@@ -16,7 +16,8 @@ iguais aos do original, pelas mesmas sementes), mas com cara e jogabilidade atua
 - **Olhar livre com o mouse** e controles modernos (WASD, atalhos, tela cheia);
 - **Interface nova** no estilo medieval (madeira, pergaminho e dourado), mais simples e clara;
 - **Salvar e carregar** em vários espaços, criação de personagem em passos, níveis, magias,
-  inventário, comércio, cidades com moradores, ermo, viagem por Tamriel e masmorras;
+  inventário, comércio, cidades com moradores, ermo, viagem por Tamriel, masmorras e a busca
+  pelos pedaços do Cajado do Caos;
 - **Sprites e texturas redesenháveis**: basta colocar PNGs em `data/mods/` para trocar a arte
   original (estou redesenhando aos poucos).
 
@@ -310,6 +311,17 @@ As masmorras com nome do `CITYDATA` aparecem na viagem (T), marcadas em roxo no 
 cada província ligadas à missão principal usam o mapa pronto do original (`NNNNNNNN.MIF`, pelo
 número da semente, com os monstros que o mapa traz); as outras são geradas. A escada de subida do
 andar de cima leva para fora (aos arredores da cidade mais próxima, quando se chegou viajando).
+
+### Missão principal
+
+Os oito pedaços do Cajado do Caos, na ordem de províncias do executável (Hammerfell, Skyrim,
+Valenwood, Elsweyr, Summerset, Rocha Alta, Pântano Negro e Morrowind). Ao descansar (a partir do
+nível 2), Ria Silmane aparece em sonho com o lugar do próximo pedaço (textos do `TEMPLATE.DAT`,
+traduzidos). Nas cidades da província certa, o primeiro boato aponta a masmorra da pista, que passa
+a aparecer no mapa de viagem; o item da pista (`*ITEM 13` do mapa pronto) revela a masmorra do
+pedaço, e o pedaço em si leva ao próximo sonho. As masmorras da missão ficam escondidas no mapa
+até serem descobertas. Simplificado por enquanto: no original o item da pista é entregue a um rei
+ou sábio, e o confronto final no Palácio Imperial ainda não existe.
 
 ### Dia e noite
 

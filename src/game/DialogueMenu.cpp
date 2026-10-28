@@ -22,6 +22,7 @@ void arena::DialogueMenu::open(const std::string &npcName, const std::string &gr
 	this->places = std::move(placeList);
 	this->rumors = std::move(rumorList);
 	this->nextRumor = 0;
+	this->firstRumorIsQuest = this->questRumorHeard = false;
 	this->page = Page::Main;
 	this->frameW = this->frameH = 1;
 }
@@ -51,6 +52,7 @@ bool arena::DialogueMenu::choose(int action, Game &game)
 	case Who: this->text = this->whoAnswer; break;
 	case WhereIs: this->page = Page::WhereIs; this->text = loc.get("Dialogue.WhereIsPrompt"); break;
 	case Rumor:
+		if (!this->rumors.empty() && this->firstRumorIsQuest && this->nextRumor % this->rumors.size() == 0) this->questRumorHeard = true;
 		if (!this->rumors.empty()) this->text = "\"" + this->rumors[this->nextRumor++ % this->rumors.size()] + "\"";
 		break;
 	case Back: this->page = Page::Main; this->text = loc.get("Dialogue.Anything"); break;

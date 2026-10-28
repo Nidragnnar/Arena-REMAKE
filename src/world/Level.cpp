@@ -315,7 +315,11 @@ bool arena::Level::build(const AssetManager &assets, const Palette &palette, con
 
 				Sprite sprite;
 				int w = 0, h = 0;
-				if (this->addSpriteFrames(assets, palette, flat.filename, sprite.frames, w, h) == 0) continue;
+				if (this->addSpriteFrames(assets, palette, flat.filename, sprite.frames, w, h) == 0)
+				{
+					// Itens da missão sem imagem nos dados (PARCHFLT.IMG, TABLET.IMG): o rolo do mapa no lugar.
+					if (flat.itemId != 13 || this->addSpriteFrames(assets, palette, "MAP.IMG", sprite.frames, w, h) == 0) continue;
+				}
 				if (this->exterior && flat.lightRadius > 0 && flat.filename.size() > 4)
 				{
 					// Lampiões das ruas: a versão apagada (mesmo nome + "DA.IMG") aparece de dia.

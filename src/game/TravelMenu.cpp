@@ -5,6 +5,7 @@
 #include "../render/Ui.h"
 #include "../world/SpriteOverrides.h"
 #include "GameMenus.h"
+#include "MainQuest.h"
 #include "TravelMenu.h"
 
 namespace
@@ -39,7 +40,7 @@ void arena::TravelMenu::selectProvince(const Game &game, int newProvince)
 	this->scroll = 0;
 	for (const CityLocation &city : game.getData().getCities())
 	{
-		if (city.province != newProvince || city.name.empty() || &city == this->current) continue;
+		if (city.province != newProvince || city.name.empty() || &city == this->current || !quest::dungeonKnown(game.getCharacter(), city)) continue;
 		const int days = this->current ? game.getData().travelDays(*this->current, city, this->month) : 1;
 		this->places.emplace_back(&city, days);
 	}

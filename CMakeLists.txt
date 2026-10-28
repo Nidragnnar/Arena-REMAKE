@@ -42,6 +42,7 @@ add_library(arena_core STATIC
 	src/game/CityGen.cpp
 	src/game/WildGen.cpp
 	src/game/DungeonGen.cpp
+	src/game/MainQuest.cpp
 	src/game/TravelMenu.cpp
 	src/game/NewCharacter.cpp
 	src/game/InventoryUi.cpp

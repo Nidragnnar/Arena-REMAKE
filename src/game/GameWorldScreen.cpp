@@ -9,6 +9,7 @@
 #include "GameClock.h"
 #include "WildGen.h"
 #include "DungeonGen.h"
+#include "MainQuest.h"
 #include "Leveling.h"
 #include "Screens.h"
 
@@ -320,6 +321,7 @@ void arena::GameWorldScreen::rest()
 	if (this->game.getCharacter().classIndex != 3) this->spellPoints = this->game.getCharacter().maxSpellPoints;
 	this->persist();
 	this->showMessage(text.get("World.Rested"), 3.0);
+	this->tryDream();
 }
 
 void arena::GameWorldScreen::setupWeapon()
@@ -600,6 +602,12 @@ arena::MenuState arena::GameWorldScreen::menuState() const
 
 void arena::GameWorldScreen::screenButtonAction(char action)
 {
+	if (action == 'v')
+	{
+		this->visionText.clear();
+		return;
+	}
+
 	this->chapterOpen = false;
 	switch (action)
 	{
@@ -796,12 +804,39 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 		return true;
 	}
 
+	if (name == "stairs" && this->loaded)
+	{
+		// stairs lista as saídas e descidas do andar (depuração).
+		std::printf("andar %d em %.1f,%.1f:", this->dungeonLevel, this->x, this->z);
+		for (int cx = 0; cx < this->level.getWidth(); cx++)
+			for (int cz = 0; cz < this->level.getDepth(); cz++)
+			{
+				const Cell &c = this->level.cell(cx, cz);
+				if (c.isExit || c.isLevelDown) std::printf(" %s(%d,%d)", c.isExit ? "sobe" : "desce", cx, cz);
+			}
+		std::printf("\n");
+		return true;
+	}
+
 	if (name == "wildcount")
 	{
 		int alive = 0;
 		std::string kinds;
 		for (const Creature &c : this->creatures.getCreatures()) if (!c.gone && c.state != Creature::State::Dead) { alive++; kinds += std::to_string(c.definition) + " "; }
 		std::printf("ermo: %d criaturas ativas (%s)\n", alive, kinds.c_str());
+		return true;
+	}
+
+	if (name == "quest")
+	{
+		// quest:pedaços,passo ajusta a missão principal (vazio só mostra) e lista as masmorras conhecidas.
+		CharacterDraft &character = this->game.getCharacter();
+		int pieces = character.staffPieces, step = character.questStep;
+		if (std::sscanf(arg.c_str(), "%d,%d", &pieces, &step) == 2) { character.staffPieces = pieces; character.questStep = step; }
+		std::printf("missão: %d pedaço(s), passo %d, nível %d; conhecidas:", character.staffPieces, character.questStep, character.level);
+		for (const CityLocation &c : this->game.getData().getCities())
+			if (c.mainQuest() && quest::dungeonKnown(character, c)) std::printf(" %s", c.name.c_str());
+		std::printf("\n");
 		return true;
 	}
 
@@ -1102,6 +1137,8 @@ void arena::GameWorldScreen::interact()
 			this->showMessage(text.get("World.KeyFound"));
 			return;
 		}
+
+		if (along > 0.0f && along < 1.9f && side < 0.6f && sprites[i].itemId == 13 && this->tryTakeQuestItem(i)) return;
 	}
 
 	if (this->tryTalkToClerk() || this->tryTalkToCitizen()) return;
@@ -1229,6 +1266,11 @@ void arena::GameWorldScreen::handleInput(const InputEvent &event)
 	// Mouse sobre os botões de pausa/morte (interface em resolução nativa).
 	eventToPixels(event, this->uiFrameW, this->uiFrameH, this->uiMouseX, this->uiMouseY);
 	if (this->gateTimer > 0.0) return;
+	if (!this->visionText.empty() && this->overlay == Overlay::None)
+	{
+		if (event.isKey(InputEvent::Key::Enter) || event.isKey(InputEvent::Key::Escape)) { this->screenButtonAction('v'); return; }
+		if (!event.isClick()) return;
+	}
 	if (this->chapterOpen && this->overlay == Overlay::None)
 	{
 		if (event.isKey(InputEvent::Key::Enter)) { this->screenButtonAction('t'); return; }
@@ -1236,7 +1278,7 @@ void arena::GameWorldScreen::handleInput(const InputEvent &event)
 		if (!event.isClick()) return;
 	}
 
-	if ((this->paused || this->health <= 0 || this->chapterOpen) && this->overlay == Overlay::None && event.isClick())
+	if ((this->paused || this->health <= 0 || this->chapterOpen || !this->visionText.empty()) && this->overlay == Overlay::None && event.isClick())
 	{
 		for (const auto &[rect, action] : this->screenButtons)
 		{
@@ -1284,6 +1326,11 @@ void arena::GameWorldScreen::handleInput(const InputEvent &event)
 		if (this->overlay == Overlay::Dialogue)
 		{
 			const OverlayResult result = this->dialogueMenu.handleInput(event, this->game);
+			if (this->dialogueMenu.questRumorHeard && this->game.getCharacter().questStep == 1)
+			{
+				this->game.getCharacter().questStep = 2; // a masmorra da pista aparece no mapa de viagem
+				this->persist();
+			}
 			if (result.close) this->overlay = Overlay::None;
 			return;
 		}
@@ -1303,6 +1350,7 @@ void arena::GameWorldScreen::handleInput(const InputEvent &event)
 			if (result.close) this->overlay = Overlay::None;
 			this->applyOverlayResult(result);
 			if (!result.inventoryChanged && (result.rested || result.healthDelta != 0)) this->persist();
+			if (result.rested) this->tryDream();
 			return;
 		}
 
@@ -1432,7 +1480,7 @@ void arena::GameWorldScreen::update(double dt)
 		return;
 	}
 
-	if (!this->loaded || this->paused || this->overlay != Overlay::None || this->chapterOpen)
+	if (!this->loaded || this->paused || this->overlay != Overlay::None || this->chapterOpen || !this->visionText.empty())
 	{
 		return;
 	}
@@ -2179,6 +2227,10 @@ void arena::GameWorldScreen::drawHud(std::vector<uint32_t> &pixels, int width, i
 		const double t = std::clamp(1.0 - this->gateTimer / GateDuration, 0.0, 1.0);
 		fillRect(frame, 0, 0, width, height, rgb(255, 244, 214, static_cast<uint8_t>(std::min(1.0, t * 1.4) * 255)));
 	}
+	else if (!this->visionText.empty())
+	{
+		this->drawVision(painter, width, height);
+	}
 	else if (this->chapterOpen)
 	{
 		this->drawChapterEnd(painter, width, height);
@@ -2454,7 +2506,21 @@ bool arena::GameWorldScreen::tryTalkToCitizen()
 	for (int i = 0; text.has("Rumors.R" + std::to_string(i)); i++) rumors.push_back(ui::format(text.get("Rumors.R" + std::to_string(i)), { this->locationName }));
 	std::shuffle(rumors.begin(), rumors.end(), this->game.getRandom());
 
+	// Missão principal: depois do sonho, os moradores sabem onde procurar. Na província certa,
+	// o primeiro boato aponta a masmorra da pista (e a marca no mapa); nas outras, a província.
+	const CharacterDraft &character = this->game.getCharacter();
+	const int questProvince = quest::targetProvince(character);
+	const CityLocation *pieceDungeon = questProvince >= 0 ? this->game.getData().getCity(questProvince, quest::PieceDungeon) : nullptr;
+	const CityLocation *clueDungeon = questProvince >= 0 ? this->game.getData().getCity(questProvince, quest::ClueDungeon) : nullptr;
+	const bool questRumor = character.questStep == 1 && pieceDungeon && clueDungeon;
+	if (questRumor)
+	{
+		rumors.insert(rumors.begin(), province == questProvince ? ui::format(text.get("Quest.RumorHere"), { pieceDungeon->name, clueDungeon->name })
+			: ui::format(text.get("Quest.RumorElsewhere"), { pieceDungeon->name, text.get("Provinces.Name" + std::to_string(questProvince)) }));
+	}
+
 	this->dialogueMenu.open(name, greeting, who, std::move(places), std::move(rumors));
+	this->dialogueMenu.firstRumorIsQuest = questRumor && province == questProvince;
 	this->overlay = Overlay::Dialogue;
 	this->heldKeys.clear();
 	this->holdLeft = this->holdRight = this->holdUp = this->holdDown = false;
@@ -2736,4 +2802,86 @@ void arena::GameWorldScreen::updateWildCreatures(double dt)
 		this->creatures.spawn(this->game.getAssets(), this->palette, kind, cx + 0.5f, cz + 0.5f, rng);
 		return;
 	}
+}
+
+void arena::GameWorldScreen::openVision(const std::string &title, const std::string &body)
+{
+	this->visionTitle = title;
+	this->visionText = body;
+	this->overlay = Overlay::None; // o sonho no quarto da taverna fecha o balcão
+	this->heldKeys.clear();
+	this->holdLeft = this->holdRight = this->holdUp = this->holdDown = false;
+}
+
+void arena::GameWorldScreen::tryDream()
+{
+	// Ria aparece no sonho com o lugar do próximo pedaço (depois do oitavo, o caminho até Tharn).
+	CharacterDraft &character = this->game.getCharacter();
+	if (!quest::dreamDue(character)) return;
+	const Localization &text = this->game.getText();
+	const std::string body = ui::format(text.get("Quest.Dream" + std::to_string(character.staffPieces)), { character.name, character.name, character.name });
+	character.questStep = 1;
+	this->openVision(text.get("Quest.DreamTitle"), body);
+	this->persist();
+}
+
+bool arena::GameWorldScreen::tryTakeQuestItem(size_t sprite)
+{
+	// *ITEM 13 dos mapas prontos: o item da pista (masmorra 33) ou o pedaço do cajado (32).
+	CharacterDraft &character = this->game.getCharacter();
+	const Localization &text = this->game.getText();
+	const int province = quest::targetProvince(character);
+	const CityLocation *piece = province >= 0 ? this->game.getData().getCity(province, quest::PieceDungeon) : nullptr;
+	const CityLocation *clue = province >= 0 ? this->game.getData().getCity(province, quest::ClueDungeon) : nullptr;
+	auto inside = [&](const CityLocation *dungeon) { return dungeon && this->mifName.find("MIFL:" + quest::premadeMif(*dungeon)) != std::string::npos; };
+
+	if (inside(clue) && character.questStep >= 1 && character.questStep <= 2)
+	{
+		this->removeSpriteAt(sprite);
+		character.questStep = 3; // a masmorra do pedaço aparece no mapa de viagem
+		this->game.playSound("FANFARE2.VOC");
+		this->openVision(text.get("Quest.ClueTitle"), ui::format(text.get("Quest.ClueFound"), { text.get("Quest.Item" + std::to_string(character.staffPieces)), piece ? piece->name : std::string() }));
+		this->persist();
+		return true;
+	}
+
+	if (inside(piece) && character.questStep >= 1)
+	{
+		this->removeSpriteAt(sprite);
+		character.staffPieces++;
+		character.questStep = 0; // próximo sonho ao descansar
+		this->game.playSound("FANFARE2.VOC");
+		this->openVision(text.get("Quest.PieceTitle"), text.get("Quest.Piece" + std::to_string(character.staffPieces)) + "\n\n"
+			+ ui::format(text.get("Quest.PieceCount"), { std::to_string(character.staffPieces) }));
+		this->persist();
+		return true;
+	}
+
+	this->showMessage(text.get(inside(piece) || inside(clue) ? "Quest.NotYet" : "Quest.NothingLeft"));
+	return true;
+}
+
+void arena::GameWorldScreen::drawVision(kit::Painter &painter, int width, int height)
+{
+	// Painel de pergaminho no estilo do fim de capítulo, com um botão para seguir.
+	namespace col = kit::color;
+	const int u = painter.unit();
+	const Fonts &fonts = this->game.getFonts();
+	painter.fill(Rect{ 0, 0, width, height }, hud::rgb(12, 8, 4, 215));
+
+	// Altura pelo tamanho do texto (estimativa de ~78 letras por linha), até 300 unidades.
+	const int lines = static_cast<int>(this->visionText.size()) / 78 + 1 + static_cast<int>(std::count(this->visionText.begin(), this->visionText.end(), '\n'));
+	const int w = std::min(width - 16 * u, 460 * u), h = std::min({ height - 16 * u, 300 * u, (100 + lines * 11) * u });
+	const Rect box{ (width - w) / 2, (height - h) / 2, w, h };
+	painter.woodPanel(box, 245);
+	painter.text(fonts.a, this->visionTitle, box.x + w / 2, box.y + 10 * u, col::GoldBright, TextAlign::Center);
+	painter.divider(box.x + 14 * u, box.y + 32 * u, w - 28 * u, col::GoldDim);
+
+	const Rect page{ box.x + 14 * u, box.y + 40 * u, w - 28 * u, h - 40 * u - 34 * u };
+	painter.parchmentPanel(page);
+	painter.paragraph(fonts.arena, this->visionText, Rect{ page.x + 12 * u, page.y + 10 * u, page.w - 24 * u, page.h - 20 * u }, col::Ink);
+
+	const Rect r{ box.x + (w - 130 * u) / 2, box.y + h - 26 * u, 130 * u, 18 * u };
+	painter.button(r, this->game.getText().get("Quest.Continue"), kit::hit(r, this->uiMouseX, this->uiMouseY), false);
+	this->screenButtons.push_back({ r, 'v' });
 }

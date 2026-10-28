@@ -69,6 +69,8 @@ namespace arena
 		std::vector<int> spells; // feitiços conhecidos (índices do SPELLSG.65), até 32 como no original
 		int readySpell = -1;     // feitiço preparado para a tecla Q
 		bool spellbookKnown = false; // a ficha já tinha a seção [Spellbook]
+		int staffPieces = 0; // missão principal: pedaços do Cajado do Caos (ver MainQuest.h)
+		int questStep = 0;   // passo da busca do próximo pedaço
 	};
 
 	class Game;

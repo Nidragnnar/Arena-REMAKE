@@ -421,6 +421,25 @@ namespace
 		{
 			std::printf("\nAndar '%s' INF=%s FLOR=%zu MAP1=%zu MAP2=%zu locks=%zu trig=%zu\n", level.name.c_str(), level.info.c_str(),
 				level.flor.size(), level.map1.size(), level.map2.size(), level.locks.size(), level.triggers.size());
+			if (std::getenv("ARENA_VOXEL"))
+			{
+				// ARENA_VOXEL=n: células do MAP1 que usam a textura n (msb ou lsb = n + 1).
+				const int wanted = std::atoi(std::getenv("ARENA_VOXEL")) + 1;
+				for (size_t i = 0; i < level.map1.size(); i++)
+				{
+					const uint16_t v = level.map1[i];
+					if (v != 0 && (((v >> 8) & 0x7F) == wanted || (v & 0xFF) == wanted))
+						std::printf("  voxel %04X em x=%zu z=%zu\n", v, i % static_cast<size_t>(mif->width), i / static_cast<size_t>(mif->width));
+				}
+				for (size_t i = 0; i < level.flor.size(); i++)
+				{
+					const uint16_t v = level.flor[i];
+					if (((v >> 8) & 0xFF) == wanted || ((v >> 8) & 0xFF) == wanted - 1)
+						std::printf("  chão %04X em x=%zu z=%zu\n", v, i % static_cast<size_t>(mif->width), i / static_cast<size_t>(mif->width));
+				}
+				for (size_t i = 0; i < level.map2.size(); i++)
+					if (level.map2[i] != 0) { std::printf("  map2 tem dados\n"); break; }
+			}
 
 			if (const auto infData = assets.read(level.info))
 			{
@@ -431,7 +450,7 @@ namespace
 						std::printf("    tex %2zu: %s%s\n", i, inf->voxelTextures[i].filename.c_str(),
 							inf->voxelTextures[i].setIndex >= 0 ? ("#" + std::to_string(inf->voxelTextures[i].setIndex)).c_str() : "");
 					for (size_t i = 0; i < inf->flats.size(); i++)
-						std::printf("    flat %2zu: %s y=%d luz=%d\n", i, inf->flats[i].filename.c_str(), inf->flats[i].yOffset, inf->flats[i].lightRadius);
+						std::printf("    flat %2zu: %s y=%d luz=%d item=%d\n", i, inf->flats[i].filename.c_str(), inf->flats[i].yOffset, inf->flats[i].lightRadius, inf->flats[i].itemId.value_or(-1));
 				}
 			}
 
@@ -561,6 +580,7 @@ int main(int argc, char **argv)
 		const auto data = assets.read(argv[3]);
 		const auto inf = data ? loadInf(*data, error) : std::nullopt;
 		if (!inf) { std::fprintf(stderr, "Erro: %s\n", error.c_str()); return 4; }
+		std::printf("levelUp=%d levelDown=%d\n", inf->levelUp.value_or(-1), inf->levelDown.value_or(-1));
 		for (size_t i = 0; i < inf->voxelTextures.size(); i++) std::printf("tex %2zu: %s [%d]\n", i, inf->voxelTextures[i].filename.c_str(), inf->voxelTextures[i].setIndex);
 		for (size_t i = 0; i < inf->flats.size(); i++) std::printf("flat %2zu: %s\n", i, inf->flats[i].filename.c_str());
 		return 0;

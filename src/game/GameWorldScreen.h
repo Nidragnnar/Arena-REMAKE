@@ -34,7 +34,7 @@ namespace arena
 		bool usesWorldView() const override { return true; }
 		void renderWorld(std::vector<uint32_t> &pixels, int width, int height) override;
 		bool debugCommand(const std::string &name, const std::string &arg) override;
-		bool wantsRelativeMouse() const override { return this->loaded && !this->paused && this->health > 0 && this->overlay == Overlay::None && !this->chapterOpen && this->gateTimer <= 0.0; }
+		bool wantsRelativeMouse() const override { return this->loaded && !this->paused && this->health > 0 && this->overlay == Overlay::None && !this->chapterOpen && this->visionText.empty() && this->gateTimer <= 0.0; }
 
 	private:
 		// Arma em primeira pessoa (CIF do original) e seus golpes.
@@ -204,6 +204,13 @@ namespace arena
 		Texture skyTexture; // degradê do céu (exteriores)
 		double gateTimer = 0.0; // passagem pelo portão em andamento (clarão)
 		bool chapterOpen = false; // painel de fim do capítulo da prisão
+
+		// Missão principal (MainQuest.h): sonhos de Ria e achados, num painel que pausa o jogo.
+		std::string visionTitle, visionText; // aberto quando visionText não está vazio
+		void openVision(const std::string &title, const std::string &body);
+		void tryDream();
+		bool tryTakeQuestItem(size_t sprite);
+		void drawVision(kit::Painter &painter, int width, int height);
 		std::vector<std::tuple<float, float, std::string>> removedSprites;
 
 		// Magia: pontos, conjuração em andamento, projéteis, efeitos ativos no jogador e nas criaturas.

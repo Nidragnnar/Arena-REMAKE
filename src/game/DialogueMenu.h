@@ -19,6 +19,10 @@ namespace arena
 		OverlayResult handleInput(const InputEvent &event, Game &game);
 		void render(kit::Painter &painter, const Game &game);
 
+		// O primeiro boato é a pista da missão principal; true depois que o jogador o ouviu.
+		bool firstRumorIsQuest = false;
+		bool questRumorHeard = false;
+
 	private:
 		enum class Page { Main, WhereIs };
 		struct Option { std::string label; int action; };

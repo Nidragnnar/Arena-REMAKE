@@ -319,6 +319,8 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 		else if (key == "Character.Health") loaded.health = number;
 		else if (key == "Character.SpellPoints") loaded.spellPoints = number;
 		else if (key == "Spellbook.Ready") loaded.readySpell = number;
+		else if (key == "Quest.StaffPieces") loaded.staffPieces = std::clamp(number, 0, 8);
+		else if (key == "Quest.Step") loaded.questStep = std::clamp(number, 0, 3);
 		else if (key == "Spellbook.Known")
 		{
 			loaded.spellbookKnown = true;
@@ -431,6 +433,7 @@ bool arena::Game::saveCharacter(const std::filesystem::path &path, const std::st
 	file << "\n[Spellbook]\n# feitiços conhecidos (índices do SPELLSG.65) e o preparado para a tecla Q\nKnown=";
 	for (size_t i = 0; i < c.spells.size(); i++) file << (i ? "," : "") << c.spells[i];
 	file << "\nReady=" << c.readySpell << "\n";
+	file << "\n[Quest]\n# missão principal: pedaços do Cajado do Caos e passo da busca do próximo\nStaffPieces=" << c.staffPieces << "\nStep=" << c.questStep << "\n";
 	if (!world.empty()) file << "\n" << world;
 
 	return static_cast<bool>(file);

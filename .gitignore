@@ -1,0 +1,8 @@
+build/
+out/
+screenshots/
+*.user
+.vs/
+saves/
+data/mods/
+*.png

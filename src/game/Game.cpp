@@ -1,0 +1,442 @@
+#include <algorithm>
+#include <ctime>
+#include <fstream>
+#include <cstdio>
+
+#include "../core/KeyValueFile.h"
+#include "../render/Ui.h"
+#include "../world/SpriteOverrides.h"
+#include "Game.h"
+#include "Screens.h"
+
+bool arena::Game::init(const std::filesystem::path &arenaDir, const std::filesystem::path &dataDir, std::string &outError)
+{
+	loadSpriteOverrides(dataDir / "mods");
+	if (!this->assets.init(arenaDir, dataDir / "mods", outError))
+	{
+		return false;
+	}
+
+	const auto paletteData = this->assets.read("PAL.COL");
+	const auto palette = paletteData ? loadColPalette(*paletteData) : std::nullopt;
+	if (!palette)
+	{
+		outError = "PAL.COL não encontrado ou inválido.";
+		return false;
+	}
+
+	this->defaultPalette = *palette;
+
+	const std::pair<BitmapFont*, const char*> fontFiles[] =
+	{
+		{ &this->fonts.a, "FONT_A.DAT" }, { &this->fonts.b, "FONT_B.DAT" }, { &this->fonts.c, "FONT_C.DAT" },
+		{ &this->fonts.d, "FONT_D.DAT" }, { &this->fonts.s, "FONT_S.DAT" }, { &this->fonts.arena, "ARENAFNT.DAT" },
+		{ &this->fonts.character, "CHARFNT.DAT" }, { &this->fonts.teeny, "TEENYFNT.DAT" }, { &this->fonts.four, "FONT4.DAT" }
+	};
+
+	for (const auto &[font, name] : fontFiles)
+	{
+		const auto data = this->assets.read(name);
+		if (!data || !font->load(*data))
+		{
+			outError = std::string("Fonte inválida: ") + name;
+			return false;
+		}
+	}
+
+	this->text.loadExeStringMap(dataDir / "exe" / "acd_strings.txt", this->assets.getExeImage());
+	if (!this->text.loadLanguage(dataDir / "lang" / "pt_BR.txt"))
+	{
+		outError = "Arquivo de idioma pt_BR.txt não encontrado em " + (dataDir / "lang").string();
+		return false;
+	}
+
+	this->dataDirectory = dataDir;
+	if (!this->rules.load(this->assets, dataDir, outError))
+	{
+		return false;
+	}
+
+	this->parchmentTiles = this->loadFrames("PARCH.CIF");
+
+	this->current = std::make_unique<TitleScreen>(*this);
+	this->fadeTimer = FadeDuration;
+	return true;
+}
+
+void arena::Game::changeScreen(std::unique_ptr<Screen> next)
+{
+	if (this->pending)
+	{
+		return; // já existe uma transição em andamento
+	}
+
+	this->pending = std::move(next);
+	this->fadingOut = true;
+	this->fadeTimer = FadeDuration;
+}
+
+void arena::Game::handleInput(const InputEvent &event)
+{
+	if (this->current && !this->pending)
+	{
+		this->current->handleInput(event);
+	}
+}
+
+void arena::Game::update(double dt)
+{
+	if (this->fadeTimer > 0.0)
+	{
+		this->fadeTimer -= dt;
+		if (this->fadeTimer <= 0.0 && this->fadingOut)
+		{
+			this->current = std::move(this->pending);
+			this->fadingOut = false;
+			this->fadeTimer = FadeDuration;
+		}
+	}
+
+	if (this->current)
+	{
+		this->current->update(dt);
+	}
+}
+
+void arena::Game::render(Canvas &canvas, float &outBrightness) const
+{
+	if (this->current)
+	{
+		this->current->render(canvas);
+	}
+
+	const double t = std::max(0.0, this->fadeTimer) / FadeDuration;
+	outBrightness = static_cast<float>(this->fadingOut ? t : 1.0 - t);
+}
+
+arena::IndexedImage arena::Game::loadImage(const std::string &name) const
+{
+	const auto data = this->assets.read(name);
+	if (auto image = data ? loadImg(name, *data) : std::nullopt)
+	{
+		return std::move(*image);
+	}
+
+	IndexedImage blank;
+	blank.width = Canvas::Width;
+	blank.height = Canvas::Height;
+	blank.pixels.assign(static_cast<size_t>(blank.width * blank.height), 0);
+	return blank;
+}
+
+std::vector<arena::IndexedImage> arena::Game::loadFrames(const std::string &name) const
+{
+	const auto data = this->assets.read(name);
+	return data ? loadCif(name, *data) : std::vector<IndexedImage>{};
+}
+
+std::optional<arena::Palette> arena::Game::loadPalette(const std::string &name) const
+{
+	const auto data = this->assets.read(name);
+	if (!data)
+	{
+		return std::nullopt;
+	}
+
+	if (auto col = loadColPalette(*data))
+	{
+		return col;
+	}
+
+	// .MNU/.IMG com paleta embutida.
+	const auto image = loadImg(name, *data);
+	return image ? image->palette : std::nullopt;
+}
+
+const arena::IndexedImage &arena::Game::getParchment(int width, int height)
+{
+	const auto key = std::make_pair(width, height);
+	auto it = this->parchmentCache.find(key);
+	if (it == this->parchmentCache.end())
+	{
+		it = this->parchmentCache.emplace(key, ui::makeParchment(this->parchmentTiles, width, height)).first;
+	}
+
+	return it->second;
+}
+
+std::string arena::Game::localized(const std::string &key, const std::string &fallback) const
+{
+	if (!this->character.male && this->text.has(key + "_F"))
+	{
+		return this->text.get(key + "_F");
+	}
+
+	return this->text.getOr(key, fallback);
+}
+
+std::string arena::Game::className(int index) const
+{
+	return this->localized("Classes.Name" + std::to_string(index), this->rules.getClass(index).originalName);
+}
+
+std::string arena::Game::raceName(int index, bool plural) const
+{
+	return this->localized(std::string(plural ? "Races.Plural" : "Races.Singular") + std::to_string(index), "?");
+}
+
+std::string arena::Game::provinceName(int index) const
+{
+	return this->text.getOr("Provinces.Name" + std::to_string(index), "?");
+}
+
+std::string arena::Game::attributeName(int index, bool shortName) const
+{
+	return this->text.getOr(std::string(shortName ? "Attributes.Short" : "Attributes.Name") + std::to_string(index), "?");
+}
+
+const std::string &arena::Game::gendered(const std::string &key) const
+{
+	if (!this->character.male && this->text.has(key + "_F"))
+	{
+		return this->text.get(key + "_F");
+	}
+
+	return this->text.get(key);
+}
+
+void arena::Game::renderWorld(std::vector<uint32_t> &pixels, int width, int height) const
+{
+	if (!this->current)
+	{
+		return;
+	}
+
+	this->current->renderWorld(pixels, width, height);
+
+	// Mesmo fade das telas 2D.
+	const double t = std::max(0.0, this->fadeTimer) / FadeDuration;
+	const float brightness = static_cast<float>(this->fadingOut ? t : 1.0 - t);
+	if (this->gpu)
+	{
+		// Na GPU o fade é aplicado na composição final (cena + HUD).
+		this->gpu->setWorldBrightness(std::clamp(brightness, 0.0f, 1.0f));
+	}
+	else if (brightness < 0.999f)
+	{
+		const uint32_t scale = static_cast<uint32_t>(std::clamp(brightness, 0.0f, 1.0f) * 256.0f);
+		for (uint32_t &p : pixels)
+		{
+			const uint32_t r = ((p & 0xFF) * scale) >> 8;
+			const uint32_t g = (((p >> 8) & 0xFF) * scale) >> 8;
+			const uint32_t b = (((p >> 16) & 0xFF) * scale) >> 8;
+			p = 0xFF000000u | (b << 16) | (g << 8) | r;
+		}
+	}
+}
+
+void arena::Game::enableAudio(float soundVolume, float musicVolume)
+{
+	this->mixer.setMasterVolume(soundVolume);
+	this->music = std::make_unique<MusicPlayer>();
+	this->music->setVolume(musicVolume);
+}
+
+void arena::Game::playSound(const std::string &name, float volume, float pan)
+{
+	const std::string key = toUpperAscii(name);
+	auto it = this->soundCache.find(key);
+	if (it == this->soundCache.end())
+	{
+		const auto data = this->assets.read(key);
+		auto sound = data ? loadVoc(*data) : std::nullopt;
+		it = this->soundCache.emplace(key, sound ? std::make_shared<const SoundBuffer>(std::move(*sound)) : nullptr).first;
+	}
+
+	if (it->second)
+	{
+		this->mixer.play(it->second, volume, pan);
+	}
+}
+
+void arena::Game::playMusic(const std::string &name)
+{
+	const std::string key = toUpperAscii(name);
+	if (!this->music || key == this->currentMusic)
+	{
+		return;
+	}
+
+	this->currentMusic = key;
+	const auto data = this->assets.read(key);
+	if (data)
+	{
+		this->music->play(loadXmi(*data), true);
+	}
+}
+
+void arena::Game::stopMusic()
+{
+	if (this->music)
+	{
+		this->music->stop();
+		this->currentMusic.clear();
+	}
+}
+
+bool arena::Game::hasSavedCharacter() const
+{
+	std::error_code ec;
+	return std::filesystem::exists(this->getSavePath(), ec);
+}
+
+bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
+{
+	std::vector<std::pair<std::string, std::string>> world;
+	CharacterDraft loaded;
+	const bool ok = parseKeyValueFile(path, [&loaded, &world](const std::string &key, const std::string &value)
+	{
+		if (key.rfind("World.", 0) == 0 || key.rfind("Creatures.", 0) == 0 || key.rfind("Loot.", 0) == 0)
+		{
+			world.emplace_back(key, value);
+			return;
+		}
+
+		const int number = std::atoi(value.c_str());
+		if (key == "Character.Name") loaded.name = value;
+		else if (key == "Character.Male") loaded.male = number != 0;
+		else if (key == "Character.Class") loaded.classIndex = number;
+		else if (key == "Character.Race") loaded.raceIndex = number;
+		else if (key == "Character.Portrait") loaded.portraitIndex = number;
+		else if (key == "Character.MaxHealth") loaded.maxHealth = number;
+		else if (key == "Character.MaxStamina") loaded.maxStamina = number;
+		else if (key == "Character.MaxSpellPoints") loaded.maxSpellPoints = number;
+		else if (key == "Character.Gold") loaded.gold = number;
+		else if (key == "Character.Experience") loaded.experience = number;
+		else if (key == "Character.Level") loaded.level = std::max(1, number);
+		else if (key == "Character.LevelPoints") loaded.levelPoints = std::max(0, number);
+		else if (key == "Character.Time") loaded.gameMinutes = std::max(0.0, std::atof(value.c_str()));
+		else if (key == "Character.Health") loaded.health = number;
+		else if (key == "Character.SpellPoints") loaded.spellPoints = number;
+		else if (key == "Spellbook.Ready") loaded.readySpell = number;
+		else if (key == "Spellbook.Known")
+		{
+			loaded.spellbookKnown = true;
+			for (size_t at = 0; at < value.size();)
+			{
+				const size_t comma = value.find(',', at);
+				const std::string part = value.substr(at, comma == std::string::npos ? std::string::npos : comma - at);
+				if (!part.empty()) loaded.spells.push_back(std::atoi(part.c_str()));
+				if (comma == std::string::npos) break;
+				at = comma + 1;
+			}
+		}
+		else if (key.rfind("Inventory.Item", 0) == 0)
+		{
+			// Item = tipo, id, classe de armadura, material, equipado
+			int kind = 0, type = 0, armorClass = 0, material = 0, equipped = 0;
+			if (std::sscanf(value.c_str(), "%d,%d,%d,%d,%d", &kind, &type, &armorClass, &material, &equipped) == 5)
+			{
+				Item item;
+				item.kind = static_cast<ItemKind>(std::clamp(kind, 0, 2));
+				item.type = type;
+				item.armorClass = static_cast<ArmorClass>(std::clamp(armorClass, 0, 2));
+				item.material = std::clamp(material, 0, MaterialCount - 1);
+				item.equipped = equipped != 0;
+				loaded.inventory.push_back(item);
+			}
+		}
+		else if (key.rfind("Character.Attribute", 0) == 0)
+		{
+			const int index = std::atoi(key.c_str() + 19);
+			if (index >= 0 && index < AttributeCount) loaded.attributes[static_cast<size_t>(index)] = number;
+		}
+	});
+
+	if (!ok || loaded.name.empty() || loaded.classIndex < 0 || loaded.classIndex >= ClassCount || loaded.raceIndex < 0 || loaded.raceIndex >= RaceCount)
+	{
+		return false;
+	}
+
+	// Fichas antigas (antes do inventário) recebem o equipamento inicial da classe.
+	if (loaded.inventory.empty())
+	{
+		loaded.inventory = startingKit(loaded.classIndex, static_cast<int>(this->rules.getClass(loaded.classIndex).armor));
+	}
+
+	// Fichas sem livro de feitiços recebem o livro inicial da classe.
+	if (!loaded.spellbookKnown)
+	{
+		loaded.spells = starterSpells(loaded.classIndex, this->rules.getClass(loaded.classIndex).castsMagic);
+		loaded.readySpell = loaded.spells.empty() ? -1 : loaded.spells.front();
+	}
+
+	this->character = loaded;
+	this->pendingWorld = std::move(world);
+	return true;
+}
+
+arena::Game::SaveSummary arena::Game::readSaveSummary(const std::filesystem::path &path) const
+{
+	SaveSummary summary;
+	summary.exists = parseKeyValueFile(path, [&summary](const std::string &key, const std::string &value)
+	{
+		if (key == "Slot.Name" || (key == "Character.Name" && summary.name.empty())) summary.name = value;
+		else if (key == "Slot.Date") summary.date = value;
+		else if (key == "Slot.Location") summary.location = value;
+		else if (key == "Character.Level") summary.level = std::max(1, std::atoi(value.c_str()));
+	});
+	return summary;
+}
+
+bool arena::Game::saveCharacter(const std::filesystem::path &path, const std::string &world, const std::string &location) const
+{
+	const CharacterDraft &c = this->character;
+	std::error_code ec;
+	std::filesystem::create_directories(this->getSavePath().parent_path(), ec);
+	std::ofstream file(path, std::ios::binary);
+	if (!file)
+	{
+		return false;
+	}
+
+	// Resumo para as listas de salvar/carregar.
+	const std::time_t now = std::time(nullptr);
+	char date[32] = {};
+	std::tm local{};
+#ifdef _WIN32
+	localtime_s(&local, &now);
+#else
+	localtime_r(&now, &local);
+#endif
+	std::strftime(date, sizeof(date), "%d/%m/%Y %H:%M", &local);
+	file << "# Jogo salvo do Arena Remake\n[Slot]\nName=" << c.name << "\nDate=" << date << "\nLocation=" << location << "\n\n[Character]\n"
+		<< "Name=" << c.name << "\nMale=" << (c.male ? 1 : 0) << "\nClass=" << c.classIndex << "\nRace=" << c.raceIndex
+		<< "\nPortrait=" << c.portraitIndex << "\nMaxHealth=" << c.maxHealth << "\nMaxStamina=" << c.maxStamina
+		<< "\nMaxSpellPoints=" << c.maxSpellPoints << "\nGold=" << c.gold << "\nLevel=" << c.level << "\nLevelPoints=" << c.levelPoints << "\nTime=" << static_cast<long long>(c.gameMinutes) << "\nExperience=" << c.experience
+		<< "\nHealth=" << c.health << "\nSpellPoints=" << c.spellPoints << "\n";
+	for (int i = 0; i < AttributeCount; i++)
+	{
+		file << "Attribute" << i << "=" << c.attributes[static_cast<size_t>(i)] << "\n";
+	}
+
+	file << "\n[Inventory]\n# tipo (0 arma, 1 armadura, 2 poção), id, classe (0 placas, 1 malha, 2 couro), material, equipado\n";
+	for (size_t i = 0; i < c.inventory.size(); i++)
+	{
+		const Item &item = c.inventory[i];
+		file << "Item" << i << "=" << static_cast<int>(item.kind) << "," << item.type << "," << static_cast<int>(item.armorClass)
+			<< "," << item.material << "," << (item.equipped ? 1 : 0) << "\n";
+	}
+
+	file << "\n[Spellbook]\n# feitiços conhecidos (índices do SPELLSG.65) e o preparado para a tecla Q\nKnown=";
+	for (size_t i = 0; i < c.spells.size(); i++) file << (i ? "," : "") << c.spells[i];
+	file << "\nReady=" << c.readySpell << "\n";
+	if (!world.empty()) file << "\n" << world;
+
+	return static_cast<bool>(file);
+}
+
+const arena::Palette &arena::Game::getPalette() const
+{
+	return this->current ? this->current->getPalette() : this->defaultPalette;
+}

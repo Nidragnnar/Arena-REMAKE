@@ -1,0 +1,955 @@
+# Tradução para Português do Brasil — The Elder Scrolls: Arena (Remake)
+#
+# Formato: [Secao] e linhas Chave=Valor. "\n" quebra a linha.
+# Chaves que não estiverem aqui usam o texto original em inglês do ACD.EXE
+# (veja data/exe/acd_strings.txt). Marcadores %s devem ser mantidos na mesma ordem.
+# Uma chave terminada em "_F" é a variante usada para personagens femininas.
+#
+# Estilo: o original usa inglês arcaico ("thou", "thy"); usamos a segunda pessoa
+# do singular ("tu", "teu") para manter o tom solene.
+# As perguntas de classe ficam em pt_BR_questions.txt.
+
+[Game]
+Title=The Elder Scrolls: Arena
+Subtitle=Edição Remasterizada em Português
+PressAnyKey=Pressione qualquer tecla
+
+[Common]
+Yes=Sim
+No=Não
+
+[MainMenu]
+LoadGame=Carregar Jogo
+NewGame=Novo Jogo
+Exit=Sair
+LoadGameHotkey=C
+NewGameHotkey=N
+ExitHotkey=S
+NotImplemented=Em construção nesta versão do remake.
+NoSavedCharacter=Nenhum personagem salvo.
+Continue=Continuar
+Footer=Arena Remake - versão em português
+Crie um em Novo Jogo.
+
+[CharacterCreation]
+ChooseClassCreation=Como desejas escolher\ntua classe?
+ChooseClassCreationGenerate=Gerar
+ChooseClassCreationSelect=Escolher
+ClassQuestionsIntro=Dez perguntas te serão feitas para\ndeterminar o caminho do teu destino.\nResponde com as teclas A, B ou C,\nou clica na alternativa desejada.\nUsa a roda do mouse ou as setas\npara rolar o pergaminho.
+QuestionHeader=Pergunta %s de %s
+SuggestedClass=Sobreviverias por mais\ntempo como %s.\nAceitas isto como\nteu destino?
+ChooseClassList=Escolhe tua classe...
+ChooseName=Qual será teu nome, %s?
+ChooseGender=Escolhe teu gênero...
+ChooseGenderMale=Masculino
+ChooseGenderFemale=Feminino
+ChooseRace=De onde vens,\n%s,\no %s?
+ChooseRace_F=De onde vens,\n%s,\na %s?
+ConfirmRace=Escolheste %s,\nterra dos %s.\nAceitas esta terra\ncomo teu lar?
+ConfirmedRace1=Então serás conhecido como\n%s %s, que chamará\n%s, terra dos %s,\nde lar.
+ConfirmedRace1_F=Então serás conhecida como\n%s %s, que chamará\n%s, terra dos %s,\nde lar.
+ConfirmedRace2=Sabe também isto:
+ConfirmedRace3=Teu corpo e tua mente devem ser\n%s\nse quiseres triunfar\ncomo %s.
+ConfirmedRace4=Segue agora em paz.\nQue teu destino seja escrito\nnos Elder Scrolls...
+DistributeClassPoints=Distribui teus pontos como achares melhor,\nlembrando das recomendações\npara a classe escolhida...\n\nClica num atributo e usa as setas ao lado\n(ou as setas do teclado) para ajustá-lo.
+ChooseAttributes=O que escolhes?
+ChooseAttributesSave=Salvar atributos
+ChooseAttributesReroll=Rolar de novo
+ChooseAttributesBonusPointsRemaining=Deves distribuir todos os\nteus pontos de bônus.
+ChooseAppearance=Agora escolherás tua aparência.\nClica em teu rosto para alterá-lo\n(botão direito volta ao anterior).\nQuando terminares, seleciona 'Pronto' para entrar\nno mundo de Tamriel, lar da Arena...
+CreationComplete=%s, %s %s,
+está pronto para entrar em Tamriel.
+
+A ficha foi salva. Clica para começar.
+CreationComplete_F=%s, %s %s,
+está pronta para entrar em Tamriel.
+
+A ficha foi salva. Clica para começar.
+
+[Classes]
+# Ordem do ACD.EXE: magos (0-5), ladrões (6-11), guerreiros (12-17).
+Name0=Mago
+Name0_F=Maga
+Name1=Espadachim Arcano
+Name1_F=Espadachim Arcana
+Name2=Mago de Batalha
+Name2_F=Maga de Batalha
+Name3=Feiticeiro
+Name3_F=Feiticeira
+Name4=Curandeiro
+Name4_F=Curandeira
+Name5=Lâmina Noturna
+Name6=Bardo
+Name6_F=Barda
+Name7=Arrombador
+Name7_F=Arrombadora
+Name8=Velhaco
+Name8_F=Velhaca
+Name9=Acrobata
+Name10=Ladrão
+Name10_F=Ladra
+Name11=Assassino
+Name11_F=Assassina
+Name12=Monge
+Name12_F=Monja
+Name13=Arqueiro
+Name13_F=Arqueira
+Name14=Patrulheiro
+Name14_F=Patrulheira
+Name15=Bárbaro
+Name15_F=Bárbara
+Name16=Guerreiro
+Name16_F=Guerreira
+Name17=Cavaleiro
+Name17_F=Cavaleira
+Preferred0=inteligente e obstinado
+Preferred0_F=inteligente e obstinada
+Preferred1=forte e inteligente
+Preferred2=rápido e inteligente
+Preferred2_F=rápida e inteligente
+Preferred3=inteligente e ágil
+Preferred4=inteligente e obstinado
+Preferred4_F=inteligente e obstinada
+Preferred5=ágil e inteligente
+Preferred6=inteligente e carismático
+Preferred6_F=inteligente e carismática
+Preferred7=ágil e rápido
+Preferred7_F=ágil e rápida
+Preferred8=forte e inteligente
+Preferred9=ágil e rápido
+Preferred9_F=ágil e rápida
+Preferred10=ágil e inteligente
+Preferred11=forte e ágil
+Preferred12=ágil e resistente
+Preferred13=forte e ágil
+Preferred14=forte e inteligente
+Preferred15=forte e resistente
+Preferred16=forte e resistente
+Preferred17=forte e obstinado
+Preferred17_F=forte e obstinada
+
+[ClassInfo]
+Category0=Caminho da Magia
+Category1=Caminho da Furtividade
+Category2=Caminho do Combate
+Armor0=couro, malha e placas
+Armor1=couro e malha
+Armor2=apenas couro
+Armor3=nenhuma
+Magic=Magia: %sx Inteligência
+NoMagic=Sem magia
+Description=%s - %s\nArmadura: %s\nIdeal: %s\nVida: 25 + d%s    %s
+
+[Races]
+Singular0=Bretão
+Singular0_F=Bretã
+Singular1=Guarda Vermelho
+Singular1_F=Guarda Vermelha
+Singular2=Nórdico
+Singular2_F=Nórdica
+Singular3=Elfo Negro
+Singular3_F=Elfa Negra
+Singular4=Alto Elfo
+Singular4_F=Alta Elfa
+Singular5=Elfo da Floresta
+Singular5_F=Elfa da Floresta
+Singular6=Khajiit
+Singular7=Argoniano
+Singular7_F=Argoniana
+Plural0=Bretões
+Plural1=Guardas Vermelhos
+Plural2=Nórdicos
+Plural3=Elfos Negros
+Plural4=Altos Elfos
+Plural5=Elfos da Floresta
+Plural6=Khajiit
+Plural7=Argonianos
+# TEMPLATE.DAT #1409..#1416
+Description0=Tua raça descende dos antigos Druidas de Galen, de raciocínio ágil e fortes nas artes místicas. Teu povo é astuto e inteligente, um povo erudito que usa seus dons para guiar outros à iluminação...
+Description1=Tua raça é um povo sem passado, pois na Guerra Tiberiana fostes guardiões firmes de Hammerfell. Com o passar do tempo, teu povo agarrou-se à terra pela qual derramou lágrimas de sangue, e agora a terra, e a força e a resistência da própria rocha, são tuas para comandar...
+Description2=Tua raça é forte como os ventos do norte que varrem as geleiras. O clima ártico endureceu teu povo para a mão cruel e amarga da vida...
+Description3=Tua raça é tão mortal quanto os espinhos da rosa negra que floresce apenas no seio de tua mãe. Tens toda a graça de teus irmãos do dia, mas tua mãe é a lua, e tu és um de seus filhos da noite...
+Description4=Tua raça é alta e majestosa, pois sois reis entre príncipes. Teu povo foi o primeiro nesta terra a respirar o ar da primavera e o primeiro a saltar, ágil como o vento. Teus olhos tudo enxergam, mesmo quando nada brilha além da Senhora da Noite...
+Description5=Tua raça é uma só com a floresta e suas criaturas, e tua força flui da própria mãe terra. Tu és um só com o mundo...
+Description6=Tua raça nasceu do deserto, onde a vida é cruel e dura e a morte chega nas asas dos abutres. Sois felinos e esguios, caçadores mortais dos ermos...
+Description7=Tua raça nasceu dos pântanos. Tu te mantiveste longe dos campos abertos, pois sois caçadores de outro tipo, aqueles que espreitam a presa nas águas negras e paradas...
+
+[Provinces]
+Name0=Rocha Alta
+Name1=Hammerfell
+Name2=Skyrim
+Name3=Morrowind
+Name4=Ilha Summerset
+Name5=Valenwood
+Name6=Elsweyr
+Name7=Pântano Negro
+Name8=Província Imperial
+
+[Map]
+TitleLeft=Império de
+
+# Rótulos desenhados no mapa (podem ter duas linhas).
+Label0=ROCHA ALTA
+Label1=HAMMERFELL
+Label2=SKYRIM
+Label3=MORROWIND
+Label4=ILHA\nSUMMERSET
+Label5=VALENWOOD
+Label6=ELSWEYR
+Label7=PÂNTANO NEGRO
+Label8=PROVÍNCIA IMPERIAL
+
+[Attributes]
+Name0=Força
+Name1=Inteligência
+Name2=Vontade
+Name3=Agilidade
+Name4=Velocidade
+Name5=Resistência
+Name6=Personalidade
+Name7=Sorte
+Short0=For:
+Short1=Int:
+Short2=Von:
+Short3=Agi:
+Short4=Vel:
+Short5=Res:
+Short6=Per:
+Short7=Sor:
+
+[Sheet]
+Damage=Dano:
+SpellPoints=Magia:
+MagicDefense=Def.Mág:
+ToHit=Acerto:
+HealthBonus=Saúde:
+Charisma=Carisma:
+MaxKilos=Kg Máx:
+ToDefend=Defesa:
+HealMod=Cura:
+Health=Vida:
+Fatigue=Vigor:
+Gold=Ouro:
+Experience=Exp.:
+Level=Nível:
+Done=Pronto
+BonusPoints=Bônus:
+PortraitHint=Clica no rosto para mudar
+ItemsButton=Itens
+CloseHint=Esc ou C: voltar ao jogo
+EquipmentTitle=Equipamento
+Exit=Sair
+Spellbook=Feitiços
+Drop=Largar
+
+[World]
+StartDungeonMif=START.MIF
+StartDungeonName=Masmorras Imperiais
+Intro=Acordas no chão frio de uma cela das Masmorras Imperiais. O Imperador foi traído, e tu sabes demais. Encontra uma saída.
+Facing=Direção:
+Direction0=Norte
+Direction1=Nordeste
+Direction2=Leste
+Direction3=Sudeste
+Direction4=Sul
+Direction5=Sudoeste
+Direction6=Oeste
+Direction7=Noroeste
+Help=WASD mover - Mouse olhar - Clique/F atacar (arraste o mouse para mudar o golpe) - E usar/saquear - C ficha e itens - Q conjurar - B feitiços - R descansar - Shift correr - M mapa - Esc pausa
+North=N
+DoorOpens=A porta se abre.
+DoorCloses=A porta se fecha.
+KeyFound=Encontraste uma chave.
+ExitGate=O campo cintilante do Portão de Transição pulsa diante de ti.
+Paused=Pausado
+PausedHelp=Esc ou C: continuar    S: sair para o menu principal
+Keys=Chaves:
+KeyGained=Encontraste uma chave de rubi escondida no canto!
+DoorLocked=A porta está trancada.
+DoorUnlocked=A chave de rubi gira na fechadura e a porta se abre.
+LockPicked=Arrombaste a fechadura!
+LockPickFailed=Não conseguiste arrombar a fechadura.
+RestEnemies=Não podes descansar com inimigos por perto.
+Rested=Descansaste por um tempo e recuperaste tua vida.
+PlayerHit=Acertaste %s! (-%s)
+PlayerMiss=Erraste o golpe em %s.
+CreatureKilled=Mataste %s! +%s de experiência.
+CreatureHit=%s te acerta! (-%s de vida)
+CreatureMiss=%s erra o ataque.
+CreatureNoticed=%s te notou!
+DeathMessage=Tua visão escurece...
+Dead=Morreste
+DeadHelp=Enter: recomeçar na cela    S: menu principal
+LoadError=Não foi possível carregar o nível:
+
+[Triggers]
+# Textos do @TEXT dos .INF, por arquivo: Triggers.<INF>.<número>
+START.1=Acordas com o gotejar de água vindo de algum lugar acima. As paredes da cela estão cobertas de limo, assim como as correntes que pendem do teto. Teus olhos, porém, vão direto a um estranho brilho de rubi no canto da cela...
+START.2=Os corredores aqui parecem tortuosos e confusos, mas as instruções de Ria eram seguir para o oeste e depois para o sul até encontrar o Portão de Transição...
+START.3=Ouve-se o arranhar de muitas garrinhas sobre as pedras molhadas...
+START.4=Olhos vermelhos parecem brilhar para ti na escuridão...
+START.5=Adiante podes ver o campo cintilante do Portão de Transição...
+START.6=Parece seguro descansar nestes nichos. Achas que os ratos e outras criaturas não sentirão teu cheiro com a corrente de ar que passa tão rente ao chão... (R para descansar)
+
+[Creatures]
+# Name = rótulo no HUD; Ref = forma usada nas frases (com artigo).
+Name0=Rato
+Ref0=o rato
+Name1=Goblin
+Ref1=o goblin
+Name2=Homem-Lagarto
+Ref2=o homem-lagarto
+Name3=Lobo
+Ref3=o lobo
+Name4=Lobo da Neve
+Ref4=o lobo da neve
+Name5=Orc
+Ref5=o orc
+Name6=Esqueleto
+Ref6=o esqueleto
+Name7=Minotauro
+Ref7=o minotauro
+Name8=Aranha
+Ref8=a aranha
+Name9=Carniçal
+Ref9=o carniçal
+Name10=Cão Infernal
+Ref10=o cão infernal
+Name11=Fantasma
+Ref11=o fantasma
+Name12=Zumbi
+Ref12=o zumbi
+Name13=Troll
+Ref13=o troll
+Name14=Espectro
+Ref14=o espectro
+Name15=Homúnculo
+Ref15=o homúnculo
+Name16=Golem de Gelo
+Ref16=o golem de gelo
+Name17=Golem de Pedra
+Ref17=o golem de pedra
+Name18=Golem de Ferro
+Ref18=o golem de ferro
+Name19=Daemon de Fogo
+Ref19=o daemon de fogo
+Name20=Medusa
+Ref20=a medusa
+Name21=Vampiro
+Ref21=o vampiro
+Name22=Lich
+Ref22=o lich
+Name23=Jagar Tharn
+Ref23=Jagar Tharn
+
+[Weapons]
+# Nomes na ordem da tabela do executável (Staff..Long Bow).
+Fists=Punhos
+Name0=Cajado
+Name1=Adaga
+Name2=Espada curta
+Name3=Espada larga
+Name4=Sabre
+Name5=Espada longa
+Name6=Claymore
+Name7=Tanto
+Name8=Wakizashi
+Name9=Katana
+Name10=Dai-katana
+Name11=Maça
+Name12=Mangual
+Name13=Martelo de guerra
+Name14=Machado de guerra
+Name15=Machado de batalha
+Name16=Arco curto
+Name17=Arco longo
+
+[Armor]
+Piece0=Couraça
+Piece1=Manoplas
+Piece2=Grevas
+Piece3=Ombreira (E)
+Piece4=Ombreira (D)
+Piece5=Elmo
+Piece6=Botas
+Piece7=Broquel
+Piece8=Escudo redondo
+Piece9=Escudo pipa
+Piece10=Escudo torre
+Class0=de placas
+Class1=de malha
+Class2=de couro
+
+[Materials]
+Name0=Ferro
+Name1=Aço
+Name2=Prata
+Name3=Élfico
+Name4=Anão
+Name5=Mithril
+Name6=Adamantio
+Name7=Ébano
+
+[Potions]
+Name0=Poção de Vigor
+Name1=Poção de Força
+Name2=Poção de Cura
+Name3=Poção de Restaurar Magia
+Name4=Poção de Resistir ao Fogo
+Name5=Poção de Resistir ao Frio
+Name6=Poção de Resistir a Choque
+Name7=Poção de Curar Doença
+Name8=Poção de Cura Total
+Name9=Poção de Levitação
+Name10=Poção de Resistir a Veneno
+Name11=Poção de Ação Livre
+Name12=Poção de Curar Veneno
+Name13=Poção de Invisibilidade
+Name14=Poção de Purificação
+
+[Items]
+WeaponDetails=Dano %s-%s  Peso %s kg
+TwoHanded=(duas mãos)
+ArmorDetails=Proteção %s  Peso %s kg
+PotionDetails=Bebe para sentir o efeito.
+PotionHealed=Bebeste a poção e recuperaste %s de vida.
+PotionNoEffect=Bebeste a poção, mas nada parece mudar.
+PotionRestoredMagic=Bebeste a poção e recuperaste %s de magia.
+BowsNotSupported=Arcos ainda não podem ser usados nesta versão.
+ClassForbidden=Tua classe não pode usar este equipamento.
+NoSpellbook=Não conheces nenhum feitiço.
+Empty=(sem itens)
+Weight=Carga: %s / %s kg
+HintUse=Clica de novo ou E: beber   D: largar
+HintUnequip=Clica de novo ou E: tirar   D: largar
+HintEquip=Clica de novo ou E: equipar   D: largar
+
+[Loot]
+TitleCorpse=Corpo de %s
+TitleBody=Restos mortais
+TitleEquipment=Pilha de equipamentos
+TitleTreasure=Tesouro
+TitleChest=Baú
+TookGold=Pegaste %s moedas de ouro.
+TookItem=Pegaste: %s.
+TooHeavy=Carga demais! Larga algo primeiro.
+GoldLine=%s moedas de ouro
+Empty=Nada aqui.
+Hint=Clique numa linha para pegar     T: pegar tudo
+TakeAll=Pegar tudo
+
+[Spells]
+# Livro de feitiços (CHARSPEL.IMG) e conjuração. Nomes na ordem do SPELLSG.65.
+Title=Livro de Feitiços
+LabelName=Nome:
+LabelLevel=Nível:
+LabelSpell=Feitiço:
+LabelTarget=Alvo:
+LabelEffects=Efeitos:
+LabelGold=Ouro:
+LabelPrice=Preço:
+LabelSave=Resiste:
+LabelCost=Custo:
+Next=Próximo
+Previous=Anterior
+Prepare=Preparar
+Exit=Sair
+ReadyMark=(preparado)
+Footer=Feitiço %s de %s   -   Magia %s/%s   -   Enter/Q: preparar
+Empty=Teu livro de feitiços está vazio. Feitiços são aprendidos nas guildas dos magos.
+Target0=Conjurador
+Target1=Toque
+Target2=Alvo à distância
+Target3=Área ao redor
+Target4=Área à distância
+Element0=Fogo
+Element1=Frio
+Element2=Veneno
+Element3=Choque
+Element4=Magia
+Element5=Nenhum
+Resist0=fogo
+Resist1=frio
+Resist2=choque
+Resist3=magia
+Resist4=veneno
+Prepared=%s preparado. Aperte Q para conjurar.
+NoneReady=Nenhum feitiço preparado. Abre o livro com B.
+NotEnough=Magia insuficiente para %s (custa %s).
+Cast=Conjuraste %s.
+Healed=Recuperaste %s de vida.
+Stamina=Sentes o vigor renovado.
+LightOn=Um globo de luz mágica passa a te acompanhar.
+LightGone=A luz mágica se apaga.
+ShieldOn=Um escudo mágico de %s pontos te envolve.
+ShieldAbsorb=O escudo mágico absorve o golpe.
+ShieldGone=O escudo mágico se desfaz.
+InvisibleOn=Teu corpo some no ar. As criaturas não te veem.
+InvisibleGone=Voltaste a ficar visível.
+ResistOn=Estás protegido contra %s.
+FortifyOn=Tua %s aumenta em %s.
+FortifyGone=O reforço mágico passa.
+RegenerateOn=Teus ferimentos começam a se fechar sozinhos.
+NothingToCure=O feitiço não encontra nenhum mal para curar.
+DoorOpened=A fechadura cede à magia!
+DoorResists=A fechadura resiste à magia.
+DoorLockedByMagic=A porta é trancada por magia.
+NoDoor=Não há porta à tua frente.
+CreatureHit=%s sofre %s de dano!
+CreatureParalyzed=%s fica paralisado!
+CreaturePoisoned=%s foi envenenado!
+CreatureResisted=%s resiste ao feitiço.
+Drained=Roubaste %s de vida de %s.
+Fizzle=O feitiço se perde no ar.
+NotAvailable=O efeito de %s ainda não existe nesta versão.
+Name0=Vigor
+Name1=Santuário
+Name2=Luz
+Name3=Luz Errante
+Name4=Tranca Mágica
+Name5=Força de Orc
+Name6=Fogo do Mago
+Name7=Escudo
+Name8=Choque
+Name9=Abrir
+Name10=Dilaceração Arcana
+Name11=Sanguessuga de Força
+Name12=Raio de Gelo
+Name13=Cura
+Name14=Resistir ao Fogo
+Name15=Resistir ao Frio
+Name16=Bola de Fogo
+Name17=Muralha de Terra
+Name18=Levitação
+Name19=Maldição da Bruxa
+Name20=Ferrão de Serpe
+Name21=Curar Veneno
+Name22=Raio de Força
+Name23=Resistir a Choque
+Name24=Invisibilidade
+Name25=Fogo dos Deuses
+Name26=Tempestade de Gelo
+Name27=Muralha de Força
+Name28=Relâmpago
+Name29=Fossos
+Name30=Fogo Selvagem
+Name31=Silêncio
+Name32=Silêncio Distante
+Name33=Cura Total
+Name34=Atravessar Paredes
+Name35=Tempestade de Fogo
+Name36=Escudo contra Magia
+Name37=Ação Livre
+Name38=Resistir a Veneno
+Name39=Roubo de Vida
+Name40=Nuvem Tóxica
+Name41=Sangue de Troll
+Name42=Olhar da Medusa
+Name43=Dreno de Magia
+Name44=Espelho de Shalidor
+Name45=Purificar
+Name46=Chrysamere
+Name47=Lâmina de Ébano
+Name48=Quebra-Feitiço
+Name49=Cota do Senhor
+Name50=Escudo de Auriel
+Name51=Cajado de Magnus
+Name52=Anel do Bruxo
+Name53=Volendrung
+Name54=Anel de Phynaster
+Name55=Anel dos Khajiit
+Name56=Cota de Ébano
+Name57=Arco de Auriel
+Name58=Amuleto do Necromante
+Name59=Causar Doença
+Name60=Curar Doença
+Name61=Dardo de Fogo
+Name62=Cura Leve
+Name63=Dreno de Magia
+
+[SpellText]
+# Modelos do SPELLMKR.TXT traduzidos. %0..%5 = parâmetros; %c = atributo; %b e %f = textos abaixo.
+T00=%0% de chance de transmitir doença. A doença tira %2 pts de FOR, AGI, VEL e RES a cada rodada. +%1% a cada %4 nível(is). Dura %5 rodada(s) por nível.
+T01=%0% de chance de envenenar. Dano de %2 pts a cada %3 rodada(s). +%1% a cada %4 nível(is). Dura %5 rodada(s) por nível.
+T02=%0% de chance de causar medo. +%1% a cada %4 nível(is). Dura %5 rodada(s) a cada %2 nível(is).
+T03=%0% de chance de paralisar. +%1% a cada %4 nível(is). Dura %5 rodada(s) a cada %2 nível(is).
+T04=%0% de chance de amaldiçoar. A maldição tira %2 pts de INT, VON, PER e SOR a cada rodada. +%1% a cada %4 nível(is). Dura %5 rodada(s) por nível.
+T05=%0% de chance de causar a morte. +%1% a cada %4 nível(is).
+T06=Causa de %0 a %1 pts de dano à vida a cada %a rodada(s), por %5 rodada(s). +%2 a %3 pts a cada %4 nível(is).
+T07=Causa de %0 a %1 pts de dano ao vigor a cada %a rodada(s), por %5 rodada(s). +%2 a %3 pts a cada %4 nível(is).
+T08=Causa de %0 a %1 pts de dano à magia a cada %a rodada(s), por %5 rodada(s). +%2 a %3 pts a cada %4 nível(is).
+T09=Cria um escudo de %0 pontos de vida. +%1 pts a cada %4 nível(is).
+T10=Cria %0 parede(s) permanente(s).
+T11=Cria %0 piso(s) permanente(s).
+T12=%0% de chance de curar uma doença do mesmo nível do conjurador. +%1% a cada %4 nível(is).
+T13=%0% de chance de curar um veneno do mesmo nível do conjurador. +%1% a cada %4 nível(is).
+T14=%0% de chance de remover o medo. +%1% a cada %4 nível(is).
+T15=%0% de chance de curar paralisia do mesmo nível do conjurador. +%1% a cada %4 nível(is).
+T16=%0% de chance de remover uma maldição. +%1% a cada %4 nível(is).
+T17=%0% de chance de ressuscitar alguém do mesmo nível do conjurador. +%1% a cada %4 nível(is).
+T18=De %0 a %1 pts de dano à vida, +%2 a %3 pts a cada %4 nível(is).
+T19=De %0 a %1 pts de dano ao vigor, +%2 a %3 pts a cada %4 nível(is).
+T20=De %0 a %1 pts de dano à magia, +%2 a %3 pts a cada %4 nível(is).
+T21=%0% de chance de o conjurador ser ignorado, +%1% a cada %4 nível(is). Dura %5 rodada(s) a cada %2 nível(is). %b
+T22=Anula %0 parede(s) para sempre.
+T23=Anula %0 piso(s) para sempre.
+T24=De %0 a %1 pts de dano à vida, +%2 a %3 pts a cada %4 nível(is).
+T25=%0% de chance de desintegrar alvos do nível do conjurador. +%1% a cada %4 nível(is).
+T26=%0% de chance de dissipar feitiços do nível do conjurador. +%1% a cada %4 nível(is). Área de %5 metros.
+T27=Drena %0 pts de %c do alvo por %5 rodada(s) por nível. O alvo recupera %1 pts a cada %4 rodada(s).
+T28=Resistência a %c +%0% por %5 rodada(s) a cada %2 nível(is). +%1% a cada %4 nível(is).
+T29=+%0 pts de %c ao conjurador por %5 rodada(s) por nível. Perde %1 pts a cada %4 rodada(s).
+T30=De %0 a %1 pts de %c, +%2 a %3 pts a cada %4 nível(is).
+T31=Transfere %0 pts de %c do alvo para o conjurador.
+T32=Cria uma jaula de %0 pontos de vida ao redor do alvo. +%1 pts a cada %4 nível(is).
+T33=O conjurador fica invisível por %0 rodada(s), +%1 rodada(s) a cada %4 nível(is).
+T34=O conjurador flutua por %0 rodada(s), +%1 rodada(s) a cada %4 nível(is).
+T35=Cria um globo de luz por %5 rodada(s) por nível. A luz %f.
+T36=%0% de chance de trancar uma porta por magia. Dura %5 rodada(s) a cada %2 nível(is). +%1% a cada %4 nível(is).
+T37=%0% de chance de abrir uma porta trancada. +%1% a cada %4 nível(is).
+T38=Regenera %0 pontos de vida a cada %1 rodada(s), por %4 rodada(s) por nível.
+T39=%0% de chance de silenciar o alvo por %5 rodada(s) a cada %2 nível(is). +%1% a cada %4 nível(is).
+T40=%0% de chance de absorver a magia de um feitiço recebido. +%1% a cada %4 nível(is). Dura %5 rodada(s) a cada %2 nível(is).
+T41=%0% de chance de refletir um feitiço de volta ao conjurador inimigo. +%1% a cada %4 nível(is). Dura %5 rodada(s) a cada %2 nível(is).
+T42=%0% de chance de resistir a um feitiço recebido. +%1% a cada %4 nível(is). Dura %5 rodada(s) a cada %2 nível(is).
+May=Pode conjurar outros feitiços enquanto isso.
+MayNot=Não pode conjurar outros feitiços enquanto isso.
+LightFollows=acompanha o conjurador
+LightWanders=vagueia ao redor do conjurador
+
+[Menu]
+# Janela do personagem (C / I / B) com abas.
+TabCharacter=Personagem
+TabInventory=Inventário
+TabSpells=Feitiços
+Close=Fechar
+Attributes=Atributos
+Abilities=Habilidades
+Effects=Efeitos mágicos
+NoEffects=Nenhum efeito ativo.
+Damage=Bônus de dano
+ToHit=Bônus de acerto
+Defense=Bônus de defesa
+MagicResist=Resistência mágica
+MaxWeight=Carga máxima
+MaxMagic=Magia máxima
+Gold=Ouro
+Level=Nível
+Experience=Experiência
+ColumnItem=Item
+ColumnWeight=Peso (kg)
+ColumnSpell=Feitiço
+ColumnCost=Custo
+Equip=Equipar
+Unequip=Tirar
+Use=Usar
+Drop=Largar
+SelectItem=Escolhe um item da lista.
+Prepare=Preparar (Q)
+Prepared=Preparado para a tecla Q
+TargetLabel=Alvo
+ElementLabel=Elemento
+CostLabel=Custo
+SpellCost=%s de magia
+HintCharacter=1 2 3 ou setas: trocar de aba     Esc: fechar
+HintInventory=Clique: escolher     Clique de novo ou Enter: usar     D: largar
+HintSpells=Clique: escolher     Clique de novo ou Enter: preparar     Q no jogo: conjurar
+
+[Hud]
+Weapon=Arma
+Spell=Feitiço (Q)
+NoSpell=nenhum
+Exp=Exp.
+
+[Compass]
+# Bússola em faixa, a partir do norte em sentido horário.
+D0=N
+D1=NE
+D2=L
+D3=SE
+D4=S
+D5=SO
+D6=O
+D7=NO
+
+[Effects]
+Shield=Escudo: %s pts
+Light=Luz: %s s
+Invisible=Invisível: %s s
+Regenerate=Regeneração: %s s
+Fortify=%s +%s: %s s
+Resist=Resiste a %s: %s s
+
+[Help]
+Title=Controles
+K1=W A S D|andar
+K2=Mouse|olhar
+K3=Shift|correr
+K4=Clique|atacar
+K5=E|usar e saquear
+K6=Q|conjurar feitiço
+K7=R|descansar
+K8=C|personagem
+K9=I|inventário
+K10=B|feitiços
+K11=M / T|mapa / viagem
+K12=H|esta ajuda
+K13=Esc|pausa
+K14=F11|tela cheia
+
+[Pause]
+Continue=Continuar
+Character=Personagem
+Spells=Feitiços
+Help=Controles
+Restart=Recomeçar na cela
+Save=Salvar jogo
+Load=Carregar jogo
+MainMenu=Sair para o menu
+
+[Creation]
+Title=Novo Personagem
+StepClass=Classe
+StepIdentity=Nome
+StepProvince=Província
+StepAttributes=Atributos
+StepFace=Rosto
+StepSummary=Resumo
+Back=Voltar
+BackToMenu=Menu principal
+Next=Próximo
+Start=Começar a aventura
+MethodTitle=Como queres escolher tua classe?
+MethodIntro=No Arena, a classe define tuas armas, armaduras, vida e magia. Podes responder às perguntas do destino, como no jogo original, ou escolher diretamente na lista.
+ByQuestions=Responder às perguntas
+ByQuestionsHint=10 perguntas sorteadas sugerem a classe ideal
+ByList=Escolher da lista
+ByListHint=As 18 classes, com a descrição de cada uma
+AnswerHint=Clica numa resposta ou usa as teclas A, B e C
+SuggestedTitle=Teu destino aponta para: %s
+Accept=Aceitar esta classe
+OtherClass=Escolher outra
+Caster=Usa magia
+NameHint=Digita o nome (até 25 letras)
+ProvinceIntro=%s, %s: escolhe no mapa a província onde nasceste. Ela define tua raça.
+ProvinceIntro_F=%s, %s: escolhe no mapa a província onde nasceste. Ela define tua raça.
+RaceOf=Terra dos %s
+BonusPoints=Pontos de bônus para distribuir: %s
+Ideal=Ideal: %s
+SpendPoints=Distribui todos os pontos de bônus antes de seguir.
+Reroll=Rolar de novo
+FaceTitle=Escolhe teu rosto
+FaceCount=Rosto %s de %s
+
+[Level]
+# Subida de nível (pontos de bônus 3 a 6; vida = dado da classe + bônus da Resistência).
+Reached=Subiste para o nível %s!
+Title=Nível %s!
+Health=Vida +%s (máximo agora %s)
+Points=Pontos para distribuir: %s
+Preview=Com estes atributos: magia máxima %s, vigor %s
+Confirm=Confirmar
+Confirmed=Agora és nível %s.
+
+[Saves]
+TitleSave=Salvar jogo
+TitleLoad=Carregar jogo
+Empty=- vazio -
+HintSave=Escolhe um espaço para salvar
+HintLoad=Escolhe um jogo salvo para carregar
+ConfirmOverwrite=Clica de novo no espaço %s para salvar por cima
+Saved=Jogo salvo.
+Failed=Não foi possível salvar o jogo.
+
+[Chapter]
+Title=Livre das Masmorras
+Vision=A luz do portão te envolve e, por um instante, a voz de Ria Silmane soa dentro da tua mente: "Conseguiste sair, %s. Jagar Tharn continua no trono com o rosto do Imperador, e o verdadeiro Uriel Septim segue preso em outro plano. Para derrotá-lo, precisarás do Cajado do Caos, que foi partido em oito pedaços e escondido nas províncias de Tamriel. Procura-os. Eu te encontrarei em sonhos."
+Stats=Nível %s   -   Experiência %s   -   Criaturas vencidas %s   -   Ouro %s
+Note=O portão te leva a uma cidade da tua província natal. A partir dali começa a busca pelos pedaços do Cajado. O jogo foi salvo.
+Explore=Ficar na prisão
+Travel=Seguir para %s
+
+[Shop]
+Gold=Ouro: %s
+Price=%s ouro
+Empty=Nada por aqui.
+Hint=Clica para escolher e clica de novo (ou Enter) para confirmar
+TabBuy=Comprar
+TabSell=Vender
+TabDrinks=Bebidas
+TabRooms=Quartos
+TabTemple=Serviços
+TabSpells=Feitiços
+TabPotions=Poções
+ActionBuy=Comprar
+ActionSell=Vender
+ActionDrink=Pedir
+ActionRent=Alugar
+ActionHeal=Curar
+Equipped=Equipado (tira antes de vender)
+UnequipFirst=Tira o item antes de vendê-lo.
+NoGold=Precisas de %s de ouro.
+Bought=Compraste %s por %s de ouro.
+Sold=Vendeste %s por %s de ouro.
+Drank=Bebes %s. Um calor agradável te anima.
+Room0=Quarto individual
+Room1=Quarto duplo
+Room2=Suíte
+Room3=Suíte real
+RoomDetail=Uma noite: recupera vida e magia
+Slept=Dormes no %s e acordas descansado.
+Heal=Curar ferimentos
+HealDetail=Vida %s de %s
+Healed=O sacerdote cura teus ferimentos.
+NotHurt=Não estás ferido.
+SpellDetail=Custo para lançar: %s de magia
+Learned=Aprendeste %s.
+CannotCast=Tua classe não sabe lançar feitiços.
+Drink0=Cerveja
+Drink1=Cerveja inglesa
+Drink2=Cerveja preta
+Drink3=Cerveja bock
+Drink4=Licor amargo
+Drink5=Cerveja clara
+Drink6=Pilsen
+Drink7=Vinho tinto
+Drink8=Vinho do Porto
+Drink9=Vinho branco
+Drink10=Grogue
+Drink11=Sidra
+Drink12=Guttgeist
+Drink13=Água sulfurosa
+Drink14=Tripa de orc
+
+[Dialogue]
+Who=Quem és tu?
+WhereIs=Onde fica...?
+Rumors=Boatos
+Bye=Até logo
+Back=Voltar
+WhereIsPrompt=O que procuras?
+Anything=Mais alguma coisa?
+WhoAnswer0=Sou %s. Nasci e cresci em %s.
+WhoAnswer1=Chamam-me %s. Trabalho aqui em %s desde menino.
+WhoAnswer2=%s, ao teu dispor. Pouca coisa acontece em %s sem que eu saiba.
+WhoAnswer3=Meu nome é %s. Por que queres saber?
+WhoAnswer4=Sou %s, um simples morador de %s.
+WhoAnswer5=%s. E tu, quem és, estrangeiro? Nunca te vi em %s.
+PlaceAt=%s fica a %s daqui, a uns %s passos.
+PlaceHere=%s é logo ali, a poucos passos.
+NoPlace=Não há nada assim em %s.
+Dir0=norte
+Dir1=nordeste
+Dir2=leste
+Dir3=sudeste
+Dir4=sul
+Dir5=sudoeste
+Dir6=oeste
+Dir7=noroeste
+
+[Rumors]
+R0=Dizem que o Imperador mudou muito nos últimos meses. Nem parece o mesmo homem.
+R1=Ouvi falar de um cajado antigo, partido em pedaços e escondido pelas províncias.
+R2=O mago da corte, Jagar Tharn, tem andado com o Imperador dia e noite.
+R3=Há quem jure ter visto um fantasma de mulher nas masmorras da Cidade Imperial.
+R4=Os preços em %s não param de subir. Culpa dos impostos do Império.
+R5=Um caravaneiro sumiu na estrada ao norte. Dizem que foram lobos... ou coisa pior.
+R6=A Guilda dos Magos procura gente corajosa para buscar ingredientes nas ruínas.
+R7=Bebe na taverna e vais ouvir mais histórias do que consegues contar.
+R8=Os guardas do palácio dobraram a ronda. Algo os preocupa.
+R9=Contam que um prisioneiro escapou das Masmorras Imperiais. Ninguém sabe como.
+R10=Os sacerdotes do templo dizem que os Nove estão em silêncio. Mau sinal.
+R11=Vi luzes estranhas no céu ontem à noite, sobre as colinas.
+
+[Travel]
+Title=Viagem por Tamriel
+Here=Estás em %s
+Day=%s dia
+Days=%s dias
+Hint=Clica numa província no mapa e escolhe o destino
+Confirm=Viajar para %s (%s dias)? Clica de novo para partir.
+Go=Viajar
+Arrived=Depois de %s dias de viagem, chegas aos arredores de %s.
+ArrivedDay=Depois de um dia de viagem, chegas aos arredores de %s.
+GoOutside=Sai do prédio para viajar.
+Dungeon=%s (masmorra)
+MainDungeon=%s (masmorra antiga)
+ArrivedDungeon=Depois de %s dias de viagem, chegas a %s.
+ArrivedDungeonDay=Depois de um dia de viagem, chegas a %s.
+NotHere=Não há como viajar daqui.
+
+[Dungeon]
+Entered=Entraste em %s.
+WildName=Masmorra perto de %s
+Down=Desces para o %sº andar.
+Up=Sobes para o %sº andar.
+
+[Wild]
+Name=Arredores de %s
+Crypt=Cripta perto de %s
+Tower=Torre perto de %s
+DungeonClosed=A entrada desta masmorra está selada (ainda não existe neste remake).
+
+[Citizens]
+# %s = cidade, segundo %s = nome do jogador
+Male0=Bom dia, viajante. Bem-vindo a %s.
+Male1=Não tenho tempo para conversa, estrangeiro.
+Male2=Dizem que o Imperador anda estranho ultimamente...
+Male3=Se precisares de armas, procura a loja de equipamentos.
+Male4=A taverna é o melhor lugar para ouvir boatos em %s.
+Male5=Cuidado com os ladrões depois que escurece.
+Male6=Os sacerdotes do templo curam feridas, por um preço.
+Male7=Hm? Ah, perdão, estava distraído.
+Female0=Saudações. Não te conheço de %s.
+Female1=A guilda dos magos vende feitiços, se tiveres ouro.
+Female2=Que os Nove te protejam, viajante.
+Female3=Dizem que há masmorras perigosas nesta província.
+Female4=Tenho pressa, desculpa.
+Female5=O mercado anda caro este ano.
+Female6=Precisas de um quarto? A taverna aluga por noite.
+Female7=Os guardas andam nervosos com tantos forasteiros.
+
+[City]
+Arrived=Chegaste a %s.
+Entered=%s
+Equipment=Loja de Equipamentos de %s
+Tavern=Taverna de %s
+MagesGuild=Guilda dos Magos de %s
+Temple=Templo de %s
+House=Casa em %s
+Noble=Casa Nobre de %s
+Palace=Palácio de %s
+GatesClosed=Os portões da cidade levam ao ermo, que ainda não existe neste remake.
+DoorLocked=A porta está trancada.
+ClosedAtNight=Fechado. Abre às 6 da manhã.
+NightFalls=A noite cai sobre a cidade.
+DayBreaks=O sol nasce.
+PlaceTavern=Taverna
+PlaceEquipment=Loja de equipamentos
+PlaceTemple=Templo
+PlaceMagesGuild=Guilda dos Magos
+PlacePalace=Palácio
+PlaceTavernThe=A taverna
+PlaceEquipmentThe=A loja de equipamentos
+PlaceTempleThe=O templo
+PlaceMagesGuildThe=A Guilda dos Magos
+PlacePalaceThe=O palácio
+
+[Escape]
+Location=Fora das Masmorras
+
+[Calendar]
+# Meses de Tamriel (nomes tradicionais traduzidos).
+Month1=Estrela da Manhã
+Month2=Alvorada do Sol
+Month3=Primeira Semente
+Month4=Mão da Chuva
+Month5=Segunda Semente
+Month6=Meio do Ano
+Month7=Auge do Sol
+Month8=Última Semente
+Month9=Lareira
+Month10=Geada
+Month11=Crepúsculo do Sol
+Month12=Estrela do Entardecer
+Date=%s de %s

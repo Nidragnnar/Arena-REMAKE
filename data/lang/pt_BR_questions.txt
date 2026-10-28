@@ -1,0 +1,204 @@
+# Perguntas de classe (QUESTION.TXT) traduzidas para PT-BR.
+# Formato: "N." inicia a pergunta; "a)", "b)", "c)" as alternativas.
+# A marcação no fim de cada alternativa define a categoria e NÃO deve ser removida:
+#   (5l) = lógico (mago), (5c) = astuto (ladrão), (5v) = combativo (guerreiro)
+
+1. Num dia claro, você encontra um animal estranho com a pata presa na armadilha de um caçador. Pelo sangramento, ele não sobreviverá por muito tempo. Você:
+a) Saca sua adaga e, por misericórdia, acaba com a vida dele com um único golpe? (5v)
+b) Não interfere no curso natural dos acontecimentos e aproveita a oportunidade para aprender mais sobre um animal estranho que nunca viu antes? (5l)
+c) Usa ervas da sua bolsa para fazê-lo dormir, depois o liberta da armadilha e o leva a um lugar seguro, sabendo que assim provavelmente privará um caçador e sua família do sustento? (5c)
+
+2. Numa tarde de verão, seu pai, Talin, deixa você escolher uma tarefa. Você prefere:
+a) Trabalhar na forja com ele, fundindo ferro para um arado novo? (5v)
+b) Colher ervas para sua mãe, que está preparando o jantar? (5l)
+c) Pescar no riacho com rede e linha? (5c)
+
+3. Você e seu pai voltam do mercado da cidade quando veem um menino saindo correndo de uma loja. Nas mãos ele aperta um pão. Atrás dele corre o padeiro, com um cutelo na mão. Você sabe que o menino deve estar com fome, mas a cidade sofre com uma seca que tornou a comida valiosa. Você:
+a) Fica do lado da justiça e insiste para que seu pai detenha o menino? (5v)
+b) Ajuda o pobre garoto, entrando no caminho do padeiro? (5c)
+c) Sai do caminho e espera para ver o que seu pai decide, confiando na experiência dele? (5l)
+
+4. Certa noite, seu pai conta a história de sua batalha no Vale de Borim, onde seus homens puseram o inimigo em fuga. Eles teriam capturado todos, não fosse o sacrifício corajoso de um jovem sargento do lado inimigo, que segurou um desfiladeiro tempo suficiente para que seus homens recuassem em segurança. Ele fez isso sabendo que lhe custaria a vida. Se você fosse aquele homem, teria:
+a) Fugido, argumentando que sua experiência em táticas de batalha era valiosa demais para ser desperdiçada e poderia fazer a diferença mais tarde? (5l)
+b) Segurado o desfiladeiro também, para que os homens sob seu comando pudessem fugir, mesmo que isso custasse sua vida? (5v)
+c) Procurado algum meio de distrair o inimigo para que seus homens tivessem chance de escapar, mas sem custar sua própria vida? (5c)
+
+5. Sua mãe manda você ao mercado com uma lista de compras. Depois de terminar, você percebe que, por engano, um comerciante lhe devolveu dinheiro demais no troco de um dos itens. Você:
+a) Volta à loja e devolve ao comerciante o dinheiro suado dele, explicando o engano? (5v)
+b) Embolsa o dinheiro extra, sabendo que os comerciantes em geral cobram demais dos fregueses de qualquer jeito? (5c)
+c) Decide dar um bom uso ao dinheiro extra e compra itens que ajudariam sua família? (5l)
+
+6. No mercado, você vê um ladrão cortar a bolsa de um nobre. Ao mesmo tempo, o nobre percebe e chama os guardas da cidade. Na pressa de fugir, o ladrão deixa a bolsa cair perto de você. Surpreendentemente, ninguém parece notar o saco de moedas aos seus pés. Você:
+a) Pega o saco e o embolsa, sabendo que esse dinheiro inesperado ajudará sua família em tempos difíceis? (5c)
+b) Pega o saco e faz sinal ao guarda, sabendo que a única atitude honrada é devolver o dinheiro ao dono? (5v)
+c) Deixa o saco ali, sabendo que é melhor não se envolver? (5l)
+
+7. Seu pai lhe dá uma tarefa que você detesta: limpar o estábulo. No caminho, forcado na mão, você encontra seu amigo da propriedade vizinha. Ele se oferece para fazer o serviço por você, em troca de um favor futuro de escolha dele. Você:
+a) Recusa a oferta, sabendo que seu pai espera que você faça o trabalho e que é melhor não ficar devendo? (5v)
+b) Aceita a oferta, raciocinando que, desde que o estábulo fique limpo, não importa quem faça a limpeza? (5c)
+c) Pede que ele ajude você, sabendo que duas pessoas fazem o serviço mais rápido que uma, e combina de ajudá-lo numa tarefa de escolha dele no futuro? (5l)
+
+8. Sua mãe pede ajuda para consertar o fogão. Enquanto você trabalha, um cano muito quente se solta e cai na direção dela. Você:
+a) Empurra sua mãe para fora do caminho? (5l)
+b) Agarra o cano quente e tenta afastá-lo? (5v)
+c) Coloca-se entre o cano e sua mãe? (5c)
+
+9. Na cidade, o padeiro lhe dá um pão doce. Contente, você vai a um beco para saboreá-lo, mas é interceptado por um bando de três garotos da sua idade. O líder exige o pão doce, senão ele e os amigos vão bater em você e tomá-lo. Você:
+a) Joga o pão doce no chão, pisa nele e se prepara para a briga? (5v)
+b) Entrega o pão doce agora sem discutir, sabendo que mais tarde estará com todos os seus amigos e poderá voltar para cobrar o que ele lhe deve? (5l)
+c) Finge que vai entregar o pão doce, mas no último instante o joga para o alto, esperando que eles se distraiam tempo suficiente para você acertar o líder? (5c)
+
+10. Ao entrar na cidade, você vê um homem muito bem-vestido fugindo de uma multidão. Ele grita pedindo sua ajuda. A multidão atrás dele parece muito furiosa. Você:
+a) Corre imediatamente em auxílio do homem, mesmo sem conhecer as circunstâncias? (5v)
+b) Corre imediatamente em auxílio da cidade, mesmo sem conhecer as circunstâncias? (5c)
+c) Sai do caminho e deixa o homem e a turba passarem, percebendo que provavelmente é melhor não se envolver? (5l)
+
+11. Você e seu melhor amigo compram juntos suas primeiras adagas, um par idêntico. Você empresta o valor a ele, já que ele não tem ouro suficiente, e ele promete pagar depois. Ao sair da loja, vocês se sentam para admirar as armas novas. Para sua decepção, você nota um pequeno dente na lâmina da adaga que escolheu. Seu amigo pede que você vigie a arma dele enquanto ele resolve um assunto. Você:
+a) Espera seu amigo voltar, mostra o defeito na sua adaga e volta à loja de armas para exigir o reembolso? (5v)
+b) Troca as adagas, argumentando que, como você pagou por elas, deveria escolher primeiro, e que se seu amigo notar o defeito, você sempre pode levá-lo de volta à loja e conseguir o reembolso? (5c)
+c) Guarda a adaga dele até ele voltar, depois troca as adagas com o conhecimento do amigo, justificando que você pagou por elas, e se oferece para acompanhá-lo de volta à loja? (5l)
+
+12. Você está no treino de armas com o Mestre de Armas Festil. Ele já está muito velho, mas leva o ensino muito a sério. Na verdade, você já o ouviu dizer que é tudo o que lhe resta na vida. Hoje ele zombou de você sem parar a cada erro. Por fim, pede que você o ataque com a mesma técnica que acabou de usar, para lhe mostrar a execução correta. Você:
+a) Executa a técnica apenas rápido o bastante para que ele consiga bloqueá-la, sabendo que é mais importante permitir que o mestre mantenha a dignidade, independentemente do que você sente? (5v)
+b) Ataca com velocidade total, sabendo que provavelmente acertaria o golpe e justificaria o tratamento injusto mostrando à turma que você estava fazendo certo? (5c)
+c) Recusa e deixa o treino, incapaz de conciliar sua raiva com a dignidade dele, percebendo que qualquer caminho faria você perder o respeito por ele ou por si mesmo? (5l)
+
+13. Ao jogar uma bola para você, seu amigo quebra uma janela da casa dele. O pai dele sai correndo e exige saber quem quebrou a janela. Você sabe que o pai do seu amigo é muito rígido e o punirá severamente se ele assumir a culpa. Você, por outro lado, não sendo filho dele, sairia praticamente ileso. Você:
+a) Levanta a mão e assume a culpa antes que seu amigo possa responder? (5v)
+b) Fica em silêncio e não se envolve? (5l)
+c) Aponta para seu amigo, sabendo que qualquer outra coisa provavelmente só adiaria o inevitável e pioraria as coisas para ele? (5c)
+
+14. Durante uma aula de estratégia, o Mestre de Armas Festil comenta: "A melhor vitória é humilhar seu oponente completa e totalmente." Então ele se vira para você e pergunta se você concorda. Você sabe que o Mestre de Armas já esteve em inúmeros combates de vida ou morte e tem a experiência de um guerreiro calejado. Você:
+a) Concorda com o comentário, sabendo que neste momento sua experiência não basta para justificar outra posição senão concordar com tudo o que diz seu Mestre de Armas, um homem que dedicou a vida à estratégia? (5v)
+b) Discorda do comentário, raciocinando que deve ser algum tipo de teste e que a verdade só virá da oposição à opinião dele, e não de uma concordância de ovelha? (5c)
+c) Recusa-se a responder, preferindo guardar sua opinião até ter mais experiência e poder conversar sobre o assunto com ele de forma inteligente? (5l)
+
+15. O aluno mais antigo da sua turma de armas tem derrotado você sem piedade há vários anos. Hoje é o Torneio dos Alunos e você descobre, consternado, que vai enfrentá-lo na primeira luta. Enquanto você se prepara, um amigo se aproxima e se oferece para contar sobre uma lesão que o aluno sofreu no treino de ontem, ao qual você faltou. Você:
+a) Aceita a oferta, sabendo que isso lhe permitiria concentrar-se na área ferida e aumentar muito suas chances de vencê-lo? (5c)
+b) Recusa a oferta, sabendo que, ganhando ou perdendo, prefere fazê-lo pela própria habilidade, e não por algum conhecimento extra no que deveria ser uma luta justa e honrada? (5v)
+c) Aceita a oferta, raciocinando que é melhor ter a informação caso precise dela, e que ter a informação não significa necessariamente usá-la? (5l)
+
+16. Um velho para você a caminho do mercado, dizendo ter sido roubado. Ele está caído na trilha e parece gravemente ferido. Pede que você corra até a cidade e chame o guarda. Você dá sua palavra de que irá direto à cidade e trará o guarda. No caminho, você nota um homem suspeito esgueirando-se por outra trilha. Ele ainda não parece ter visto você. Você:
+a) Segue o homem, raciocinando que, se ele for o ladrão, você poderia levar o guarda direto até ele e proteger outros viajantes, embora isso signifique quebrar sua palavra? (5c)
+b) Repara nele, mas continua, raciocinando que o homem na trilha está ferido demais para você parar, sejam quais forem as outras considerações? (5l)
+c) Repara nele, mas continua, raciocinando que sua palavra é um compromisso e que ela vem antes de qualquer outra coisa? (5v)
+
+17. Pescando numa tarde ensolarada, você descobre que as botas que tirou estão cheias de formigas, que levam ativamente pedaços de um pão que você deixou cair até o formigueiro. Você:
+a) Pega as botas e tira todas as formigas agora, mesmo que só vá embora ao entardecer? (5l)
+b) Observa as formigas, curioso para saber como trabalham com tanta eficiência, e contente em viver e deixar viver? (5v)
+c) Faz barquinhos de folhas e manda cada formiga correnteza abaixo para passar o tempo até um peixe morder a isca? (5c)
+
+18. Na aula de armas, você ouve o Mestre de Armas Festil comentar: "A intenção do seu oponente pode ser vista em sua lâmina." Muitos alunos zombam disso, embora não abertamente. Você:
+a) Sente que o desrespeito dos alunos aponta para algo que eles não entendem e, por isso, concentra ainda mais seus esforços em compreender o significado? (5c)
+b) Sente que ele quer dizer que a forma como o oponente ataca e se move revela o que ele sente? (5v)
+c) Percebe que o Mestre de Armas Festil não deveria ser alvo de desprezo, e sim de respeito, pois viveu uma vida plena e sobreviveu a coisas que nenhum aluno poderia imaginar? (5l)
+
+19. A cidade faz uma loteria em que o bilhete vencedor é anunciado. Você olha, chocado, e vê que o número vencedor é o seu! Antes que possa dizer algo, outra família se adianta. Você já os viu antes e sabe que são extremamente pobres. Sua família, por outro lado, vive muito bem e poderia passar sem o prêmio de 100 moedas de ouro. Você:
+a) Não diz nada e deixa a outra família reivindicar o prêmio? (5v)
+b) Levanta-se e mostra seu bilhete, sabendo que o prêmio é seu por direito? (5c)
+c) Levanta-se, mostra seu bilhete e se oferece para dividir o prêmio ao meio com a outra família? (5l)
+
+20. Certo dia, o Mestre de Armas Festil faz uma pergunta à turma. Uma companhia de 100 homens tenta fugir do inimigo. Há dois caminhos para sair da fortaleza em ruínas. Um deles matará metade dos homens sob o comando do oficial, mas a outra metade sobreviverá. O outro caminho tem cinquenta por cento de chance de todos morrerem, mas também cinquenta por cento de chance de todos sobreviverem. Como oficial no comando, você:
+a) Escolheria o caminho que garante a sobrevivência de metade dos seus homens? (5l)
+b) Escolheria o caminho com cinquenta por cento de chance de todos sobreviverem e cinquenta por cento de chance de todos morrerem? (5v)
+c) Deixaria a escolha para os homens, decidindo por maioria de votos qual caminho seguir? (5c)
+
+21. Você tem uma tia-avó e um tio-avô que moram em duas aldeias próximas, e ambos pediram ao seu pai que deixasse você morar com eles por algumas semanas. Seu pai já sabe para onde pretende mandá-lo, mas está curioso sobre sua opinião. Se pudesse escolher, você preferiria:
+a) Morar com sua tia-avó, uma velha sábia e muito rica. Viver no luxo por algumas semanas poderia ser não só esclarecedor, mas também muito interessante. (5c)
+b) Morar com seu tio-avô, um velho doente que sempre foi um tanto estranho para você. Algumas semanas com ele podem ser árduas, mas ele precisa mais da sua ajuda que sua tia-avó. (5v)
+c) Pensar num jeito de dividir seu tempo entre a tia-avó e o tio-avô. Talvez você não passe com cada um tanto tempo quanto gostaria, mas nenhum dos dois seria deixado de lado. (5l)
+
+22. Um amigo comentou várias vezes o quanto gosta de um certo anel de ouro seu. Um dia, você descobre que o anel sumiu e, depois de procurar bem, o encontra num casaco que seu amigo deixou na sua despensa. Você tende mais a:
+a) Perguntar ao amigo como ele conseguiu o anel, raciocinando que é bem provável que ele o tenha encontrado e pretendesse devolvê-lo. (5v)
+b) Confrontá-lo pelo roubo. Você sabe que o anel não teria caído no bolso dele por acaso; portanto, ele não passa de um ladrão comum que trairia você por ganho material. (5c)
+c) Não dizer nada e esperar para ver o que seu amigo faz. Seja ele inocente ou culpado, você saberá pelas atitudes dele. Então poderá confrontá-lo com a verdade. (5l)
+
+23. Um bom amigo seu está apaixonado por uma moça de uma aldeia vizinha, que mal o conhece. Ele é extremamente tímido e inexperiente, e implora sua ajuda. Você sugeriria que ele:
+a) Vá até ela imediatamente e declare seu amor. Se o relacionamento tiver de acontecer, ele precisa ser honesto desde o início. Você se oferece para acompanhá-lo até a aldeia para apoiá-lo. (5v)
+b) Descubra mais sobre a moça usando qualquer contato que tenha na aldeia dela. Ele não será tão tímido se souber algo sobre ela, e pode até descobrir que ela não é a moça certa para ele. (5l)
+c) Deixe você ajudá-lo a escrever cartas de amor e poemas anônimos, para ver a reação dela sem precisar encará-la diretamente. Se a reação for favorável, ele pode falar com as amigas dela na aldeia e arranjar um encontro "por acaso". (5c)
+
+24. O Mestre de Armas Festil conta a história de um grande rei que conheceu numa terra distante, cujos inventores criaram um balão maravilhoso, tão grande que podia levar dezenas de pessoas pelo ar a qualquer lugar. Se você fosse esse rei, pergunta ele, como usaria esse balão extraordinário? Você:
+a) Exploraria regiões antes impossíveis ou extremamente perigosas de visitar por terra. (5l)
+b) Manteria o balão em segredo, guardando-o para ataques surpresa ou para a defesa em tempo de guerra. (5c)
+c) Encomendaria ao inventor dezenas desses "balões", esperando criar um sistema de viagens por todo o reino que acelerasse o transporte e a troca de ideias. (5v)
+
+25. Há muita discussão acalorada na taverna local sobre um grupo de pessoas chamadas "Telepatas". Elas foram contratadas por certos reis das Cidades-Estado. Dizem que esses Telepatas leem a mente das pessoas e contam ao seu senhor se um seguidor está dizendo a verdade ou não. Você acredita:
+a) Que é uma prática terrível. Os pensamentos de uma pessoa pertencem a ela, e ninguém, nem mesmo um rei, tem o direito de invadir assim a mente de outro ser humano. (5c)
+b) Que seguidores leais ao Rei não têm nada a temer de um Telepata. É importante ter um meio de encontrar assassinos e espiões antes que seja tarde demais. (5v)
+c) Que, nestes tempos, é um mal necessário. Embora você não goste necessariamente da ideia, um Telepata poderia trazer certas vantagens em tempo de guerra ou para provar a inocência de alguém acusado de um crime. (5l)
+
+26. Você fica sabendo que um rapaz foi preso pelos guardas da aldeia e acusado de assassinato. Ao que parece, o irmão dele foi morto por um grupo de quatro arruaceiros numa taverna local e, em seu luto, o rapaz encontrou cada um deles e os matou. Pensando bem, você acredita que:
+a) O rapaz agiu com honra ao vingar a morte do irmão. O senhor da aldeia deveria libertá-lo. (5v)
+b) Por mais que você simpatize com o rapaz, a justiça pelas próprias mãos não pode ser tolerada se houver de existir paz. (5l)
+c) O único erro do rapaz foi ser pego enquanto se vingava. Por isso, agora ele deve aceitar o que o destino lhe reservar. (5c)
+
+27. Certa noite, voltando para casa, você é atacado por um rapaz que conhece da turma do Mestre de Armas Festil. Você se defende com habilidade e o deixa inconsciente. Enquanto ele está desacordado, você:
+a) Amarra-o, com a intenção de interrogá-lo quando acordar. Você quer saber por que ele o atacou. Depois poderá entregá-lo ao Mestre de Armas quando quiser. (5l)
+b) Corta-lhe a garganta. Você o conhece da turma e acha que ele teria feito o mesmo se as posições estivessem invertidas. (5c)
+c) Deixa nele uma cicatriz visível; saber da derrota pelas suas mãos e carregar essa lembrança já é punição suficiente para quem recorreu a táticas tão desonrosas. (5v)
+
+28. Seu pai adora contar histórias das viagens de juventude. Numa delas, ele fala de uma ilha primitiva onde, uma vez por ano, uma criança era sacrificada para aplacar Arius, o Deus do Fogo. Sempre que os nativos deixavam de fazer o sacrifício, o vulcão da ilha entrava em erupção e matava centenas de aldeões. Você imediatamente diz ao seu pai que:
+a) Não acredita em nenhum Deus do Vulcão. Homens civilizados deveriam intervir, descobrir a causa natural das erupções e acabar com os sacrifícios. (5l)
+b) O deus Arius deve ser maligno para exigir o sacrifício de crianças. Os aldeões deveriam encontrar um jeito de combater esse deus, em vez de simplesmente ceder às suas exigências. (5v)
+c) É trágico, mas a morte de uma criança é preferível à de muitos aldeões. Se funciona, eles devem manter a tradição. Não se brinca com deuses. (5c)
+
+29. O Mestre de Armas Festil apresenta um novo aluno à turma: um garoto pequeno e desajeitado chamado Tys, que não parece ter talento algum. A turma é dividida em dois lados para uma batalha simulada e, como um dos "generais", você deve posicionar seus soldados. Tys é um dos seus homens. Você decide:
+a) Pôr Tys na linha de frente com os outros combatentes, raciocinando que numa batalha real ele provavelmente seria uma baixa de qualquer forma, e que alguns sacrifícios são necessários. (5l)
+b) Usar Tys como batedor, raciocinando que, pelo tamanho pequeno, ele provavelmente seria bom em se infiltrar e colher informações sobre o inimigo. (5c)
+c) Designar Tys a vários postos ao longo da batalha, ficando por perto e ajudando-o para que ganhe experiência valiosa e melhore. (5v)
+
+30. Sua mãe está gravemente doente e você foi enviado com algumas moedas de ouro para comprar ervas medicinais raras para ela. Ao chegar à porta do boticário, você percebe que há um furo na sua bolsa e todo o ouro caiu. Você:
+a) Entra na loja, conta seu dilema ao boticário e promete por sua honra pagar depois pelas ervas de que sua mãe precisa tão desesperadamente. (5l)
+b) Tenta roubar as ervas do boticário. Você sabe que o velho que trabalha na loja não conseguirá pegá-lo, e sua mãe está doente. (5c)
+c) Volta correndo para casa e admite a perda, esperando que seu pai tenha mais ouro. Você sabe que será castigado, mas não ficará devendo ao boticário nem será um ladrão. (5v)
+
+31. O barco em que você está é subitamente apanhado por um redemoinho tremendo. Quando a correnteza atinge uma velocidade impossível, o pequeno barco começa a fazer água e a afundar no vórtice. Você não vê saída que não prometa a morte, então:
+a) Pega um balde e começa a tirar água furiosamente, esperando manter o barco à tona só mais alguns segundos. (5l)
+b) Recosta-se e aceita seu destino, escolhendo morrer com decoro e nobreza, e não como um plebeu que teme o desconhecido. (5v)
+c) Mergulha na correnteza revolta. Talvez você só esteja apressando a própria morte, mas ao menos está fazendo alguma coisa. (5c)
+
+32. Você está na Caçada do Rei, uma competição em que o melhor caçador ganhará riquezas suficientes para viver confortavelmente pelo resto da vida. Você rastreia um cervo branco em que muitos atiraram mais cedo. Sozinho, você examina o cervo e reconhece a flecha como uma disparada pelo arco do seu amigo. Ao retirar a flecha para examiná-la melhor, você ouve seus amigos chegando. Você:
+a) Afirma ter disparado a flecha que acertou o cervo, ganhando assim a honra do abate? (5c)
+b) Mostra a flecha aos outros e proclama seu amigo o arqueiro do dia? (5v)
+c) Sugere dividir o prêmio, raciocinando que, embora a flecha do seu amigo tenha derrubado o cervo, todos foram essenciais no rastreamento e no abate? (5l)
+
+33. Um mês depois da festa de Contos e Velas, você olha a pilha de guloseimas que juntou e encontra muitas ameixas no conhaque, um doce de que você não gosta nem um pouco. Você sabe que sua irmã mais nova gosta delas. Você:
+a) Dá a ela todas as suas ameixas no conhaque? (5v)
+b) Troca as ameixas por algo de que ela não gosta muito, mas você sim? (5l)
+c) Finge que são ameixas excelentes e vê se ela abre mão de algo realmente bom em troca? (5c)
+
+34. Seu primo lhe deu um apelido muito constrangedor e, pior ainda, adora chamá-lo assim na frente dos seus amigos. Você já pediu que ele parasse, mas ele acha muito divertido ver você corar. O que você faz?
+a) Inventa um apelido ainda mais constrangedor para ele e o usa sem parar até ele aprender a lição. (5l)
+b) Inventa uma história que transforma seu apelido num motivo de orgulho, em vez de algo humilhante. (5c)
+c) Dá uma surra no primo e avisa que, se ele chamar você por esse apelido de novo, vai apanhar ainda mais do que desta vez. (5v)
+
+35. Othisa, uma amiga, apanhou de um garoto vários anos mais velho que vocês dois. Ela pede sua ajuda. Você tende mais a:
+a) Reunir um grupo de amigos e emboscar o garoto, ensinando-lhe uma lição sobre intimidar os outros. (5c)
+b) Dizer a Othisa que evite o valentão; não há motivo para piorar as coisas. (5l)
+c) Desafiar o garoto mais velho, sabendo que provavelmente vai apanhar, mas confiante de que, se fizer isso vezes suficientes, ele vai procurar um alvo mais fácil. (5v)
+
+36. Seus pais estão dando uma festa para vários parentes. Enquanto ajuda na casa, você vê seu primo entrar num cômodo escuro. Curioso, você o segue e descobre que ele está escondendo um castiçal de prata no casaco. Ele é um rapaz honrado, mas você sabe que a família dele passou recentemente por dificuldades financeiras. Ele ainda não viu você. Você:
+a) Pigarreia e pede que ele devolva o castiçal, garantindo que seus pais podem ajudar se a família dele estiver em apuros, mas que ele não deve recorrer ao roubo. (5l)
+b) Fecha a porta atrás de si e não diz nada. Sua família pode viver sem o castiçal, mas a família do seu primo obviamente não. (5v)
+c) Trata-o como qualquer outro ladrão. Tranca-o no cômodo e chama seu pai. Se ele resolver ter piedade por causa da pobreza do primo, a decisão é dele. Afinal, o castiçal é do seu pai. (5c)
+
+37. Explorando a floresta com outros dois aventureiros, você encontra uma pequena cabana abandonada que parece ter pertencido a um mago. Pela janela, você vê os restos de um laboratório, com muitas poções e pergaminhos ainda nas prateleiras. Uma guerreira chamada Geotina, que acha você covarde, sugere arrombar a cabana e explorá-la. Outro guerreiro, chamado Hunard, sugere ir à cidade buscar mais informações. Você aconselha:
+a) Ir à cidade. Lá conhecem melhor a região e podem ter informações importantes sobre a cabana e os arredores. (5l)
+b) Arrombar a cabana, mas deixando alguém do lado de fora caso algo dê errado. Coisas novas devem ser investigadas, não evitadas. (5v)
+c) Desafiar Geotina a entrar primeiro. Se houver uma armadilha, ela a dispara, e então você e Hunard podem entrar e explorar com calma. (5c)
+
+38. É uma aula especialmente exaustiva com o Mestre de Armas Festil. Ele tem sido exigente além da conta com todos, inclusive com você. As críticas dele beiram o abuso, e ele parece não ter nenhum comentário positivo a fazer. No fim da aula, ele se vira para repreender você e, por cima do ombro dele, você vê alguns colegas colocarem uma cobra agressiva, mas não venenosa, na sacola dele. Você:
+a) Não faz nada. O grande Mestre de Armas precisa de uma dose de humildade, e esta pode ser uma boa forma de pagar por toda a desgraça que ele lhe fez passar hoje. (5c)
+b) Avisa Festil que viu uma cobra entrar na sacola dele, mas não conta o que os colegas fizeram. Não há motivo para meter ninguém em mais encrenca. (5l)
+c) Conta imediatamente a Festil o que os colegas fizeram. Não há desculpa para desrespeitar um guerreiro experiente como ele, não importa como ele tenha tratado você naquele dia. (5v)
+
+39. Como você demonstrou interesse, o Mestre de Armas Festil lhe deu algumas dicas para reconhecer armas mágicas. Mais tarde, você pratica arco e flecha com alguns amigos. Um garoto que nunca foi bom arqueiro se tornou quase um atirador de elite. De repente você percebe que ele está usando flechas mágicas. O que você faz?
+a) Conta aos outros sobre as flechas. Numa competição amistosa de arco e flecha, usar flechas mágicas é trapaça. (5v)
+b) Diz ao amigo que percebeu as flechas mágicas e que, se ele não lhe arranjar algumas, você contará ao Mestre de Armas e aos outros o motivo da melhora dele. (5c)
+c) Não diz nada. Se um dia precisar de flechas mágicas, pode comentar algo com ele mais tarde. Afinal, magia não é bem trapaça, é uma habilidade diferente. (5l)
+
+40. Treinando sozinho, você desenvolve um novo estilo de luta que o deixa muito animado. Quando o menciona ao Mestre de Armas Festil, ele diz que nunca funcionaria num combate de verdade. Você:
+a) Usa o novo estilo no meio de um treino da turma. Quando funcionar, Festil será obrigado a admitir sua utilidade ou dar uma razão para não aceitá-lo. (5c)
+b) Continua fazendo perguntas a Festil sobre o estilo, concentrando-se nos detalhes da forma para descobrir a objeção dele. Uma hora ele terá de fazer uma crítica mais específica. (5l)
+c) Aceita a palavra dele sem questionar. O Mestre de Armas Festil luta desde o tempo do seu avô. Ele reconhece um estilo falho quando vê um, e é melhor não desperdiçar o tempo dele nem o seu perguntando por quê. (5v)

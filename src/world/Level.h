@@ -155,6 +155,14 @@ namespace arena
 			c.type = wall ? CellType::Wall : CellType::Empty;
 			if (wall) c.wallTexture = texture;
 		}
+		// Fosso aberto por feitiço (Pitfalls): o chão vira um buraco seco, e depois volta.
+		void setPit(int x, int z, bool open)
+		{
+			if (!this->inBounds(x, z)) return;
+			Cell &c = this->cells[static_cast<size_t>(x + z * this->width)];
+			c.chasm = open;
+			c.chasmKind = open ? ChasmKind::Dry : ChasmKind::None;
+		}
 		const std::map<std::pair<int, int>, int> &getLocks() const { return this->locks; }
 		void setLocks(std::map<std::pair<int, int>, int> values) { this->locks = std::move(values); }
 		// Portas abertas (para salvar) e abertura imediata ao carregar.

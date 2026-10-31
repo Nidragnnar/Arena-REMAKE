@@ -462,6 +462,7 @@ void arena::GameWorldScreen::applySpellToSelf(const Spell &spell)
 			break;
 		case SpellEffectType::Destroy:
 			if (effect.sub == 0) this->passWallAhead();
+			else if (effect.sub == 1) this->openPitAhead(std::max(2, spellRounds(effect, Level)) * SecondsPerRound);
 			else this->showMessage(ui::format(text.get("Spells.NotAvailable"), { name }), 3.0);
 			break;
 		case SpellEffectType::SpellResistance:
@@ -576,6 +577,12 @@ void arena::GameWorldScreen::updateMagic(double dt)
 		if (w.remaining <= 0.0) this->level.setWall(w.x, w.z, false, -1);
 	}
 	this->tempWalls.erase(std::remove_if(this->tempWalls.begin(), this->tempWalls.end(), [](const TempWall &w) { return w.remaining <= 0.0; }), this->tempWalls.end());
+	for (TempWall &pit : this->tempPits)
+	{
+		pit.remaining -= dt;
+		if (pit.remaining <= 0.0) this->level.setPit(pit.x, pit.z, false);
+	}
+	this->tempPits.erase(std::remove_if(this->tempPits.begin(), this->tempPits.end(), [](const TempWall &w) { return w.remaining <= 0.0; }), this->tempPits.end());
 
 	for (Burst &b : this->bursts) b.age += dt;
 	this->bursts.erase(std::remove_if(this->bursts.begin(), this->bursts.end(), [](const Burst &b) { return b.age > BurstLength; }), this->bursts.end());
@@ -772,6 +779,58 @@ bool arena::GameWorldScreen::passWallAhead()
 	this->level.setWall(cx, cz, false, -1);
 	this->game.playSound("GRIND.VOC");
 	this->showMessage(text.get("Spells.WallOpened"), 3.0);
+	return true;
+}
+
+bool arena::GameWorldScreen::openPitAhead(double seconds)
+{
+	// Pitfalls: o chão se abre sob a criatura mirada (até 6 passos) ou logo à frente. Quem está em
+	// cima cai e morre; as outras contornam o buraco até ele fechar.
+	const Localization &text = this->game.getText();
+	const int target = this->creatures.findTarget(this->x, this->z, this->yaw, 6.0f, 0.9f);
+	int cx, cz;
+	if (target >= 0)
+	{
+		const Creature &c = this->creatures.getCreatures()[static_cast<size_t>(target)];
+		cx = static_cast<int>(std::floor(c.x));
+		cz = static_cast<int>(std::floor(c.z));
+	}
+	else
+	{
+		cx = static_cast<int>(std::floor(this->x + std::cos(this->yaw) * 1.5f));
+		cz = static_cast<int>(std::floor(this->z + std::sin(this->yaw) * 1.5f));
+	}
+
+	const bool here = cx == static_cast<int>(std::floor(this->x)) && cz == static_cast<int>(std::floor(this->z));
+	if (here || !this->level.inBounds(cx, cz))
+	{
+		this->showMessage(text.get("Spells.NoRoom"), 2.5);
+		return false;
+	}
+	const Cell &cell = this->level.cell(cx, cz);
+	if (cell.type != CellType::Empty || cell.chasm || cell.isExit || cell.isLevelDown || cell.menu >= 0)
+	{
+		this->showMessage(text.get("Spells.NoRoom"), 2.5);
+		return false;
+	}
+
+	this->level.setPit(cx, cz, true);
+	this->tempPits.push_back(TempWall{ cx, cz, seconds });
+	this->playAt("GRIND.VOC", cx + 0.5f, cz + 0.5f);
+	this->showMessage(text.get("Spells.PitOpened"), 3.0);
+
+	const auto &all = this->creatures.getCreatures();
+	for (size_t i = 0; i < all.size(); i++)
+	{
+		if (!this->creatures.isAlive(static_cast<int>(i)) || static_cast<int>(std::floor(all[i].x)) != cx || static_cast<int>(std::floor(all[i].z)) != cz) continue;
+		const int maxHp = all[i].maxHp;
+		const std::string ref = this->creatureRef(static_cast<int>(i), true);
+		if (this->creatures.damage(static_cast<int>(i), maxHp + 1))
+		{
+			this->rewardKill(static_cast<int>(i), maxHp);
+			this->showMessage(ui::format(text.get("Spells.PitFall"), { ref }), 3.5);
+		}
+	}
 	return true;
 }
 

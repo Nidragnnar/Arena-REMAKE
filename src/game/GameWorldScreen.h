@@ -103,6 +103,8 @@ namespace arena
 		bool raiseWallAhead(double seconds);
 		struct TempWall { int x, z; double remaining; };
 		std::vector<TempWall> tempWalls; // Earth Wall: some depois de algumas rodadas
+		std::vector<TempWall> tempPits;  // Pitfalls: o fosso fecha depois de algumas rodadas
+		bool openPitAhead(double seconds);
 		void rewardKill(int creature, int maxHp);
 		void updateMagic(double dt);
 		void addMagicLights(std::vector<PointLight> &lights) const;

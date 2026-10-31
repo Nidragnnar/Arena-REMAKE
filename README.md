@@ -197,7 +197,8 @@ Comandos: `k:X`, `enter`, `esc`, `up`, `down`, `left`, `right`, `bs`, `click:x,y
   regeneração, Abrir (destranca a porta à frente), Wizard Lock (tranca), Levitar (flutua sobre água e
   lava), Passwall (abre a parede à frente), Earth Wall (ergue uma parede por algumas rodadas), doença,
   maldição e drenar nas criaturas, Silêncio (a criatura para de conjurar) e as proteções contra magia
-  (resistir, refletir e absorver os feitiços das criaturas). Pitfalls ainda avisa que não existe nesta versão.
+  (resistir, refletir e absorver os feitiços das criaturas) e Pitfalls (abre um fosso sob a criatura mirada, até 6
+  passos, ou no chão à frente; quem está em cima cai e morre, e o buraco fecha depois de algumas rodadas).
 - Criaturas conjuradoras, como no original: Fantasma e Espectro (frio), Homúnculo, Vampiro e Lich (magia),
   Daemon de Fogo (fogo), Medusa (veneno) e Jagar Tharn (choque). De longe, com o jogador à vista, lançam um
   projétil luminoso a cada 4 a 8 s; de perto, atacam corpo a corpo. A resistência ao elemento também anula o feitiço.

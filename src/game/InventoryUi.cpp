@@ -36,6 +36,18 @@ std::string arena::itemName(const Game &game, const Item &item)
 	const Localization &text = game.getText();
 	const ItemTables &tables = game.getData().getItems();
 	if (item.artifact >= 0) return text.get("Artifacts.Name" + std::to_string(item.artifact));
+	if (item.isMagicItem())
+	{
+		// "Anel de Bola de Fogo", "Marca de Força +3", "Braçadeiras de Proteção +2".
+		const std::string piece = text.getOr("Magic.Piece" + std::to_string(item.type), tables.magicItemNames[static_cast<size_t>(std::clamp(item.type, 0, MagicItemTypeCount - 1))]);
+		if (item.magicGroup == 3) return ui::format(text.get("Magic.AttributeItem"), { piece, game.attributeName(std::clamp(item.magicIndex, 0, AttributeCount - 1), false), std::to_string(item.charges) });
+		if (item.magicGroup == 4) return ui::format(text.get("Magic.ArmorItem"), { piece, std::to_string(item.charges) });
+		// O nome do feitiço é o do livro (Spells.NameN), como "Anel de Bola de Fogo".
+		const int spell = magicItemSpell(item, tables);
+		const auto &group = tables.magicSpells[static_cast<size_t>(std::clamp(item.magicGroup, 0, 2))];
+		const std::string fallback = item.magicIndex >= 0 && item.magicIndex < static_cast<int>(group.size()) ? group[static_cast<size_t>(item.magicIndex)].name : std::string();
+		return ui::format(text.get("Magic.SpellItem"), { piece, text.getOr("Spells.Name" + std::to_string(spell), fallback) });
+	}
 	const std::string material = text.getOr("Materials.Name" + std::to_string(item.material), tables.materialNames[static_cast<size_t>(item.material)]);
 	switch (item.kind)
 	{
@@ -67,6 +79,8 @@ std::string arena::itemDetails(const Game &game, const Item &item)
 	case ItemKind::Armor:
 		return ui::format(text.get("Items.ArmorDetails"), { std::to_string(armorRating(item, tables)), weight }) + power;
 	case ItemKind::Trinket:
+		if (item.isMagicItem() && item.magicGroup <= 2) return ui::format(text.get("Magic.Charges"), { std::to_string(item.charges) }) + "  " + ui::format(text.get("Items.TrinketWeight"), { weight });
+		if (item.isMagicItem()) return text.get("Magic.Passive") + "  " + ui::format(text.get("Items.TrinketWeight"), { weight });
 		return text.get("Artifacts.Power" + std::to_string(item.type)) + "  " + ui::format(text.get("Items.TrinketWeight"), { weight });
 	default:
 		return text.get("Items.PotionDetails");
@@ -252,7 +266,21 @@ arena::OverlayResult arena::useInventoryItem(Game &game, int index, int currentH
 		return result;
 	}
 
-	if (item.kind == ItemKind::Trinket && item.type == artifact::OghmaInfinium)
+	if (item.isMagicItem() && item.magicGroup <= 2)
+	{
+		// Item mágico de feitiço: lança o feitiço sem gastar magia e gasta uma carga; sem cargas, se desfaz.
+		result.castSpell = magicItemSpell(item, tables);
+		result.close = result.castSpell >= 0;
+		item.charges--;
+		if (item.charges <= 0)
+		{
+			result.message = ui::format(text.get("Magic.Crumbles"), { itemName(game, item) });
+			c.inventory.erase(c.inventory.begin() + index);
+		}
+		return result;
+	}
+
+	if (item.kind == ItemKind::Trinket && item.artifact >= 0 && item.type == artifact::OghmaInfinium)
 	{
 		// Oghma Infinium: ler o livro aumenta todos os atributos de uma vez; depois ele some.
 		for (int &value : c.attributes) value = std::min(100, value + 10);
@@ -262,7 +290,7 @@ arena::OverlayResult arena::useInventoryItem(Game &game, int index, int currentH
 		return result;
 	}
 
-	if (item.kind == ItemKind::Trinket && item.type == artifact::OrgnumsCoffer)
+	if (item.kind == ItemKind::Trinket && item.artifact >= 0 && item.type == artifact::OrgnumsCoffer)
 	{
 		// Cofre do Rei Orgnum: enche-se de ouro sozinho, 100 moedas por dia desde a última vez.
 		const int today = static_cast<int>(c.gameMinutes / (24.0 * 60.0));
@@ -284,7 +312,7 @@ arena::OverlayResult arena::useInventoryItem(Game &game, int index, int currentH
 	{
 		item.equipped = true;
 		game.playSound("CLICKS.VOC", 0.5f);
-		if (artifact::spellOf(item.type) >= 0) result.message = ui::format(text.get("Artifacts.PowerReady"), { itemName(game, item) });
+		if (item.artifact >= 0 && artifact::spellOf(item.type) >= 0) result.message = ui::format(text.get("Artifacts.PowerReady"), { itemName(game, item) });
 		return result;
 	}
 

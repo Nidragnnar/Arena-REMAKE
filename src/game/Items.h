@@ -21,6 +21,8 @@ namespace arena
 	constexpr int MaterialCount = 8;        // Ferro .. Ébano
 	constexpr int PotionTypeCount = 15;
 	constexpr int BodyPartCount = 7;        // peito, mãos, pernas, ombro E, ombro D, cabeça, pés
+	constexpr int MagicItemTypeCount = 4;   // peças dos itens mágicos (anel, amuleto...)
+	constexpr int MagicSpellCounts[3] = { 15, 9, 8 }; // feitiços de ataque, defesa e diversos
 
 	struct Item
 	{
@@ -30,6 +32,11 @@ namespace arena
 		int material = 1;                     // metais (armas e placas); 1 = Aço
 		bool equipped = false;
 		int artifact = -1;                    // artefato (ver Artifacts.h); -1 = item comum
+		// Item mágico comum (Trinket sem artefato; type = peça: Marca, Cristal, Braçadeiras, Anel):
+		// grupo 0..2 = feitiço de ataque/defesa/diversos (índice na tabela, charges = cargas);
+		// 3 = bônus de atributo (índice = atributo, charges = bônus); 4 = bônus de armadura (charges = bônus).
+		int magicGroup = -1, magicIndex = 0, charges = 0;
+		bool isMagicItem() const { return this->kind == ItemKind::Trinket && this->artifact < 0 && this->magicGroup >= 0; }
 
 		bool isShield() const { return this->kind == ItemKind::Armor && this->type >= 7; }
 	};
@@ -61,6 +68,13 @@ namespace arena
 		std::array<std::string, 8> weaponAnimFiles;       // staff.cif .. hand.cif
 		std::vector<uint32_t> creatureLootChances;        // por índice de criatura + 1
 
+		// Itens mágicos de feitiço (SpellcastingItem* do executável).
+		std::array<std::string, MagicItemTypeCount> magicItemNames;
+		std::array<int, MagicItemTypeCount> magicItemChance{}, magicItemPrice{};
+		std::array<std::pair<int, int>, MagicItemTypeCount> magicItemCharges{};
+		struct MagicSpell { std::string name; int spell = 0, quality = 0, pricePerCharge = 0; };
+		std::array<std::vector<MagicSpell>, 3> magicSpells; // ataque, defesa, diversos
+
 		bool load(const ByteBuffer &exe, const std::function<size_t(const char*)> &offsetOf);
 	};
 
@@ -74,6 +88,11 @@ namespace arena
 	int bodyPartOf(const Item &item); // -1 para escudos e não-armaduras
 	std::string weaponAnimationFile(int weaponType, const ItemTables &tables); // "" = punhos
 
+	// Item mágico sorteado como no original: peça pela chance acumulada, cargas pela faixa da peça e um feitiço
+	// do grupo com qualidade até maxQuality (nível de quem acha/compra).
+	Item randomMagicItem(const ItemTables &tables, int maxQuality, std::mt19937 &rng);
+	int magicItemSpell(const Item &item, const ItemTables &tables); // feitiço do SPELLSG (-1 se não for de feitiço)
+
 	// Equipamento inicial por classe e geração de saque (aproximação das regras do original).
 	std::vector<Item> startingKit(int classIndex, int armorAllowance);
 	struct Loot
@@ -83,5 +102,6 @@ namespace arena
 	};
 
 	enum class LootSource { TreasurePile, EquipmentPile, DeadBody, Chest, Creature };
-	Loot generateLoot(LootSource source, int creatureIndex, const ItemTables &tables, std::mt19937 &rng);
+	// playerLevel limita a qualidade dos itens mágicos que podem sair.
+	Loot generateLoot(LootSource source, int creatureIndex, const ItemTables &tables, std::mt19937 &rng, int playerLevel = 1);
 }

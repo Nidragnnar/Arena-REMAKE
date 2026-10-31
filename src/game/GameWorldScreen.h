@@ -94,6 +94,7 @@ namespace arena
 		// Magia (GameWorldSpells.cpp)
 		void loadSpellArt();
 		void castReadySpell();
+		void castFreeSpell(int spell); // item mágico: o feitiço sai sem gastar magia
 		void releaseSpell();
 		void applySpellToSelf(const Spell &spell);
 		void applySpellToCreature(const Spell &spell, int creature);

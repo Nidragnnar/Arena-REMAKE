@@ -403,13 +403,15 @@ arena::PlayerCombatStats arena::GameWorldScreen::combatStats() const
 	stats.level = character.level;
 	stats.classIndex = character.classIndex;
 	const ItemTables &tables = this->game.getData().getItems();
-	stats.defenseBonus = hitBonusFor(character.attributes[3]);
+	stats.defenseBonus = hitBonusFor(character.attributes[3] + this->fortifyBonus(3));
 	for (const Item &item : character.inventory)
 	{
 		if (!item.equipped || item.kind != ItemKind::Armor) continue;
 		if (item.isShield()) stats.shieldArmor = armorRating(item, tables);
 		else stats.partArmor[static_cast<size_t>(bodyPartOf(item))] = armorRating(item, tables);
 	}
+	// Itens mágicos de proteção (grupo 4) somam ao corpo inteiro, como o escudo.
+	for (const Item &item : character.inventory) if (item.equipped && item.isMagicItem() && item.magicGroup == 4) stats.shieldArmor += item.charges;
 
 	return stats;
 }
@@ -466,7 +468,7 @@ bool arena::GameWorldScreen::tryOpenLoot()
 		{
 			const LootSource source = (sprite.itemId == 2) ? LootSource::DeadBody : (sprite.itemId == 3) ? LootSource::EquipmentPile
 				: (sprite.itemId == 7) ? LootSource::Chest : LootSource::TreasurePile;
-			it = this->containerLoot.emplace(key, generateLoot(source, -1, this->game.getData().getItems(), this->game.getRandom())).first;
+			it = this->containerLoot.emplace(key, generateLoot(source, -1, this->game.getData().getItems(), this->game.getRandom(), this->game.getCharacter().level)).first;
 		}
 
 		const char *titleKey = (sprite.itemId == 2) ? "Loot.TitleBody" : (sprite.itemId == 3) ? "Loot.TitleEquipment" : (sprite.itemId == 7) ? "Loot.TitleChest" : "Loot.TitleTreasure";
@@ -525,6 +527,8 @@ void arena::GameWorldScreen::applyOverlayResult(const OverlayResult &result)
 		this->heldKeys.clear();
 		this->persist();
 	}
+
+	if (result.castSpell >= 0) this->castFreeSpell(result.castSpell);
 }
 
 void arena::GameWorldScreen::drawOverlay(std::vector<uint32_t> &pixels, int width, int height)
@@ -1019,6 +1023,8 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 		std::printf("escudos:"); for (int v : t.shieldArmorClass) std::printf(" %d", v);
 		std::printf("\nmateriais:"); for (int v : t.materialBonus) std::printf(" %d", v);
 		std::printf("\npoções:"); for (int v : t.potionPrice) std::printf(" %d", v);
+		for (int i = 0; i < MagicItemTypeCount; i++) std::printf("\nmágico %d: %s chance %d preço %d cargas %d..%d", i, t.magicItemNames[static_cast<size_t>(i)].c_str(), t.magicItemChance[static_cast<size_t>(i)], t.magicItemPrice[static_cast<size_t>(i)], t.magicItemCharges[static_cast<size_t>(i)].first, t.magicItemCharges[static_cast<size_t>(i)].second);
+		for (size_t g = 0; g < 3; g++) for (const auto &s : t.magicSpells[g]) std::printf("\n  grupo %zu: %s -> feitiço %d, qualidade %d, %d/carga", g, s.name.c_str(), s.spell, s.quality, s.pricePerCharge);
 		std::printf("\n");
 		return true;
 	}
@@ -1054,6 +1060,13 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 			std::printf("\n");
 		}
 		if (!arg.empty()) { this->game.getCharacter().disease = std::atoi(arg.c_str()); this->game.getCharacter().diseaseEnd = this->game.getCharacter().gameMinutes + 1440.0; }
+		return true;
+	}
+
+	if (name == "gold")
+	{
+		// gold:N muda o ouro (teste).
+		this->game.getCharacter().gold = std::max(0, std::atoi(arg.c_str()));
 		return true;
 	}
 

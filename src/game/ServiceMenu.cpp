@@ -14,7 +14,7 @@ namespace
 	using namespace arena;
 	namespace col = kit::color;
 
-	enum Action { None, BuyItem, SellItem, Drink, Room, Heal, BuySpell, BuyPotion, CureDisease, Talk = 20 };
+	enum Action { None, BuyItem, SellItem, Drink, Room, Heal, BuySpell, BuyPotion, CureDisease, BuyMagic, Talk = 20 };
 
 	// Modelos da criação de feitiços: efeito, sub (-1 = o elemento escolhido), se é de ataque
 	// (precisa de alvo) e o peso no custo. Os parâmetros saem da potência (ver makerSpell).
@@ -97,6 +97,13 @@ void arena::ServiceMenu::open(const Game &game, Kind openKind, const std::string
 	this->notice.clear();
 	this->frameW = this->frameH = 1;
 	if (openKind == Kind::Equipment) this->stock = makeStock(game.getData().getItems(), stockSeed);
+	if (openKind == Kind::MagesGuild)
+	{
+		// Itens mágicos à venda: 6 por guilda, sorteados pela semente dela, até a qualidade do nível do jogador.
+		std::mt19937 rng(stockSeed ^ 0x6D61u);
+		this->stock.clear();
+		for (int i = 0; i < 6; i++) this->stock.push_back(randomMagicItem(game.getData().getItems(), game.getCharacter().level + 2, rng));
+	}
 	this->rebuild(game);
 }
 
@@ -163,6 +170,11 @@ void arena::ServiceMenu::rebuild(const Game &game)
 			std::stable_sort(list.begin(), list.end(), [](const Spell *a, const Spell *b) { return a->goldCost < b->goldCost; });
 			for (const Spell *spell : list)
 				this->rows.push_back({ spellName(game, *spell), ui::format(text.get("Shop.SpellDetail"), { std::to_string(spell->castingCost()) }), this->price(spell->goldCost * 2), BuySpell, spell->index, true });
+		}
+		else if (this->tab == 3)
+		{
+			for (size_t i = 0; i < this->stock.size(); i++)
+				this->rows.push_back({ itemName(game, this->stock[i]), itemDetails(game, this->stock[i]), this->price(itemPrice(this->stock[i], tables)), BuyMagic, static_cast<int>(i), true });
 		}
 		else
 		{
@@ -235,6 +247,16 @@ arena::OverlayResult arena::ServiceMenu::confirm(Game &game, const Row &row)
 		result.inventoryChanged = true;
 		done(ui::format(text.get("Shop.Learned"), { row.label }));
 		break;
+	case BuyMagic:
+	{
+		const Item item = this->stock[static_cast<size_t>(row.index)];
+		c.inventory.push_back(item);
+		c.gold -= row.price;
+		this->stock.erase(this->stock.begin() + row.index);
+		result.inventoryChanged = true;
+		done(ui::format(text.get("Shop.Bought"), { row.label, std::to_string(row.price) }));
+		break;
+	}
 	case CureDisease:
 		c.gold -= row.price;
 		c.disease = -1;
@@ -383,7 +405,7 @@ void arena::ServiceMenu::render(kit::Painter &painter, const Game &game)
 	case Kind::Equipment: tabs = { text.get("Shop.TabBuy"), text.get("Shop.TabSell") }; break;
 	case Kind::Tavern: tabs = { text.get("Shop.TabDrinks"), text.get("Shop.TabRooms"), text.get("Shop.TabTalk") }; break;
 	case Kind::Temple: tabs = { text.get("Shop.TabTemple") }; break;
-	case Kind::MagesGuild: tabs = { text.get("Shop.TabSpells"), text.get("Shop.TabPotions"), text.get("Shop.TabMaker") }; break;
+	case Kind::MagesGuild: tabs = { text.get("Shop.TabSpells"), text.get("Shop.TabPotions"), text.get("Shop.TabMaker"), text.get("Shop.TabMagic") }; break;
 	}
 
 	this->tabRects.clear();

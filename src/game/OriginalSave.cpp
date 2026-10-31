@@ -140,7 +140,19 @@ namespace
 				if (item.type < 0) continue;
 				for (int n = 1; n < std::clamp<int>(le16(p + 1), 1, 10); n++) items.push_back(item);
 			}
-			else continue; // anéis e amuletos mágicos comuns ainda não têm equivalente
+			else if (kind == 2 && p[0] < MagicItemTypeCount)
+			{
+				// Bugiganga (Marca, Cristal, Braçadeiras, Anel): de feitiço (material = grupo, Y = feitiço,
+				// mãos = cargas), de atributo (atributo, Y = bônus) ou de armadura (Y = bônus).
+				item.kind = ItemKind::Trinket;
+				item.type = p[0];
+				item.material = 1;
+				if (subtype == 0 && p[16] < 3 && p[17] < MagicSpellCounts[p[16]]) { item.magicGroup = p[16]; item.magicIndex = p[17]; item.charges = std::max<int>(1, p[3]); }
+				else if (subtype == 1 && p[18] < AttributeCount) { item.magicGroup = 3; item.magicIndex = p[18]; item.charges = std::max<int>(1, p[17]); }
+				else if (subtype == 2) { item.magicGroup = 4; item.charges = std::max<int>(1, p[17]); }
+				else continue;
+			}
+			else continue;
 			items.push_back(item);
 		}
 		return items;

@@ -284,7 +284,8 @@ feitiços conhecidos, a data, as armas e armaduras do inventário (equipadas ou 
 e os pedaços do Cajado (MQDATA; o passo da busca do próximo é aproximado). O personagem começa diante do portão da
 cidade onde estava (achada pelo nome no save) ou da natal. Também vêm as poções (tipo
 pelo SlotID, quantidade no campo do peso) e os artefatos já achados (bits da AQDATA, na ordem dos nomes do executável),
-com a busca de artefato em andamento. Anéis e amuletos mágicos comuns ainda não. A ficha e os dados do jogo são
+com a busca de artefato em andamento. Os itens mágicos comuns também vêm (feitiço, atributo
+ou proteção). A ficha e os dados do jogo são
 desembaralhados numa passada só, como no ArenaSaveEditor (que edita saves reais).
 Formato pela wiki do OpenTESArena (Save File Formats); testado com um save montado nesse formato, não com um real.
 
@@ -460,7 +461,17 @@ desconto de 10% nas vilas e 20% nas aldeias:
   dobro do custo-base em ouro), as poções e a criação de feitiços: um efeito (dano, dano contínuo,
   paralisia, cura, escudo, luz, invisibilidade, resistência, força, regeneração, abrir ou levitar),
   elemento, alvo (toque, à distância ou área), potência de 1 a 10 e nome. O custo em ouro e em magia
-  sai do efeito, da potência e do alvo; os feitiços criados ficam no save (seção `[CustomSpells]`).
+  sai do efeito, da potência e do alvo; os feitiços criados ficam no save (seção `[CustomSpells]`). A quarta aba vende
+  itens mágicos (6 por guilda).
+
+### Itens mágicos
+
+Como no original (tabelas SpellcastingItem* do executável): Marca, Cristal, Braçadeiras e Anel, cada peça com o
+preço-base e a faixa de cargas dela, e um feitiço de ataque (15), defesa (9) ou diversos (8), cada um com o feitiço do
+livro, a qualidade mínima e o preço por carga ("Anel de Bola de Fogo", "Marca de Cura"). Usar no inventário lança o
+feitiço sem gastar magia e gasta uma carga; sem cargas, o item se desfaz. Também existem os de bônus enquanto equipados
+(atributo ou proteção), que vêm dos saves do original. Saem em baús, pilhas de tesouro e criaturas (o quarto byte da
+tabela de saque delas) e na Guilda dos Magos, até a qualidade do nível do jogador + 2.
 
 ## Roteiro
 

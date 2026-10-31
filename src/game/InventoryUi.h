@@ -48,6 +48,7 @@ namespace arena
 		int spellPointsDelta = 0;
 		bool rested = false; // dormiu: vida e magia cheias
 		int request = 0;     // conversa no balcão da taverna: 1 = trabalho, 2 = artefatos
+		int castSpell = -1;  // item mágico usado: feitiço a lançar sem gastar magia
 		std::string message;
 	};
 

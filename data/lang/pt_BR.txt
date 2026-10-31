@@ -823,6 +823,7 @@ TabTemple=Serviços
 TabSpells=Feitiços
 TabPotions=Poções
 TabMaker=Criar feitiço
+TabMagic=Itens mágicos
 ActionBuy=Comprar
 ActionSell=Vender
 ActionDrink=Pedir
@@ -1307,3 +1308,16 @@ Name13=Febre Tifoide
 Name14=Demência
 Name15=Crondíase
 Name16=Febre do Mago
+
+[Magic]
+# Itens mágicos comuns (peças do executável: Mark, Crystal, Bracers, Ring).
+Piece0=Marca
+Piece1=Cristal
+Piece2=Braçadeiras
+Piece3=Anel
+SpellItem=%s de %s
+AttributeItem=%s de %s +%s
+ArmorItem=%s de Proteção +%s
+Charges=Cargas: %s (usar lança o feitiço sem gastar magia)
+Passive=Bônus enquanto equipado
+Crumbles=%s se desfaz: acabaram as cargas.

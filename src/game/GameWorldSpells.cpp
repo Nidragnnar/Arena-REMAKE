@@ -106,7 +106,22 @@ int arena::GameWorldScreen::fortifyBonus(int attribute) const
 		if (e.type == SpellEffectType::Fortify && e.sub == attribute) bonus += e.magnitude;
 	}
 
+	// Itens mágicos de atributo equipados (grupo 3).
+	for (const Item &item : this->game.getCharacter().inventory)
+		if (item.equipped && item.isMagicItem() && item.magicGroup == 3 && item.magicIndex == attribute) bonus += item.charges;
 	return bonus;
+}
+
+void arena::GameWorldScreen::castFreeSpell(int spellIndex)
+{
+	const Spell *spell = this->game.getData().getSpells().find(spellIndex);
+	if (!spell || this->casting || this->health <= 0 || this->paralysisTimer > 0.0) return;
+	this->casting = true;
+	this->castReleased = false;
+	this->castTime = 0.0;
+	this->castingSpell = spell->index;
+	this->swinging = false;
+	this->game.playSound(spell->harmful() ? "SLOWBALL.VOC" : "BURST5.VOC", 0.8f);
 }
 
 void arena::GameWorldScreen::castReadySpell()
@@ -239,7 +254,7 @@ void arena::GameWorldScreen::rewardKill(int target, int maxHp)
 	this->playAt("BODYFALL.VOC", victim.x, victim.z);
 	const int gained = def.baseExperience + maxHp * def.experienceMultiplier;
 	this->experience += gained;
-	this->corpseLoot[target] = generateLoot(LootSource::Creature, victim.definition, this->game.getData().getItems(), this->game.getRandom());
+	this->corpseLoot[target] = generateLoot(LootSource::Creature, victim.definition, this->game.getData().getItems(), this->game.getRandom(), this->game.getCharacter().level);
 	this->showMessage(ui::format(text.get("World.CreatureKilled"), { this->creatureRef(target, false), std::to_string(gained) }), 3.0);
 
 	// A fera caçada para o governante: falta voltar ao palácio para receber.

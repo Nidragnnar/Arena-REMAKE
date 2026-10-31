@@ -979,7 +979,29 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 		return true;
 	}
 
-	if (name == "killjob" && this->loaded && this->jobCreature >= 0 && this->creatures.isAlive(this->jobCreature))
+	if (name == "hp" && this->loaded)
+	{
+		// hp:N muda a vida atual (teste).
+		this->health = std::max(1, std::atoi(arg.c_str()));
+		return true;
+	}
+
+	if (name == "spawn" && this->loaded)
+	{
+		// spawn:N cria a criatura N a uns passos à frente, já atenta ao jogador (teste).
+		const float fx = std::cos(this->yaw), fz = std::sin(this->yaw);
+		for (float d = 4.0f; d >= 2.0f; d -= 0.5f)
+		{
+			const float sx = this->x + fx * d, sz = this->z + fz * d;
+			if (this->level.blocksMovement(static_cast<int>(std::floor(sx)), static_cast<int>(std::floor(sz)))) continue;
+			const int index = this->creatures.spawn(this->game.getAssets(), this->palette, std::atoi(arg.c_str()), sx, sz, this->game.getRandom());
+			if (index >= 0) this->creatures.wake(index);
+			return index >= 0;
+		}
+		return false;
+	}
+
+	if (name == "killjob" &&this->loaded && this->jobCreature >= 0 && this->creatures.isAlive(this->jobCreature))
 	{
 		// killjob mata a fera caçada como um golpe do jogador (teste).
 		const int maxHp = this->creatures.getCreatures()[static_cast<size_t>(this->jobCreature)].maxHp;
@@ -1236,6 +1258,9 @@ void arena::GameWorldScreen::handleCombatEvents(const std::vector<CombatEvent> &
 			}
 			break;
 		}
+		case CombatEvent::Type::CreatureCast:
+			this->creatureCasts(event.creature, event.amount);
+			break;
 		case CombatEvent::Type::CreatureMissedPlayer:
 			this->showMessage(ui::format(text.get("World.CreatureMiss"), { this->creatureRef(event.creature, true) }), 2.0);
 			break;

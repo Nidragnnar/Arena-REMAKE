@@ -91,9 +91,14 @@ bool arena::CreatureSystem::loadAnimation(const AssetManager &assets, const Pale
 
 void arena::CreatureSystem::init(const AssetManager &assets, const Palette &palette, const ArenaData &data, const Level &level, std::mt19937 &rng)
 {
+	// Conjuradores do original: Fantasma e Espectro (frio), Homúnculo e Lich (magia), Daemon de Fogo (fogo),
+	// Medusa (veneno), Vampiro (magia, rouba vida) e Jagar Tharn (choque).
+	static const std::map<int, SpellElement> Casters = { { 11, SpellElement::Cold }, { 14, SpellElement::Cold }, { 15, SpellElement::Magic },
+		{ 19, SpellElement::Fire }, { 20, SpellElement::Poison }, { 21, SpellElement::Magic }, { 22, SpellElement::Magic }, { 23, SpellElement::Shock } };
 	for (int i = 0; data.getCreature(i) != nullptr; i++)
 	{
 		this->definitions.push_back(*data.getCreature(i));
+		if (const auto it = Casters.find(i); it != Casters.end()) this->definitions.back().spellElement = static_cast<int>(it->second);
 	}
 
 	for (const CreatureSpawn &spawn : level.getCreatureSpawns())
@@ -192,6 +197,8 @@ void arena::CreatureSystem::update(double dt, const Level &level, const PlayerCo
 		const CreatureDefinition &def = this->definitions[static_cast<size_t>(c.definition)];
 		c.stateTime += dt;
 		c.cooldown -= dt;
+		c.spellCooldown -= dt;
+		c.silenced -= dt;
 		c.hurtFlash -= dt;
 
 		if (c.state == Creature::State::Dead)
@@ -268,7 +275,17 @@ void arena::CreatureSystem::update(double dt, const Level &level, const PlayerCo
 			}
 
 			c.angle = std::atan2(dz, dx);
-			if (dist <= AttackRange && c.cooldown <= 0.0)
+			if (def.spellElement >= 0 && c.silenced <= 0.0 && c.spellCooldown <= 0.0 && c.cooldown <= 0.0 && dist > 1.6f && dist < SightRange
+				&& this->hasLineOfSight(level, c.x, c.z, player.x, player.z))
+			{
+				// Conjura de longe: a animação de ataque sem golpe, e o projétil sai pelo jogo (CreatureCast).
+				c.state = Creature::State::Attack;
+				c.stateTime = 0;
+				c.attackResolved = true;
+				c.spellCooldown = randomFloat(rng, 4.0f, 8.0f);
+				events.push_back({ CombatEvent::Type::CreatureCast, static_cast<int>(i), randomInt(rng, def.minDamage, def.maxDamage) });
+			}
+			else if (dist <= AttackRange && c.cooldown <= 0.0)
 			{
 				c.state = Creature::State::Attack;
 				c.stateTime = 0;

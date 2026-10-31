@@ -37,13 +37,15 @@ namespace arena
 		double hurtFlash = 0;
 		double soundTimer = 0;
 		double paralyzed = 0; // segundos restantes de paralisia (feitiços)
+		double silenced = 0;  // segundos sem poder conjurar (feitiço Silêncio)
+		double spellCooldown = 0;
 		bool gone = false;    // sumiu (ermo: longe do jogador); a vaga pode ser reaproveitada
 	};
 
 	// Resultado de eventos de combate para mensagens e HUD.
 	struct CombatEvent
 	{
-		enum class Type { CreatureHitPlayer, CreatureMissedPlayer, CreatureNoticed, CreatureSound, CreatureAttackStart };
+		enum class Type { CreatureHitPlayer, CreatureMissedPlayer, CreatureNoticed, CreatureSound, CreatureAttackStart, CreatureCast };
 		Type type = Type::CreatureHitPlayer;
 		int creature = -1;
 		int amount = 0;
@@ -72,6 +74,7 @@ namespace arena
 		int findTarget(float px, float pz, float yaw, float reach, float coneCos) const;
 		// Aplica dano; retorna true se a criatura morreu.
 		bool damage(int index, int amount);
+		void silence(int index, double seconds) { this->creatures[static_cast<size_t>(index)].silenced = std::max(this->creatures[static_cast<size_t>(index)].silenced, seconds); }
 		void paralyze(int index, double seconds) { this->creatures[static_cast<size_t>(index)].paralyzed = std::max(this->creatures[static_cast<size_t>(index)].paralyzed, seconds); }
 		// Estado salvo: vida e posição (morta = corpo no chão).
 		// Ermo: cria uma criatura agora (reaproveita vagas sumidas) e some com as distantes.

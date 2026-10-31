@@ -304,6 +304,7 @@ void arena::GameWorldScreen::applySpellToCreature(const Spell &spell, int creatu
 			break;
 		}
 		case SpellEffectType::Silence:
+			this->creatures.silence(creature, std::max(2, spellRounds(effect, Level)) * SecondsPerRound);
 			this->showMessage(ui::format(text.get("Spells.CreatureSilenced"), { this->creatureRef(creature, true) }), 2.5);
 			break;
 		case SpellEffectType::Drain:
@@ -463,7 +464,7 @@ void arena::GameWorldScreen::applySpellToSelf(const Spell &spell)
 		case SpellEffectType::SpellResistance:
 		case SpellEffectType::SpellReflection:
 		case SpellEffectType::SpellAbsorption:
-			// Proteções contra magia: as criaturas deste remake ainda não conjuram, então só duram.
+			// Proteções contra magia: resistem, devolvem ou absorvem os feitiços das criaturas (boltHitsPlayer).
 			addEffect(static_cast<SpellEffectType>(effect.type), std::max(1, spellRounds(effect, Level)) * SecondsPerRound, spellChance(effect, Level), 0);
 			this->showMessage(text.get("Spells.MagicWardOn"), 3.0);
 			break;
@@ -530,6 +531,37 @@ void arena::GameWorldScreen::updateMagic(double dt)
 		}
 
 		if (done) this->projectiles.erase(this->projectiles.begin() + static_cast<std::ptrdiff_t>(i));
+		else i++;
+	}
+
+	// Feitiços das criaturas: param na parede ou no jogador (só no plano XZ; voam na altura do peito).
+	for (size_t i = 0; i < this->enemyBolts.size();)
+	{
+		EnemyBolt &b = this->enemyBolts[i];
+		bool done = false;
+		for (float remaining = ProjectileSpeed * 0.75f * fdt; !done && remaining > 0.0f;)
+		{
+			const float step = std::min(0.1f, remaining);
+			remaining -= step;
+			b.x += b.dx * step; b.y += b.dy * step; b.z += b.dz * step;
+			b.travelled += step;
+			const float px = this->x - b.x, pz = this->z - b.z;
+			const int cx = static_cast<int>(std::floor(b.x)), cz = static_cast<int>(std::floor(b.z));
+			if (px * px + pz * pz < 0.4f * 0.4f && this->health > 0)
+			{
+				this->boltHitsPlayer(b);
+				done = true;
+			}
+			else if (this->level.blocksMovement(cx, cz) && this->level.cell(cx, cz).type != CellType::Empty)
+			{
+				this->bursts.push_back(Burst{ b.x - b.dx * step, b.y, b.z - b.dz * step, 0.0, b.element });
+				this->playAt("NHIT.VOC", b.x, b.z, 0.7f);
+				done = true;
+			}
+			else if (b.travelled > ProjectileRange) done = true;
+		}
+
+		if (done) this->enemyBolts.erase(this->enemyBolts.begin() + static_cast<std::ptrdiff_t>(i));
 		else i++;
 	}
 
@@ -609,6 +641,12 @@ void arena::GameWorldScreen::addMagicLights(std::vector<PointLight> &lights) con
 		lights.push_back(PointLight{ { p.x, p.y, p.z }, 3.2f, c[0], c[1], c[2] });
 	}
 
+	for (const EnemyBolt &b : this->enemyBolts)
+	{
+		const float *c = ElementColor[std::clamp(b.element, 0, 5)];
+		lights.push_back(PointLight{ { b.x, b.y, b.z }, 3.2f, c[0], c[1], c[2] });
+	}
+
 	for (const Burst &b : this->bursts)
 	{
 		const float k = static_cast<float>(1.0 - b.age / BurstLength);
@@ -638,6 +676,9 @@ void arena::GameWorldScreen::drawMagic()
 		const float pulse = 0.22f + 0.03f * static_cast<float>(std::sin(this->time * 20.0));
 		billboard(p.x, p.y, p.z, spell && spell->target == SpellTarget::AreaRanged ? pulse * 1.5f : pulse, this->orbTextures[static_cast<size_t>(element)]);
 	}
+
+	for (const EnemyBolt &b : this->enemyBolts)
+		billboard(b.x, b.y, b.z, 0.22f + 0.03f * static_cast<float>(std::sin(this->time * 20.0)), this->orbTextures[static_cast<size_t>(std::clamp(b.element, 0, 5))]);
 
 	// Impacto: clarão que cresce e some (a luz vem de addMagicLights).
 	for (const Burst &b : this->bursts)
@@ -766,4 +807,82 @@ chosen:
 	this->game.playSound("GRIND.VOC");
 	this->showMessage(text.get("Spells.WallRaised"), 3.0);
 	return true;
+}
+
+void arena::GameWorldScreen::creatureCasts(int creature, int damage)
+{
+	// Sai da criatura, na altura do peito, em direção aos olhos do jogador.
+	const Creature &c = this->creatures.getCreatures()[static_cast<size_t>(creature)];
+	const CreatureDefinition &def = this->creatures.definitionOf(creature);
+	const float dx = this->x - c.x, dz = this->z - c.z;
+	const float dist = std::max(0.01f, std::sqrt(dx * dx + dz * dz));
+	EnemyBolt bolt;
+	bolt.dx = dx / dist;
+	bolt.dz = dz / dist;
+	bolt.dy = 0.0f;
+	bolt.x = c.x + bolt.dx * 0.4f;
+	bolt.z = c.z + bolt.dz * 0.4f;
+	bolt.y = EyeHeight * 0.85f;
+	bolt.creature = creature;
+	bolt.element = std::clamp(def.spellElement, 0, 4);
+	bolt.damage = std::max(1, damage);
+	this->enemyBolts.push_back(bolt);
+	this->playAt("SLOWBALL.VOC", c.x, c.z, 0.9f);
+	if (this->messageTimer < 1.0) this->showMessage(ui::format(this->game.getText().get("Spells.CreatureCasts"), { this->creatureRef(creature, true) }), 2.0);
+}
+
+void arena::GameWorldScreen::boltHitsPlayer(const EnemyBolt &bolt)
+{
+	const Localization &text = this->game.getText();
+	std::mt19937 &rng = this->game.getRandom();
+	this->bursts.push_back(Burst{ this->x, EyeHeight * 0.8f, this->z, 0.0, bolt.element });
+	const std::string who = bolt.creature >= 0 ? this->creatureRef(bolt.creature, true) : std::string();
+	auto succeeds = [&rng](int chance) { return static_cast<int>(rng() % 100u) < std::clamp(chance, 5, 95); };
+
+	// Proteções do jogador: refletir devolve o feitiço, absorver vira magia, resistir anula.
+	for (const PlayerEffect &e : this->playerEffects)
+	{
+		if (e.type == SpellEffectType::SpellReflection && succeeds(e.magnitude) && bolt.creature >= 0 && this->creatures.isAlive(bolt.creature))
+		{
+			const int maxHp = this->creatures.getCreatures()[static_cast<size_t>(bolt.creature)].maxHp;
+			this->showMessage(ui::format(text.get("Spells.Reflected"), { this->creatureRef(bolt.creature, false) }), 3.0);
+			if (this->creatures.damage(bolt.creature, bolt.damage)) this->rewardKill(bolt.creature, maxHp);
+			return;
+		}
+		if (e.type == SpellEffectType::SpellAbsorption && succeeds(e.magnitude))
+		{
+			this->spellPoints = std::min(this->game.getCharacter().maxSpellPoints, this->spellPoints + bolt.damage);
+			this->showMessage(ui::format(text.get("Spells.Absorbed"), { std::to_string(bolt.damage) }), 3.0);
+			return;
+		}
+		if (e.type == SpellEffectType::SpellResistance && succeeds(e.magnitude))
+		{
+			this->showMessage(text.get("Spells.Resisted"), 2.5);
+			return;
+		}
+
+		// Resistência ao elemento (Resist0..4 = fogo, frio, choque, magia, veneno).
+		constexpr int ResistOf[5] = { 0, 1, 4, 2, 3 }; // por SpellElement: fogo, frio, veneno, choque, magia
+		if (e.type == SpellEffectType::ElementalResistance && e.sub == ResistOf[std::clamp(bolt.element, 0, 4)] && succeeds(e.magnitude))
+		{
+			this->showMessage(ui::format(text.get("Spells.ResistedElement"), { text.get("Spells.Resist" + std::to_string(e.sub)) }), 2.5);
+			return;
+		}
+	}
+
+	// Dano: artefatos reduzem; o Escudo mágico absorve primeiro.
+	int amount = std::max(1, bolt.damage * (100 - artifact::powersOf(this->game.getCharacter()).damageReduction) / 100);
+	const int absorbed = std::min(this->shieldPoints, amount);
+	this->shieldPoints -= absorbed;
+	amount -= absorbed;
+	this->health = std::max(0, this->health - amount);
+	this->hurtTimer = 0.4;
+	this->game.playSound(this->health > 0 ? "UHIT.VOC" : (this->game.getCharacter().male ? "MDIE.VOC" : "FDIE.VOC"));
+	this->showMessage(amount > 0 ? ui::format(text.get("Spells.PlayerHit"), { who, std::to_string(amount) }) : text.get("Spells.ShieldAbsorb"), 2.5);
+	if (this->health <= 0)
+	{
+		this->swinging = false;
+		this->heldKeys.clear();
+		this->showMessage(text.get("World.DeathMessage"), 1e9);
+	}
 }

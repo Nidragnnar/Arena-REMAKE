@@ -49,6 +49,7 @@ namespace arena
 		int experienceMultiplier = 0;
 		bool hasCorpse = true;
 		std::string soundFile;    // ex.: "RATS.VOC"
+		int spellElement = -1;    // conjura projéteis deste elemento (SpellElement); -1 = só corpo a corpo
 	};
 
 	struct ClassQuestion

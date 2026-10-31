@@ -273,6 +273,11 @@ namespace arena
 		void shootArrow();
 		void updateArrows(double dt);
 		void drawArrows();
+		// Feitiços das criaturas conjuradoras: voam até o jogador; as proteções contra magia refletem, absorvem ou resistem.
+		struct EnemyBolt { float x, y, z, dx, dy, dz; float travelled = 0.0f; int creature = -1; int element = 4; int damage = 1; };
+		std::vector<EnemyBolt> enemyBolts;
+		void creatureCasts(int creature, int damage);
+		void boltHitsPlayer(const EnemyBolt &bolt);
 		std::vector<Burst> bursts;
 		std::vector<PlayerEffect> playerEffects;
 		std::vector<CreatureDot> creatureDots;

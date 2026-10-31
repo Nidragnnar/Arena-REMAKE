@@ -10,7 +10,8 @@ namespace arena
 	class ArenaData;
 	struct CityLocation;
 
-	// Os 17 artefatos do original. Armas e armaduras são itens comuns (de ébano, em geral) com o
+	// Os 16 artefatos do original (a lista do executável), mais a Maça de Molag Bal, que não é do Arena e
+	// não é oferecida (fica só para saves antigos do remake). Armas e armaduras são itens comuns (de ébano, em geral) com o
 	// índice do artefato; anéis, amuleto, chave, livro e cofre são do tipo Trinket. Como no original,
 	// o poder de cada um é um feitiço do SPELLSG.65 (46..58), que entra no livro de feitiços enquanto
 	// o artefato está equipado e sai sem gastar magia (com recarga). Os sem feitiço têm efeito próprio.

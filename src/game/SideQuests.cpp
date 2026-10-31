@@ -250,7 +250,7 @@ std::string arena::jobs::targetDone(Game &game)
 int arena::jobs::artifactRumor(const CharacterDraft &character, uint32_t seed)
 {
 	std::vector<int> left;
-	for (int a = 0; a < artifact::Count; a++) if (!artifact::owned(character, a)) left.push_back(a);
+	for (int a = 0; a < artifact::Count; a++) if (!artifact::owned(character, a) && a != artifact::MaceOfMolagBal) left.push_back(a); // a Maça não é do Arena
 	if (left.empty()) return -1;
 	return left[seed % left.size()];
 }

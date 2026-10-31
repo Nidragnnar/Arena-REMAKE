@@ -1011,6 +1011,18 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 		return true;
 	}
 
+	if (name == "armor")
+	{
+		// armor imprime as tabelas de armadura do executável (depuração).
+		const ItemTables &t = this->game.getData().getItems();
+		for (int c = 0; c < 3; c++) { std::printf("classe %d:", c); for (int i = 0; i < ArmorPieceCount; i++) std::printf(" %d", t.armorQuality[static_cast<size_t>(c)][static_cast<size_t>(i)]); std::printf("\n"); }
+		std::printf("escudos:"); for (int v : t.shieldArmorClass) std::printf(" %d", v);
+		std::printf("\nmateriais:"); for (int v : t.materialBonus) std::printf(" %d", v);
+		std::printf("\npoções:"); for (int v : t.potionPrice) std::printf(" %d", v);
+		std::printf("\n");
+		return true;
+	}
+
 	if (name == "crime" && this->currentCity())
 	{
 		// crime marca o jogador como procurado nesta cidade, como ao matar um morador (teste).

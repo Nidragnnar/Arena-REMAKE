@@ -221,8 +221,9 @@ Comandos: `k:X`, `enter`, `esc`, `up`, `down`, `left`, `right`, `bs`, `click:x,y
   para sarar, as outras um dia); Homem-Lagarto e Aranha paralisam por 1 a 6 rodadas. Altos Elfos e Cavaleiros não
   são paralisados, Bárbaros não pegam doença e resistir a veneno protege de ambos. Doente, perde 1 de vida por hora
   do jogo (nunca abaixo de 1) até sarar, usar Curar Doença ou pagar o templo.
-- Ao morrer: Enter recomeça na cela, S volta ao menu. A armadura ainda é aproximada (5% de acerto a menos por
-  ponto de proteção), porque a tabela de classe de armadura do original ainda não foi decifrada.
+- Ao morrer: Enter recomeça na cela, S volta ao menu. A proteção da parte atingida (tabelas de armadura do executável,
+  mais o material e o escudo) é subtraída do acerto na mesma unidade do bônus de defesa da Agilidade, como diz a UESP
+  ("reduz a rolagem de ataque do inimigo"; cada 5 pontos de Agilidade valem 1 de armadura).
 
 ### Inventário, equipamento e saque
 
@@ -278,10 +279,14 @@ sobrou em baús e corpos.
 
 Na janela de carregar (pausa ou menu principal), o botão "Arena original" lista os 10 espaços do jogo original
 (`NAMES.DAT` e `SAVEENGN.0x` na pasta do Arena). O começo do SAVEENGN é desembaralhado como no OpenTESArena e
-dele vêm nome, raça, classe, sexo, rosto, nível, experiência, atributos, vida, magia, ouro, feitiços conhecidos e a
-data; o personagem começa diante do portão da cidade onde estava (achada pelo nome no save) ou da cidade natal.
-Itens e o progresso das missões ainda não são importados (o formato não foi decifrado): o personagem recebe o
-equipamento inicial da classe. Testado com um save montado no formato do original, não com um save real.
+dele vêm nome, raça, classe, sexo, rosto, nível, experiência, atributos (escala interna 0..255), vida, magia, ouro,
+feitiços conhecidos, a data, as armas e armaduras do inventário (equipadas ou não; o tipo da arma sai do dano gravado)
+e os pedaços do Cajado (MQDATA; o passo da busca do próximo é aproximado). O personagem começa diante do portão da
+cidade onde estava (achada pelo nome no save) ou da natal. Também vêm as poções (tipo
+pelo SlotID, quantidade no campo do peso) e os artefatos já achados (bits da AQDATA, na ordem dos nomes do executável),
+com a busca de artefato em andamento. Anéis e amuletos mágicos comuns ainda não. A ficha e os dados do jogo são
+desembaralhados numa passada só, como no ArenaSaveEditor (que edita saves reais).
+Formato pela wiki do OpenTESArena (Save File Formats); testado com um save montado nesse formato, não com um real.
 
 ### Portão de Transição
 
@@ -412,8 +417,8 @@ taverneiros. Um trabalho por vez, sempre com prazo; o diário (J) mostra o que f
 
 ### Artefatos
 
-Na aba Conversa da taverna, "Perguntar por artefatos": em alguns dias um estranho vende o paradeiro de um dos 17
-artefatos do original (Lâmina de Ébano, Chrysamere, Volendrung, Maça de Molag Bal, Cajado de Magnus, Cota de
+Na aba Conversa da taverna, "Perguntar por artefatos": em alguns dias um estranho vende o paradeiro de um dos 16
+artefatos do original, os da lista do executável (Lâmina de Ébano, Chrysamere, Volendrung, Cajado de Magnus, Cota de
 Ébano, Cota do Senhor, Escudo de Auriel, Quebra-Feitiço, Anel do Bruxo, Anel dos Khajiiti, Anel de Phynaster,
 Amuleto do Necromante, Chave do Esqueleto, Oghma Infinium, Cofre do Rei Orgnum e Arco de Auriel). A masmorra dele tem
 4 andares, e o artefato fica num baú no fundo do último. Armas e armaduras são de ébano (a Cota do Senhor é de malha);
@@ -422,7 +427,7 @@ os outros são anéis, amuleto, chave, livro e cofre.
 Como no original, o poder de cada artefato é o feitiço dele no `SPELLSG.65` (46..58: Chrysamere cura, reflete
 feitiços e resiste ao fogo; a Lâmina de Ébano rouba vida à distância; Volendrung fere, amaldiçoa e drena...).
 Equipado, o artefato põe o poder no livro de feitiços (B); preparado, sai com Q sem gastar magia, com 30 s de
-recarga. Sem feitiço: a Maça de Molag Bal rouba magia a cada golpe, a Chave do Esqueleto abre qualquer porta
+recarga. Sem feitiço: a Maça de Molag Bal rouba magia a cada golpe (ela não é do Arena e não é mais oferecida; fica só nos saves antigos), a Chave do Esqueleto abre qualquer porta
 trancada só de estar no inventário, ler o Oghma Infinium dá +10 em todos os atributos (e o livro some) e o Cofre
 dá 100 de ouro por dia desde a última vez que foi aberto. Os achados ficam no save (seção `[Artifacts]`).
 

@@ -198,13 +198,14 @@ namespace arena
 	// Chance de acerto corpo a corpo do original, em 256 avos (ArenaCombatUtils do OpenTESArena): 50% mais
 	// 5% por nível de diferença, bônus de acerto do atacante menos o de defesa do alvo (Agilidade); Guardas
 	// Vermelhos, Elfos Negros e Elfos da Floresta somam o próprio nível; Acrobatas e Monges defendem pelo nível
-	// deles; e nunca menos que nível do atacante + 20%. A armadura da parte atingida tira 5% por ponto de
-	// proteção (o original subtrai a classe de armadura, cuja tabela ainda não foi decifrada).
+	// deles; e nunca menos que nível do atacante + 20%. A armadura da parte atingida (mais o escudo) é subtraída
+	// como no original, na mesma unidade do bônus de defesa: segundo a UESP, o valor da armadura "reduz a rolagem
+	// de ataque do inimigo", e cada 5 pontos de Agilidade valem 1 de armadura.
 	inline int meleeHitChance256(int attackerLevel, int attackerRace, int attackerHitBonus, int defenderLevel, int defenderClass, int defenderDefenseBonus, int defenderArmor)
 	{
 		auto scale = [](int value) { return value * 256 / 100; };
 		const int racial = (attackerRace == 1 || attackerRace == 3 || attackerRace == 5) ? scale(attackerLevel) : 0;
-		int chance = 128 + scale((attackerLevel - defenderLevel) * 5) + racial + (attackerHitBonus - defenderDefenseBonus) - scale(defenderArmor * 5);
+		int chance = 128 + scale((attackerLevel - defenderLevel) * 5) + racial + (attackerHitBonus - defenderDefenseBonus) - defenderArmor;
 		if (defenderClass == 9 || defenderClass == 12) chance = (chance * 8 / 256) * (defenderLevel + 1);
 		return std::max(chance, scale(attackerLevel) + 51);
 	}

@@ -718,6 +718,7 @@ Continue=Continuar
 Character=Personagem
 Spells=Feitiços
 Journal=Diário
+UiScale=Interface: %s%
 Help=Controles
 Restart=Recomeçar na cela
 Save=Salvar jogo

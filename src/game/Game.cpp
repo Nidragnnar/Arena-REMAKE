@@ -499,3 +499,36 @@ const arena::Palette &arena::Game::getPalette() const
 {
 	return this->current ? this->current->getPalette() : this->defaultPalette;
 }
+
+void arena::Game::saveSetting(const std::string &section, const std::string &key, const std::string &value) const
+{
+	const std::filesystem::path path = this->dataDirectory.parent_path() / "settings.ini";
+	std::vector<std::string> lines;
+	{
+		std::ifstream in(path);
+		for (std::string line; std::getline(in, line);) lines.push_back(line);
+	}
+
+	// Troca a linha da chave dentro da seção; se não houver, acrescenta no fim da seção (ou do arquivo).
+	const std::string header = "[" + section + "]";
+	size_t sectionAt = lines.size(), insertAt = lines.size();
+	for (size_t i = 0; i < lines.size(); i++)
+	{
+		std::string trimmed = lines[i];
+		if (!trimmed.empty() && trimmed.back() == '\r') trimmed.pop_back();
+		if (trimmed == header) { sectionAt = i; insertAt = i + 1; continue; }
+		if (sectionAt == lines.size()) continue;
+		if (!trimmed.empty() && trimmed[0] == '[') break;
+		if (trimmed.rfind(key + "=", 0) == 0) { lines[i] = key + "=" + value; insertAt = lines.size() + 1; break; }
+		if (!trimmed.empty()) insertAt = i + 1;
+	}
+
+	if (insertAt <= lines.size())
+	{
+		if (sectionAt == lines.size()) { lines.push_back(""); lines.push_back(header); insertAt = lines.size(); }
+		lines.insert(lines.begin() + static_cast<std::ptrdiff_t>(insertAt), key + "=" + value);
+	}
+
+	std::ofstream out(path, std::ios::trunc);
+	for (const std::string &line : lines) out << line << "\n";
+}

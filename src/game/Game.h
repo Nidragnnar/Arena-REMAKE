@@ -187,6 +187,8 @@ namespace arena
 		const Palette &getDefaultPalette() const { return this->defaultPalette; }
 		const ArenaData &getData() const { return this->rules; }
 		const std::filesystem::path &getDataDir() const { return this->dataDirectory; }
+		// Grava Secao.Chave=valor no settings.ini (ao lado da pasta data), mantendo o resto.
+		void saveSetting(const std::string &section, const std::string &key, const std::string &value) const;
 
 		CharacterDraft &getCharacter() { return this->character; }
 		const CharacterDraft &getCharacter() const { return this->character; }

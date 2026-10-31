@@ -46,9 +46,26 @@ namespace
 	}
 }
 
+namespace
+{
+	float interfaceScaleValue = 1.0f;
+}
+
+void arena::kit::setInterfaceScale(float scale)
+{
+	interfaceScaleValue = std::clamp(scale, 0.5f, 2.0f);
+}
+
+float arena::kit::interfaceScale()
+{
+	return interfaceScaleValue;
+}
+
 arena::kit::Painter::Painter(hud::Frame &frame, const Fonts &fonts) : target(frame), fontSet(fonts)
 {
-	this->scaleUnit = std::max(1, static_cast<int>(std::lround(frame.height / 360.0)));
+	// Nunca maior do que o que deixa o painel mais alto (a pausa, ~270 unidades) caber na janela.
+	const int wanted = static_cast<int>(std::lround(frame.height / 360.0 * interfaceScaleValue));
+	this->scaleUnit = std::clamp(wanted, 1, std::max(1, frame.height / 270));
 }
 
 void arena::kit::Painter::border(const Rect &r, int t, uint32_t tint)

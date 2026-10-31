@@ -29,8 +29,13 @@ namespace arena::kit
 		constexpr uint32_t Danger = hud::rgb(214, 74, 52);
 	}
 
+	// Tamanho da interface (Video.UiScale): multiplica a unidade "u" (0.5 a 2.0; 1.0 = padrão).
+	void setInterfaceScale(float scale);
+	float interfaceScale();
+
 	// Pintor da interface em resolução nativa sobre o quadro RGBA (HUD e janelas do jogo).
-	// "u" é a unidade de escala (pixels por pixel das fontes do Arena): 2 em 720p, 3 em 1080p.
+	// "u" é a unidade de escala (pixels por pixel das fontes do Arena): 2 em 720p, 3 em 1080p
+	// (vezes o tamanho da interface, arredondado para manter as fontes nítidas).
 	class Painter
 	{
 	public:

@@ -634,6 +634,20 @@ void arena::GameWorldScreen::screenButtonAction(char action)
 	case 'b': this->paused = false; this->openCharacterMenu(CharacterMenu::Tab::Spells); break;
 	case 'h': this->paused = false; this->helpTimer = 1e9; break;
 	case 'j': this->paused = false; this->openJournal(); break;
+	case 'u':
+	{
+		// Tamanho da interface: 75% -> 100% -> 125% -> 150% -> 200% -> 75%; fica gravado no settings.ini.
+		static const float Steps[] = { 0.75f, 1.0f, 1.25f, 1.5f, 2.0f };
+		const float current = kit::interfaceScale();
+		float next = Steps[0];
+		for (const float step : Steps) if (step > current + 0.01f) { next = step; break; }
+		kit::setInterfaceScale(next);
+		char value[16];
+		std::snprintf(value, sizeof(value), "%.2f", next);
+		this->game.saveSetting("Video", "UiScale", value);
+		this->paused = true; // continua na pausa para ver o novo tamanho
+		break;
+	}
 	case 's':
 	case 'l':
 		this->paused = false;
@@ -2387,7 +2401,7 @@ void arena::GameWorldScreen::drawHud(std::vector<uint32_t> &pixels, int width, i
 	else if (this->paused)
 	{
 		screenPanel(text.get("World.Paused"), col::GoldBright, { { text.get("Pause.Continue"), 'c' }, { text.get("Pause.Save"), 's' }, { text.get("Pause.Load"), 'l' },
-			{ text.get("Pause.Character"), 'p' }, { text.get("Pause.Spells"), 'b' }, { text.get("Pause.Journal"), 'j' }, { text.get("Pause.Help"), 'h' }, { text.get("Pause.MainMenu"), 'm' } }, rgb(0, 0, 0, 150));
+			{ text.get("Pause.Character"), 'p' }, { text.get("Pause.Spells"), 'b' }, { text.get("Pause.Journal"), 'j' }, { ui::format(text.get("Pause.UiScale"), { std::to_string(static_cast<int>(std::lround(kit::interfaceScale() * 100.0f))) }), 'u' }, { text.get("Pause.Help"), 'h' }, { text.get("Pause.MainMenu"), 'm' } }, rgb(0, 0, 0, 150));
 	}
 }
 

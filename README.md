@@ -70,6 +70,10 @@ direito olha, RT ataca, LT conjura, A confirma, B volta, X usa, Y diário, LB fi
 Back viagem, Start pausa, direcional = setas e o analógico esquerdo apertado corre
 (`Gamepad=0` desliga; `GamepadLookSpeed` ajusta a velocidade do olhar).
 
+O tamanho da interface (menus, HUD e painéis) muda no botão "Interface" da pausa (75% a 200%) ou
+em `Video.UiScale`; as fontes continuam nítidas (a escala é arredondada) e o tamanho é limitado
+para os painéis caberem na janela.
+
 `Video.RenderScale` no `settings.ini` define a resolução 3D em relação à janela (padrão 0.6).
 Os efeitos modernos ficam em `[Graphics]` (veja "Gráficos" abaixo); `--classico` desliga todos.
 
@@ -406,7 +410,7 @@ desconto de 10% nas vilas e 20% nas aldeias:
 4. Mundo 3D — **em andamento**: ~~Prisão Imperial (START.MIF/INF) em widescreen com olhar livre, portas, água, plataformas, sprites e luzes~~ ✅; ~~criaturas (ratos e goblins) com animações CFA, IA e combate corpo a corpo~~ ✅; ~~sons, música, gatilhos de texto e travas~~ ✅; ~~inventário, equipamentos, saque e ficha em jogo~~ ✅; ~~gráficos modernos (água/lava animadas com reflexos, luz difusa, oclusão de ambiente, bloom, renderização em várias threads)~~ ✅; ~~texturas HD com detalhe e relevo~~ ✅; ~~renderização pela placa de vídeo (OpenGL)~~ ✅; ~~magias (livro, conjuração, projéteis e efeitos)~~ ✅; ~~níveis, salvar em 10 espaços e Portão de Transição~~ ✅; ~~sprites redesenhados em PNG~~ ✅; ~~primeira cidade gerada como no original~~ ✅; ~~interiores, comércio e serviços~~ ✅; ~~moradores, diálogos, dia e noite e tempo~~ ✅; ~~ermo e viagem por Tamriel~~ ✅; ~~masmorras do ermo e com nome~~ ✅; ~~criaturas no ermo~~ ✅; ~~criação de feitiços~~ ✅
 5. Cidades, masmorras, NPCs, diálogos, lojas, guildas, magias, combate
 6. Viagem pelo mapa de Tamriel, missões principais e importação de saves originais
-7. Extras modernos: ~~remapeamento de controles~~ ✅, ~~gamepad~~ ✅, ~~autosave~~ ✅, interface escalável
+7. Extras modernos: ~~remapeamento de controles~~ ✅, ~~gamepad~~ ✅, ~~autosave~~ ✅, ~~interface escalável~~ ✅
 
 ## Créditos
 

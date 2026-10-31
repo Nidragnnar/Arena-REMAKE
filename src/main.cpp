@@ -101,6 +101,7 @@ namespace
 			else if (key == "Audio.MusicVolume") settings.musicVolume = std::clamp(static_cast<float>(std::atof(value.c_str())), 0.0f, 1.0f);
 			else if (key == "Video.Renderer") settings.renderer = value;
 			else if (key == "Video.GpuRenderScale") settings.gpuRenderScale = std::clamp(static_cast<float>(std::atof(value.c_str())), 0.25f, 2.0f);
+			else if (key == "Video.UiScale") arena::kit::setInterfaceScale(static_cast<float>(std::atof(value.c_str())));
 			else if (key == "Video.RenderScale") settings.renderScale = std::clamp(static_cast<float>(std::atof(value.c_str())), 0.2f, 1.0f);
 			else if (key.rfind("Graphics.", 0) == 0)
 			{

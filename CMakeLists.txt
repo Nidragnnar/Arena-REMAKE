@@ -37,6 +37,7 @@ add_library(arena_core STATIC
 	src/game/GameWorldScreen.cpp
 	src/game/GameWorldSpells.cpp
 	src/game/GameWorldSave.cpp
+	src/game/GameWorldJobs.cpp
 	src/game/Items.cpp
 	src/game/Spells.cpp
 	src/game/Leveling.cpp
@@ -44,6 +45,8 @@ add_library(arena_core STATIC
 	src/game/WildGen.cpp
 	src/game/DungeonGen.cpp
 	src/game/MainQuest.cpp
+	src/game/SideQuests.cpp
+	src/game/Artifacts.cpp
 	src/game/Cutscene.cpp
 	src/game/JournalMenu.cpp
 	src/game/TravelMenu.cpp

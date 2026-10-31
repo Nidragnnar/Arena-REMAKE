@@ -14,7 +14,7 @@ namespace
 	using namespace arena;
 	namespace col = kit::color;
 
-	enum Action { None, BuyItem, SellItem, Drink, Room, Heal, BuySpell, BuyPotion };
+	enum Action { None, BuyItem, SellItem, Drink, Room, Heal, BuySpell, BuyPotion, Talk = 20 };
 
 	// Modelos da criação de feitiços: efeito, sub (-1 = o elemento escolhido), se é de ataque
 	// (precisa de alvo) e o peso no custo. Os parâmetros saem da potência (ver makerSpell).
@@ -131,10 +131,16 @@ void arena::ServiceMenu::rebuild(const Game &game)
 			for (int i = 0; i < 15; i++)
 				this->rows.push_back({ text.getOr("Shop.Drink" + std::to_string(i), tables.drinkNames[static_cast<size_t>(i)]), std::string(), this->price(tables.drinkPrice[static_cast<size_t>(i)]), Drink, i, true });
 		}
-		else
+		else if (this->tab == 1)
 		{
 			for (int i = 0; i < 4; i++)
 				this->rows.push_back({ text.get("Shop.Room" + std::to_string(i)), text.get("Shop.RoomDetail"), this->price(RoomPrices[i]), Room, i, true });
+		}
+		else
+		{
+			// Conversa: trabalho com o taverneiro e o estranho que vende o paradeiro de artefatos.
+			this->rows.push_back({ text.get("Shop.AskWork"), text.get("Shop.AskWorkDetail"), 0, Talk, 1, true });
+			this->rows.push_back({ text.get("Shop.AskArtifacts"), text.get("Shop.AskArtifactsDetail"), 0, Talk, 2, true });
 		}
 		break;
 	case Kind::Temple:
@@ -227,6 +233,10 @@ arena::OverlayResult arena::ServiceMenu::confirm(Game &game, const Row &row)
 		done(ui::format(text.get("Shop.Learned"), { row.label }));
 		break;
 	case BuyPotion + 1: // criar feitiço (makerOpen)
+		break;
+	case Talk:
+		result.request = row.index;
+		result.close = true;
 		break;
 	case BuyPotion:
 	{
@@ -365,7 +375,7 @@ void arena::ServiceMenu::render(kit::Painter &painter, const Game &game)
 	switch (this->kind)
 	{
 	case Kind::Equipment: tabs = { text.get("Shop.TabBuy"), text.get("Shop.TabSell") }; break;
-	case Kind::Tavern: tabs = { text.get("Shop.TabDrinks"), text.get("Shop.TabRooms") }; break;
+	case Kind::Tavern: tabs = { text.get("Shop.TabDrinks"), text.get("Shop.TabRooms"), text.get("Shop.TabTalk") }; break;
 	case Kind::Temple: tabs = { text.get("Shop.TabTemple") }; break;
 	case Kind::MagesGuild: tabs = { text.get("Shop.TabSpells"), text.get("Shop.TabPotions"), text.get("Shop.TabMaker") }; break;
 	}
@@ -412,8 +422,9 @@ void arena::ServiceMenu::render(kit::Painter &painter, const Game &game)
 		painter.text(fonts.arena, row.label, r.x + 6 * u, r.y + 2 * u, ink, TextAlign::Left, false);
 		if (!row.detail.empty()) painter.text(fonts.arena, row.detail, r.x + 6 * u, r.y + 11 * u, col::InkSoft, TextAlign::Left, false);
 		const bool affordable = row.action == SellItem || c.gold >= row.price;
-		painter.text(fonts.arena, ui::format(text.get("Shop.Price"), { std::to_string(row.price) }), r.x + r.w - 6 * u, r.y + 6 * u,
-			affordable ? hud::rgb(110, 70, 10) : col::Danger, TextAlign::Right, false);
+		if (row.action != Talk)
+			painter.text(fonts.arena, ui::format(text.get("Shop.Price"), { std::to_string(row.price) }), r.x + r.w - 6 * u, r.y + 6 * u,
+				affordable ? hud::rgb(110, 70, 10) : col::Danger, TextAlign::Right, false);
 	}
 
 	if (count > this->visibleRows)
@@ -431,7 +442,7 @@ void arena::ServiceMenu::render(kit::Painter &painter, const Game &game)
 	else
 		painter.text(fonts.arena, text.get("Shop.Hint"), this->window.x + w / 2, by - 16 * u, col::TextDim, TextAlign::Center);
 
-	const char *actionKey = this->kind == Kind::Equipment && this->tab == 1 ? "Shop.ActionSell" : this->kind == Kind::Tavern ? (this->tab == 0 ? "Shop.ActionDrink" : "Shop.ActionRent")
+	const char *actionKey = this->kind == Kind::Equipment && this->tab == 1 ? "Shop.ActionSell" : this->kind == Kind::Tavern ? (this->tab == 0 ? "Shop.ActionDrink" : this->tab == 1 ? "Shop.ActionRent" : "Shop.ActionAsk")
 		: this->kind == Kind::Temple ? "Shop.ActionHeal" : "Shop.ActionBuy";
 	this->actionRect = Rect{ this->window.x + w / 2 - 125 * u, by, 120 * u, 20 * u };
 	painter.button(this->actionRect, text.get(actionKey), kit::hit(this->actionRect, this->mouseX, this->mouseY), false, this->selected >= 0);

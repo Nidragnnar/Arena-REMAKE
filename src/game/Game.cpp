@@ -58,6 +58,12 @@ bool arena::Game::init(const std::filesystem::path &arenaDir, const std::filesys
 		return false;
 	}
 
+	// As masmorras aleatórias (locais 34..47) não têm nome no CITYDATA: o original inventa um quando
+	// uma missão as revela. Aqui o nome sai da semente delas (sempre o mesmo) com os modelos do idioma.
+	std::vector<std::string> dungeonPatterns;
+	for (int i = 0; this->text.has("Jobs.DungeonName" + std::to_string(i)); i++) dungeonPatterns.push_back(this->text.get("Jobs.DungeonName" + std::to_string(i)));
+	this->rules.nameRandomDungeons(dungeonPatterns);
+
 	this->parchmentTiles = this->loadFrames("PARCH.CIF");
 
 	// Abertura: o livro do INTRO.FLC (qualquer tecla pula) e depois a tela de título.
@@ -330,6 +336,17 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 		else if (key == "Quest.Step") loaded.questStep = std::clamp(number, 0, 4);
 		else if (key == "Quest.Giver") loaded.questGiver = number;
 		else if (key == "Quest.Version") questVersion = number;
+		else if (key == "SideJob.Kind") loaded.job.kind = static_cast<SideJob::Kind>(std::clamp(number, 0, static_cast<int>(SideJob::Kind::TavernFind)));
+		else if (key == "SideJob.Giver") loaded.job.giver = number;
+		else if (key == "SideJob.Target") loaded.job.target = number;
+		else if (key == "SideJob.Reward") loaded.job.reward = number;
+		else if (key == "SideJob.Deadline") loaded.job.deadline = std::atof(value.c_str());
+		else if (key == "SideJob.Step") loaded.job.step = number;
+		else if (key == "SideJob.Subject") loaded.job.subject = number;
+		else if (key == "SideJob.Name") loaded.job.name = value;
+		else if (key == "Artifacts.Found") loaded.artifactsFound = number;
+		else if (key == "Artifacts.Hunt") loaded.hunt.artifact = number;
+		else if (key == "Artifacts.CofferDay") loaded.cofferDay = number;
 		else if (key.rfind("CustomSpells.Spell", 0) == 0)
 		{
 			// índice|nome|alvo|elemento|efeito|sub|p0,p1,p2,p3,p4,p5|ouro
@@ -376,12 +393,13 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 		}
 		else if (key.rfind("Inventory.Item", 0) == 0)
 		{
-			// Item = tipo, id, classe de armadura, material, equipado
-			int kind = 0, type = 0, armorClass = 0, material = 0, equipped = 0;
-			if (std::sscanf(value.c_str(), "%d,%d,%d,%d,%d", &kind, &type, &armorClass, &material, &equipped) == 5)
+			// Item = tipo, id, classe de armadura, material, equipado[, artefato]
+			int kind = 0, type = 0, armorClass = 0, material = 0, equipped = 0, artifactId = -1;
+			if (std::sscanf(value.c_str(), "%d,%d,%d,%d,%d,%d", &kind, &type, &armorClass, &material, &equipped, &artifactId) >= 5)
 			{
 				Item item;
-				item.kind = static_cast<ItemKind>(std::clamp(kind, 0, 2));
+				item.kind = static_cast<ItemKind>(std::clamp(kind, 0, 3));
+				item.artifact = artifactId;
 				item.type = type;
 				item.armorClass = static_cast<ArmorClass>(std::clamp(armorClass, 0, 2));
 				item.material = std::clamp(material, 0, MaterialCount - 1);
@@ -467,12 +485,12 @@ bool arena::Game::saveCharacter(const std::filesystem::path &path, const std::st
 		file << "Attribute" << i << "=" << c.attributes[static_cast<size_t>(i)] << "\n";
 	}
 
-	file << "\n[Inventory]\n# tipo (0 arma, 1 armadura, 2 poção), id, classe (0 placas, 1 malha, 2 couro), material, equipado\n";
+	file << "\n[Inventory]\n# tipo (0 arma, 1 armadura, 2 poção, 3 artefato), id, classe (0 placas, 1 malha, 2 couro), material, equipado, artefato\n";
 	for (size_t i = 0; i < c.inventory.size(); i++)
 	{
 		const Item &item = c.inventory[i];
 		file << "Item" << i << "=" << static_cast<int>(item.kind) << "," << item.type << "," << static_cast<int>(item.armorClass)
-			<< "," << item.material << "," << (item.equipped ? 1 : 0) << "\n";
+			<< "," << item.material << "," << (item.equipped ? 1 : 0) << "," << item.artifact << "\n";
 	}
 
 	file << "\n[Spellbook]\n# feitiços conhecidos (índices do SPELLSG.65) e o preparado para a tecla Q\nKnown=";
@@ -487,6 +505,11 @@ bool arena::Game::saveCharacter(const std::filesystem::path &path, const std::st
 		file << "Spell" << i << "=" << s.index << "|" << s.originalName << "|" << static_cast<int>(s.target) << "|" << static_cast<int>(s.element) << "|" << s.effects[0].type << "|" << s.effects[0].sub
 			<< "|" << p[0] << "," << p[1] << "," << p[2] << "," << p[3] << "," << p[4] << "," << p[5] << "|" << s.goldCost << "\n";
 	}
+	const SideJob &job = c.job;
+	file << "\n[SideJob]\n# trabalho pago: tipo (0 nenhum, 1 entrega, 2 busca, 3 escolta, 4 resgate, 5 caçada, 6 entrega da taverna, 7 achado), lugares (província × 100 + local)\n"
+		<< "Kind=" << static_cast<int>(job.kind) << "\nGiver=" << job.giver << "\nTarget=" << job.target << "\nReward=" << job.reward
+		<< "\nDeadline=" << static_cast<long long>(job.deadline) << "\nStep=" << job.step << "\nSubject=" << job.subject << "\nName=" << job.name << "\n";
+	file << "\n[Artifacts]\n# achados (bit por artefato), artefato procurado e último dia do cofre\nFound=" << c.artifactsFound << "\nHunt=" << c.hunt.artifact << "\nCofferDay=" << c.cofferDay << "\n";
 	file << "\n[Journal]\n# diário: minutos de jogo|texto completo para reler|resumo\n";
 	for (size_t i = 0; i < c.journal.size(); i++)
 		file << "Entry" << i << "=" << static_cast<long long>(c.journal[i].minutes) << "|" << c.journal[i].detail << "|" << c.journal[i].text << "\n";

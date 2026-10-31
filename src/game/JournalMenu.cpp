@@ -12,9 +12,10 @@ namespace
 	namespace col = arena::kit::color;
 }
 
-void arena::JournalMenu::open(std::string currentObjective)
+void arena::JournalMenu::open(std::string currentObjective, std::string currentSideJobs)
 {
 	this->objective = std::move(currentObjective);
+	this->sideJobs = std::move(currentSideJobs);
 	this->scroll = 0;
 	this->reading = -1;
 }
@@ -114,6 +115,12 @@ void arena::JournalMenu::render(kit::Painter &painter, const Game &game)
 		y += painter.paragraph(fonts.arena, this->objective, Rect{ left, y, width, 40 * u }, col::Ink) + 4 * u;
 		painter.text(fonts.arena, ui::format(text.get("Journal.Staff"), { std::to_string(character.staffPieces) }), left, y, col::InkSoft, TextAlign::Left, false);
 		y += 14 * u;
+		if (!this->sideJobs.empty())
+		{
+			painter.text(fonts.a, text.get("Journal.SideJobs"), left, y, col::Ink, TextAlign::Left, false);
+			y += 16 * u;
+			y += painter.paragraph(fonts.arena, this->sideJobs, Rect{ left, y, width, 52 * u }, col::Ink) + 4 * u;
+		}
 		painter.divider(left, y, width, col::InkSoft);
 		y += 8 * u;
 		painter.text(fonts.a, text.get("Journal.Log"), left, y, col::Ink, TextAlign::Left, false);

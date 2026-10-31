@@ -169,6 +169,8 @@ namespace arena
 			const auto it = this->doors.find({ x, z });
 			if (it != this->doors.end()) it->second.open = it->second.target = open ? 1.0f : 0.0f;
 		}
+		// Sprite criado pelo jogo (alvos das missões secundárias), em tamanho original; false sem a imagem.
+		bool addFlat(const AssetManager &assets, const Palette &palette, const std::string &filename, float x, float z, int itemId);
 		void removeSprite(size_t index) { if (index < this->sprites.size()) this->sprites.erase(this->sprites.begin() + static_cast<std::ptrdiff_t>(index)); }
 		float getStartX() const { return this->startX; }
 		float getStartZ() const { return this->startZ; }

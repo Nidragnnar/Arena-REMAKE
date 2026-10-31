@@ -31,7 +31,7 @@ namespace arena
 		};
 
 		void rebuild(const Game &game);
-		int tabCount() const { return this->kind == Kind::Temple ? 1 : this->kind == Kind::MagesGuild ? 3 : 2; }
+		int tabCount() const { return this->kind == Kind::Temple ? 1 : this->kind == Kind::MagesGuild || this->kind == Kind::Tavern ? 3 : 2; }
 
 		// Criação de feitiços (aba 3 da Guilda dos Magos): um efeito, elemento, alvo, potência e nome.
 		bool makerOpen() const { return this->kind == Kind::MagesGuild && this->tab == 2; }

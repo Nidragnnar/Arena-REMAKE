@@ -170,6 +170,21 @@ int arena::Level::addSpriteFrames(const AssetManager &assets, const Palette &pal
 	return static_cast<int>(frames.size());
 }
 
+bool arena::Level::addFlat(const AssetManager &assets, const Palette &palette, const std::string &filename, float x, float z, int itemId)
+{
+	Sprite sprite;
+	int w = 0, h = 0;
+	if (this->addSpriteFrames(assets, palette, filename, sprite.frames, w, h) == 0) return false;
+	sprite.width = w / ArenaUnits;
+	sprite.height = h / ArenaUnits;
+	sprite.x = x;
+	sprite.z = z;
+	sprite.name = filename;
+	sprite.itemId = itemId;
+	this->sprites.push_back(std::move(sprite));
+	return true;
+}
+
 bool arena::Level::load(const AssetManager &assets, const Palette &palette, const std::string &mifName, std::string &outError)
 {
 	const auto mifData = assets.read(mifName);

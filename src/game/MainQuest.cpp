@@ -1,6 +1,7 @@
 #include <algorithm>
 
 #include "../render/Ui.h"
+#include "Artifacts.h"
 #include "Game.h"
 #include "MainQuest.h"
 
@@ -11,7 +12,14 @@ int arena::quest::targetProvince(const CharacterDraft &character)
 
 bool arena::quest::dungeonKnown(const CharacterDraft &character, const CityLocation &dungeon)
 {
-	if (!dungeon.mainQuest()) return true;
+	if (dungeon.type != CityLocation::Type::Dungeon) return true;
+	if (!dungeon.mainQuest())
+	{
+		// Masmorras aleatórias: só a do trabalho atual e a do artefato procurado aparecem no mapa.
+		const bool jobDungeon = character.job.active() && character.job.inDungeon() && character.job.target == jobs::code(dungeon);
+		const bool artifactDungeon = character.hunt.active() && artifact::hiddenIn(character.hunt.artifact, dungeon);
+		return jobDungeon || artifactDungeon;
+	}
 	for (int i = 0; i < character.staffPieces && i < PieceCount; i++)
 		if (StaffProvinces[i] == dungeon.province) return true; // já percorridas
 	if (dungeon.province != targetProvince(character)) return false;

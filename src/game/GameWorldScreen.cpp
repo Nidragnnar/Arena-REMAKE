@@ -4,6 +4,7 @@
 
 #include "../render/Ui.h"
 #include "../render3d/Hud.h"
+#include "Artifacts.h"
 #include "GameWorldScreen.h"
 #include "CityGen.h"
 #include "GameClock.h"
@@ -151,6 +152,7 @@ arena::GameWorldScreen::GameWorldScreen(Game &game, const std::string &mifName) 
 	}
 
 	this->creatures.init(game.getAssets(), this->palette, game.getData(), this->level, game.getRandom());
+	if (this->isDungeon()) this->placeDungeonTargets();
 	this->setupWeapon();
 
 	// Música: dia de sol nas cidades; masmorra (DUNGEON1 tem problemas no original; sorteia entre 2 e 5).
@@ -238,6 +240,15 @@ arena::GameWorldScreen::GameWorldScreen(Game &game, const std::string &mifName) 
 		const std::string note = game.takePendingNote();
 		this->showMessage(!note.empty() ? note : ui::format(game.getText().get(this->level.isExterior() ? "City.Arrived" : "City.Entered"), { this->locationName }), 4.0);
 		this->helpTimer = 0.0;
+
+		// Palácio: o governante paga (ou cobra) o trabalho atual, ou propõe um novo.
+		const CityLocation *city = this->isPalace() && this->visionText.empty() ? this->currentCity() : nullptr;
+		if (city)
+		{
+			const jobs::Outcome outcome = jobs::arrive(game, *city, true);
+			if (!outcome.text.empty()) this->openVision(outcome.title, outcome.text);
+			else this->offerJob(true);
+		}
 		this->persist();
 		return;
 	}
@@ -423,7 +434,7 @@ bool arena::GameWorldScreen::tryOpenLoot()
 		auto it = this->corpseLoot.find(static_cast<int>(i));
 		if (it == this->corpseLoot.end()) continue;
 		this->lootMenu.open(&it->second, ui::format(text.get("Loot.TitleCorpse"),
-			{ text.getOr("Creatures.Name" + std::to_string(c.definition), this->creatures.definitionOf(static_cast<int>(i)).originalName) }));
+			{ text.getOr("Creatures.Name" + std::to_string(this->textIndexOf(c.definition)), this->creatures.definitionOf(static_cast<int>(i)).originalName) }));
 		this->openContainer = { -1, -1 };
 		this->overlay = Overlay::Loot;
 		return true;
@@ -614,6 +625,11 @@ void arena::GameWorldScreen::screenButtonAction(char action)
 	if (action == 'v')
 	{
 		this->visionText.clear();
+		return;
+	}
+	if (action == 'y' || action == 'n')
+	{
+		this->answerOffer(action == 'y');
 		return;
 	}
 
@@ -930,6 +946,63 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 		return true;
 	}
 
+	if (name == "job")
+	{
+		// job mostra o trabalho atual; job:clear o desfaz e job:late vence o prazo (teste).
+		CharacterDraft &character = this->game.getCharacter();
+		if (arg == "clear") character.job = SideJob{};
+		if (arg == "late") character.job.deadline = character.gameMinutes - 1.0;
+		if (const int wanted = std::atoi(arg.c_str()); wanted > 0 && this->currentCity())
+		{
+			// job:N aceita um trabalho do tipo N oferecido nesta cidade (1 entrega .. 7 achado).
+			for (uint32_t seed = 1; seed < 4000; seed++)
+			{
+				const auto offer = jobs::offer(this->game, *this->currentCity(), wanted <= 5, seed);
+				if (offer && static_cast<int>(offer->kind) == wanted) { jobs::accept(this->game, *offer); break; }
+			}
+		}
+		const SideJob &job = character.job;
+		const CityLocation *target = jobs::place(this->game.getData(), job.target), *giver = jobs::place(this->game.getData(), job.giver);
+		std::printf("trabalho: tipo %d, de %s para %s (%d,%d), passo %d, %d de ouro, prazo dia %d (hoje %d) | artefato procurado %d, achados %x\n",
+			static_cast<int>(job.kind), giver ? giver->name.c_str() : "-", target ? target->name.c_str() : "-", target ? target->province : -1, target ? target->localId : -1,
+			job.step, job.reward, clock::dayIndex(job.deadline), clock::dayIndex(character.gameMinutes), character.hunt.artifact, character.artifactsFound);
+		return true;
+	}
+
+	if (name == "hunt")
+	{
+		// hunt:N marca o artefato N como procurado (teste) e mostra a masmorra dele.
+		CharacterDraft &character = this->game.getCharacter();
+		character.hunt.artifact = std::clamp(std::atoi(arg.c_str()), 0, artifact::Count - 1);
+		const CityLocation *d = artifact::dungeon(this->game.getData(), character.hunt.artifact);
+		std::printf("artefato %d em %s (%d,%d)\n", character.hunt.artifact, d ? d->name.c_str() : "-", d ? d->province : -1, d ? d->localId : -1);
+		return true;
+	}
+
+	if (name == "killjob" && this->loaded && this->jobCreature >= 0 && this->creatures.isAlive(this->jobCreature))
+	{
+		// killjob mata a fera caçada como um golpe do jogador (teste).
+		const int maxHp = this->creatures.getCreatures()[static_cast<size_t>(this->jobCreature)].maxHp;
+		if (this->creatures.damage(this->jobCreature, maxHp + 1)) this->rewardKill(this->jobCreature, maxHp);
+		return true;
+	}
+
+	if (name == "gotojob" && this->loaded && this->jobCreature >= 0)
+	{
+		// gotojob fica perto da fera caçada (teste).
+		const Creature &beast = this->creatures.getCreatures()[static_cast<size_t>(this->jobCreature)];
+		for (int d = 0; d < 8; d++)
+		{
+			const float angle = d * Pi / 4.0f;
+			const float gx = beast.x + std::cos(angle) * 2.0f, gz = beast.z + std::sin(angle) * 2.0f;
+			if (this->collides(gx, gz)) continue;
+			char where[96];
+			std::snprintf(where, sizeof(where), "%.2f,%.2f,%.1f", gx, gz, (angle + Pi) * 180.0f / Pi);
+			return this->debugCommand("goto", where);
+		}
+		return false;
+	}
+
 	if (name == "gocity")
 	{
 		// gocity:provincia,local abre a cidade gerada (teste).
@@ -1026,7 +1099,7 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 std::string arena::GameWorldScreen::creatureRef(int creature, bool capitalized) const
 {
 	const int definition = this->creatures.getCreatures()[static_cast<size_t>(creature)].definition;
-	std::string ref = this->game.getText().getOr("Creatures.Ref" + std::to_string(definition),
+	std::string ref = this->game.getText().getOr("Creatures.Ref" + std::to_string(this->textIndexOf(definition)),
 		this->creatures.definitionOf(creature).originalName);
 	if (capitalized && !ref.empty() && ref[0] >= 'a' && ref[0] <= 'z') ref[0] = static_cast<char>(ref[0] - 'a' + 'A');
 	return ref;
@@ -1087,7 +1160,8 @@ void arena::GameWorldScreen::resolveSwing()
 
 	std::mt19937 &rng = this->game.getRandom();
 	const CreatureDefinition &def = this->creatures.definitionOf(target);
-	const int chance = std::clamp(55 + 5 * hitBonusFor(character.attributes[3]) + 5 * (1 - def.level) + this->weaponMaterialBonus / 5, 10, 95);
+	const artifact::Powers powers = artifact::powersOf(character);
+	const int chance = std::clamp(55 + 5 * (hitBonusFor(character.attributes[3] + this->fortifyBonus(3)) + powers.hitBonus) + 5 * (1 - def.level) + this->weaponMaterialBonus / 5, 10, 95);
 	if (static_cast<int>(rng() % 100) >= chance)
 	{
 		this->showMessage(ui::format(text.get("World.PlayerMiss"), { this->creatureRef(target, false) }), 2.0);
@@ -1099,6 +1173,10 @@ void arena::GameWorldScreen::resolveSwing()
 	const Creature &victim = this->creatures.getCreatures()[static_cast<size_t>(target)];
 	const int maxHp = victim.maxHp;
 	this->playAt("EHIT.VOC", victim.x, victim.z);
+	// Lâmina de Ébano e Maça de Molag Bal: parte do dano volta como vida ou magia.
+	const int dealt = std::min(amount, victim.hp);
+	this->health = std::min(character.maxHealth, this->health + dealt * powers.lifeSteal / 100);
+	this->spellPoints = std::min(character.maxSpellPoints, this->spellPoints + dealt * powers.manaSteal / 100);
 	if (this->creatures.damage(target, amount))
 	{
 		this->rewardKill(target, maxHp);
@@ -1125,21 +1203,31 @@ void arena::GameWorldScreen::handleCombatEvents(const std::vector<CombatEvent> &
 			break;
 		}
 		case CombatEvent::Type::CreatureHitPlayer:
+		{
+			// Artefatos: menos dano (escudos, anéis) e parte dele devolvida ao atacante (Cota de Ébano).
+			const artifact::Powers powers = artifact::powersOf(this->game.getCharacter());
+			const int amount = std::max(1, event.amount * (100 - powers.damageReduction) / 100);
+			const int reflected = amount * powers.reflect / 100;
+			if (reflected > 0 && this->creatures.isAlive(event.creature))
+			{
+				const int maxHp = this->creatures.getCreatures()[static_cast<size_t>(event.creature)].maxHp;
+				if (this->creatures.damage(event.creature, reflected)) this->rewardKill(event.creature, maxHp);
+			}
 			if (this->shieldPoints > 0)
 			{
-				const int absorbed = std::min(this->shieldPoints, event.amount);
+				const int absorbed = std::min(this->shieldPoints, amount);
 				this->shieldPoints -= absorbed;
 				this->showMessage(text.get(this->shieldPoints > 0 ? "Spells.ShieldAbsorb" : "Spells.ShieldGone"), 2.5);
-				if (absorbed >= event.amount) break;
-				this->health = std::max(0, this->health - (event.amount - absorbed));
+				if (absorbed >= amount) break;
+				this->health = std::max(0, this->health - (amount - absorbed));
 			}
 			else
 			{
-				this->health = std::max(0, this->health - event.amount);
+				this->health = std::max(0, this->health - amount);
 			}
 			this->hurtTimer = 0.4;
 			this->game.playSound(this->health > 0 ? "UHIT.VOC" : (this->game.getCharacter().male ? "MDIE.VOC" : "FDIE.VOC"));
-			this->showMessage(ui::format(text.get("World.CreatureHit"), { this->creatureRef(event.creature, true), std::to_string(event.amount) }), 2.5);
+			this->showMessage(ui::format(text.get("World.CreatureHit"), { this->creatureRef(event.creature, true), std::to_string(amount) }), 2.5);
 			if (this->health <= 0)
 			{
 				this->swinging = false;
@@ -1147,6 +1235,7 @@ void arena::GameWorldScreen::handleCombatEvents(const std::vector<CombatEvent> &
 				this->showMessage(text.get("World.DeathMessage"), 1e9);
 			}
 			break;
+		}
 		case CombatEvent::Type::CreatureMissedPlayer:
 			this->showMessage(ui::format(text.get("World.CreatureMiss"), { this->creatureRef(event.creature, true) }), 2.0);
 			break;
@@ -1232,6 +1321,7 @@ void arena::GameWorldScreen::interact()
 		}
 
 		if (along > 0.0f && along < 1.9f && side < 0.6f && sprites[i].itemId == 13 && this->tryTakeQuestItem(i)) return;
+		if (along > 0.0f && along < 1.9f && side < 0.6f && (sprites[i].itemId == JobTargetItem || sprites[i].itemId == ArtifactItem) && this->tryTakeDungeonTarget(i)) return;
 	}
 
 	if (this->tryTalkToClerk() || this->tryTalkToCitizen()) return;
@@ -1256,9 +1346,9 @@ void arena::GameWorldScreen::interact()
 			{
 				const CharacterDraft &character = this->game.getCharacter();
 				const ClassDefinition &def = this->game.getData().getClass(std::max(0, character.classIndex));
-				if (this->keys.contains(lock))
+				if (this->keys.contains(lock) || artifact::powersOf(character).skeletonKey)
 				{
-					// Com a chave: destranca e já abre.
+					// Com a chave (ou a Chave do Esqueleto, que abre qualquer porta): destranca e já abre.
 					this->level.unlock(cx, cz);
 					this->game.playSound("LOCK.VOC");
 					unlockedNow = true;
@@ -1370,6 +1460,7 @@ void arena::GameWorldScreen::handleInput(const InputEvent &event)
 	if (this->gateTimer > 0.0) return;
 	if (!this->visionText.empty() && this->overlay == Overlay::None)
 	{
+		if (this->offerPending() && (event.isKey(InputEvent::Key::Enter) || event.isKey(InputEvent::Key::Escape))) { this->screenButtonAction(event.isKey(InputEvent::Key::Enter) ? 'y' : 'n'); return; }
 		if (event.isKey(InputEvent::Key::Enter) || event.isKey(InputEvent::Key::Escape)) { this->screenButtonAction('v'); return; }
 		if (!event.isClick()) return;
 	}
@@ -1475,6 +1566,8 @@ void arena::GameWorldScreen::handleInput(const InputEvent &event)
 			this->applyOverlayResult(result);
 			if (!result.inventoryChanged && (result.rested || result.healthDelta != 0)) this->persist();
 			if (result.rested) this->tryDream();
+			if (result.request == 1) this->offerJob(false);
+			else if (result.request == 2) this->offerArtifact();
 			return;
 		}
 
@@ -1652,6 +1745,17 @@ void arena::GameWorldScreen::update(double dt)
 	this->handleCombatEvents(events);
 	this->updateMagic(dt);
 	this->updateArrows(dt);
+
+	// Artefatos que regeneram vida (Cota do Senhor) e magia (Cajado de Magnus, Amuleto do Necromante).
+	this->regenTimer += dt;
+	if (this->regenTimer >= 5.0)
+	{
+		this->regenTimer -= 5.0;
+		const CharacterDraft &hero = this->game.getCharacter();
+		const artifact::Powers powers = artifact::powersOf(hero);
+		if (powers.healthRegen > 0 && this->health > 0) this->health = std::min(hero.maxHealth, this->health + (powers.healthRegen + 6) / 12);
+		if (powers.magicRegen > 0) this->spellPoints = std::min(hero.maxSpellPoints, this->spellPoints + (powers.magicRegen + 6) / 12);
+	}
 	this->checkLevelUp();
 	if (this->health <= 0)
 	{
@@ -1669,7 +1773,8 @@ void arena::GameWorldScreen::update(double dt)
 	const float length = std::sqrt(forwardInput * forwardInput + strafeInput * strafeInput);
 	if (length > 0.0f)
 	{
-		const float speed = (this->holdShift ? RunSpeed : WalkSpeed) * fdt / length;
+		const float boost = 1.0f + artifact::powersOf(this->game.getCharacter()).speed / 100.0f; // Anel dos Khajiiti
+		const float speed = (this->holdShift ? RunSpeed : WalkSpeed) * boost * fdt / length;
 		const float fx = std::cos(this->yaw), fz = std::sin(this->yaw);
 		// Direita = forward x up = (-fz, fx) no plano XZ.
 		const float rx = -fz, rz = fx;
@@ -2219,7 +2324,7 @@ void arena::GameWorldScreen::drawHud(std::vector<uint32_t> &pixels, int width, i
 		if (target >= 0 && this->health > 0)
 		{
 			const Creature &c = this->creatures.getCreatures()[static_cast<size_t>(target)];
-			const std::string name = text.getOr("Creatures.Name" + std::to_string(c.definition), this->creatures.definitionOf(target).originalName);
+			const std::string name = text.getOr("Creatures.Name" + std::to_string(this->textIndexOf(c.definition)), this->creatures.definitionOf(target).originalName);
 			const int barW = 90 * u;
 			painter.text(fonts.arena, name, cxp, band.y + band.h + 6 * u, rgb(255, 225, 170), TextAlign::Center);
 			const Rect hp{ cxp - barW / 2, band.y + band.h + 17 * u, barW, 5 * u };
@@ -2644,8 +2749,20 @@ bool arena::GameWorldScreen::tryTalkToClerk()
 
 	if (!facing) return false;
 
-	// Preços pela qualidade do lugar e estoque fixo por loja (semente pela porta).
+	// Taverneiro: entrega ou pagamento do trabalho que ele (ou outro taverneiro) pediu.
 	const CityLocation *city = this->currentCity();
+	if (kind == ServiceMenu::Kind::Tavern && city)
+	{
+		const jobs::Outcome outcome = jobs::arrive(this->game, *city, false);
+		if (!outcome.text.empty())
+		{
+			this->openVision(outcome.title, outcome.text);
+			this->persist();
+			return true;
+		}
+	}
+
+	// Preços pela qualidade do lugar e estoque fixo por loja (semente pela porta).
 	const int factor = !city || city->type == CityLocation::Type::CityState ? 100 : city->type == CityLocation::Type::Town ? 90 : 80;
 	const uint32_t seed = (city ? city->seed() : 0u) ^ (static_cast<uint32_t>(this->returnX * 16.0f) << 16) ^ static_cast<uint32_t>(this->returnZ * 16.0f);
 	this->serviceMenu.open(this->game, kind, this->locationName, seed, factor, this->health, this->spellPoints);
@@ -2847,6 +2964,7 @@ bool arena::GameWorldScreen::loadMap(const std::string &name)
 	{
 		MifFile mif;
 		if (!generateDungeon(this->game.getAssets(), static_cast<uint32_t>(seed), width, depth, artifact != 0, mif, this->loadError)) return false;
+		this->dungeonFloors = static_cast<int>(mif.levels.size());
 		this->dungeonLevel = std::clamp(levelIndex, 0, static_cast<int>(mif.levels.size()) - 1);
 		mif.startingLevel = this->dungeonLevel;
 		return this->level.build(this->game.getAssets(), this->palette, mif, false, this->loadError);
@@ -2930,7 +3048,13 @@ void arena::GameWorldScreen::travelToDungeon(const CityLocation &target, int day
 	std::string map;
 	const std::string premade = std::to_string(dungeon->dungeonSeed()).substr(0, 8) + ".MIF";
 	if (dungeon->mainQuest() && this->game.getAssets().exists(premade)) map = "MIFL:" + premade;
-	else map = "DNG:" + std::to_string(dungeon->dungeonSeed()) + ":2:2:0:0";
+	else
+	{
+		// A masmorra do artefato procurado tem 4 andares, como no original.
+		const ArtifactHunt &hunt = this->game.getCharacter().hunt;
+		const bool artifactHere = hunt.active() && artifact::dungeon(this->game.getData(), hunt.artifact) == dungeon;
+		map = "DNG:" + std::to_string(dungeon->dungeonSeed()) + ":2:2:" + (artifactHere ? "1" : "0") + ":0";
+	}
 	this->game.setPendingNote(ui::format(this->game.getText().get(days == 1 ? "Travel.ArrivedDungeonDay" : "Travel.ArrivedDungeon"),
 		days == 1 ? std::initializer_list<std::string>{ dungeon->name } : std::initializer_list<std::string>{ std::to_string(days), dungeon->name }));
 	this->game.changeScreen(std::make_unique<GameWorldScreen>(this->game, "IN:" + map + back + dungeon->name));
@@ -3107,6 +3231,16 @@ void arena::GameWorldScreen::drawVision(kit::Painter &painter, int width, int he
 	painter.parchmentPanel(page);
 	painter.paragraph(fonts.arena, this->visionText, Rect{ page.x + 12 * u, page.y + 10 * u, page.w - 24 * u, page.h - 20 * u }, col::Ink);
 
+	if (this->offerPending())
+	{
+		// Proposta de trabalho ou de informação: aceitar (Enter) ou recusar (Esc).
+		const Rect yes{ box.x + w / 2 - 136 * u, box.y + h - 26 * u, 130 * u, 18 * u }, no{ box.x + w / 2 + 6 * u, box.y + h - 26 * u, 130 * u, 18 * u };
+		painter.button(yes, this->game.getText().get("Jobs.Accept"), kit::hit(yes, this->uiMouseX, this->uiMouseY), false);
+		painter.button(no, this->game.getText().get("Jobs.Decline"), kit::hit(no, this->uiMouseX, this->uiMouseY), false);
+		this->screenButtons.push_back({ yes, 'y' });
+		this->screenButtons.push_back({ no, 'n' });
+		return;
+	}
 	const Rect r{ box.x + (w - 130 * u) / 2, box.y + h - 26 * u, 130 * u, 18 * u };
 	painter.button(r, this->game.getText().get("Quest.Continue"), kit::hit(r, this->uiMouseX, this->uiMouseY), false);
 	this->screenButtons.push_back({ r, 'v' });
@@ -3137,7 +3271,7 @@ void arena::GameWorldScreen::palaceArrival()
 
 void arena::GameWorldScreen::openJournal()
 {
-	this->journalMenu.open(quest::objective(this->game.getCharacter(), this->game.getData(), this->game.getText(), this->isPrison() && !this->escaped));
+	this->journalMenu.open(quest::objective(this->game.getCharacter(), this->game.getData(), this->game.getText(), this->isPrison() && !this->escaped), jobs::objective(this->game));
 	this->overlay = Overlay::Journal;
 	this->heldKeys.clear();
 	this->holdLeft = this->holdRight = this->holdUp = this->holdDown = false;
@@ -3175,6 +3309,7 @@ void arena::GameWorldScreen::callGuards()
 		guard.baseExperience = 50 * guard.level;
 		guard.experienceMultiplier = 0;
 		this->guardDefinition = this->creatures.addDefinition(guard);
+		this->definitionText[this->guardDefinition] = 24; // Creatures.Name24 = Guarda
 	}
 
 	std::mt19937 &rng = this->game.getRandom();

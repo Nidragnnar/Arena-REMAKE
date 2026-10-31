@@ -147,6 +147,8 @@ namespace arena
 
 		// Nome de morador pelas regras do original (NAMECHNK.DAT), por raça (0..8) e gênero.
 		std::string npcName(int race, bool male, ArenaRandom &random) const;
+		// Dá nome às masmorras sem nome (modelos com %s, ex.: "Cripta de %s"), pela semente de cada uma.
+		void nameRandomDungeons(const std::vector<std::string> &patterns);
 
 	private:
 		bool loadWorldMap(const AssetManager &assets, const ByteBuffer &exe, const std::function<size_t(const char *)> &offsetOf, std::string &outError);

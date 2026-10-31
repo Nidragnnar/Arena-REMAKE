@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 #include <random>
+#include <set>
 #include <string>
 
 #include "../assets/AssetManager.h"
@@ -14,6 +15,7 @@
 #include "../audio/Audio.h"
 #include "../render3d/Renderer3D.h"
 #include "ArenaData.h"
+#include "SideQuests.h"
 
 namespace arena
 {
@@ -83,6 +85,10 @@ namespace arena
 		int questGiver = -1; // cidade (id global) cujo governante espera o item da pista
 		std::vector<JournalEntry> journal; // diário, do mais antigo ao mais recente
 		std::vector<Spell> customSpells;   // feitiços criados na Guilda dos Magos (índice >= CustomSpellBase)
+		SideJob job;                       // trabalho pago do governante ou do taverneiro (SideQuests.h)
+		ArtifactHunt hunt;                 // artefato cuja masmorra o jogador conhece
+		int artifactsFound = 0;            // bit por artefato já achado (Artifacts.h)
+		int cofferDay = -1;                // último dia em que o Cofre do Rei Orgnum foi aberto
 	};
 
 	class Game;
@@ -172,6 +178,9 @@ namespace arena
 		}
 
 		bool shouldQuit() const { return this->quitRequested; }
+
+		// Propostas de trabalho já ouvidas hoje (lugar, dia): não se repetem na mesma visita ao jogo.
+		std::set<std::pair<int, int>> heardOffers;
 
 		// Carrega um .IMG; em caso de falha retorna uma imagem preta 320x200.
 		IndexedImage loadImage(const std::string &name) const;

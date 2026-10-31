@@ -512,6 +512,21 @@ bool arena::ArenaData::loadWorldMap(const AssetManager &assets, const ByteBuffer
 	return true;
 }
 
+void arena::ArenaData::nameRandomDungeons(const std::vector<std::string> &patterns)
+{
+	if (patterns.empty()) return;
+	for (CityLocation &place : this->cities)
+	{
+		if (place.type != CityLocation::Type::Dungeon || !place.name.empty()) continue;
+		ArenaRandom random(place.dungeonSeed());
+		const std::string person = this->npcName(place.province, true, random);
+		const std::string family = person.substr(person.rfind(' ') == std::string::npos ? 0 : person.rfind(' ') + 1);
+		const std::string &pattern = patterns[random.next() % patterns.size()];
+		const size_t at = pattern.find("%s");
+		place.name = at == std::string::npos ? pattern : pattern.substr(0, at) + family + pattern.substr(at + 2);
+	}
+}
+
 int arena::ArenaData::travelDays(const CityLocation &from, const CityLocation &to, int month) const
 {
 	// Soma o tempo de cada ponto da linha (Bresenham) pela velocidade do terreno naquele mês.

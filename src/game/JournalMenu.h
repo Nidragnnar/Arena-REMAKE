@@ -13,12 +13,12 @@ namespace arena
 	class JournalMenu
 	{
 	public:
-		void open(std::string objective);
+		void open(std::string objective, std::string sideJobs = {});
 		OverlayResult handleInput(const InputEvent &event, Game &game);
 		void render(kit::Painter &painter, const Game &game);
 
 	private:
-		std::string objective;
+		std::string objective, sideJobs; // missão principal; trabalho e artefato procurado
 		int scroll = 0;     // primeira linha do registro mostrada
 		int reading = -1;   // linha aberta para reler (-1 = lista)
 		int frameW = 1, frameH = 1;

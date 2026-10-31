@@ -5,6 +5,7 @@
 #include <cstdio>
 
 #include "../render/Ui.h"
+#include "Artifacts.h"
 #include "InventoryUi.h"
 #include "../world/SpriteOverrides.h"
 
@@ -34,6 +35,7 @@ std::string arena::itemName(const Game &game, const Item &item)
 {
 	const Localization &text = game.getText();
 	const ItemTables &tables = game.getData().getItems();
+	if (item.artifact >= 0) return text.get("Artifacts.Name" + std::to_string(item.artifact));
 	const std::string material = text.getOr("Materials.Name" + std::to_string(item.material), tables.materialNames[static_cast<size_t>(item.material)]);
 	switch (item.kind)
 	{
@@ -56,13 +58,16 @@ std::string arena::itemDetails(const Game &game, const Item &item)
 	const Localization &text = game.getText();
 	const ItemTables &tables = game.getData().getItems();
 	const std::string weight = kilograms(itemWeight(item, tables));
+	const std::string power = item.artifact >= 0 ? "  " + text.get("Artifacts.Power" + std::to_string(item.artifact)) : std::string();
 	switch (item.kind)
 	{
 	case ItemKind::Weapon:
 		return ui::format(text.get("Items.WeaponDetails"), { std::to_string(weaponMinDamage(item, tables)), std::to_string(weaponMaxDamage(item, tables)), weight })
-			+ (tables.weaponHands[static_cast<size_t>(item.type)] == 2 ? "  " + text.get("Items.TwoHanded") : std::string());
+			+ (tables.weaponHands[static_cast<size_t>(item.type)] == 2 ? "  " + text.get("Items.TwoHanded") : std::string()) + power;
 	case ItemKind::Armor:
-		return ui::format(text.get("Items.ArmorDetails"), { std::to_string(armorRating(item, tables)), weight });
+		return ui::format(text.get("Items.ArmorDetails"), { std::to_string(armorRating(item, tables)), weight }) + power;
+	case ItemKind::Trinket:
+		return text.get("Artifacts.Power" + std::to_string(item.type)) + "  " + ui::format(text.get("Items.TrinketWeight"), { weight });
 	default:
 		return text.get("Items.PotionDetails");
 	}
@@ -247,9 +252,38 @@ arena::OverlayResult arena::useInventoryItem(Game &game, int index, int currentH
 		return result;
 	}
 
+	if (item.kind == ItemKind::Trinket && item.type == artifact::OghmaInfinium)
+	{
+		// Oghma Infinium: ler o livro aumenta todos os atributos de uma vez; depois ele some.
+		for (int &value : c.attributes) value = std::min(100, value + 10);
+		result.message = text.get("Artifacts.OghmaRead");
+		c.inventory.erase(c.inventory.begin() + index);
+		game.playSound("FANFARE2.VOC");
+		return result;
+	}
+
+	if (item.kind == ItemKind::Trinket && item.type == artifact::OrgnumsCoffer)
+	{
+		// Cofre do Rei Orgnum: enche-se de ouro sozinho, 100 moedas por dia desde a última vez.
+		const int today = static_cast<int>(c.gameMinutes / (24.0 * 60.0));
+		const int days = c.cofferDay < 0 ? 1 : std::clamp(today - c.cofferDay, 0, 30);
+		c.cofferDay = today;
+		c.gold += days * 100;
+		result.message = days > 0 ? ui::format(text.get("Artifacts.CofferGold"), { std::to_string(days * 100) }) : text.get("Artifacts.CofferEmpty");
+		game.playSound("CLICKS.VOC", 0.6f);
+		return result;
+	}
+
 	if (item.equipped)
 	{
 		item.equipped = false;
+		return result;
+	}
+
+	if (item.kind == ItemKind::Trinket)
+	{
+		item.equipped = true;
+		game.playSound("CLICKS.VOC", 0.5f);
 		return result;
 	}
 

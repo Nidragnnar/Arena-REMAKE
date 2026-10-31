@@ -345,7 +345,7 @@ original) são esticados para 4:3 como num monitor VGA; outras proporções apar
 
 ### Crimes e guardas
 
-Golpear um morador (tecla F; o clique perto de alguém abre a conversa) o mata e chama a guarda: três
+Golpear um morador (clique ou F; conversar é com o E) o mata e chama a guarda: três
 guardas (`GUARD0@.CFA` do original) surgem nas ruas em volta, já em alerta, com nível, vida e dano
 acima dos do jogador. Os guardas não ficam no save: ao recarregar a cidade, a confusão é esquecida.
 
@@ -370,6 +370,35 @@ até serem descobertas. Com os oito pedaços, o último sonho manda ao Palácio 
 Cidade Imperial leva direto ao mapa pronto do original (`IMPPAL.MIF`, 4 andares), onde Tharn recebe o
 jogador. No último andar está a Joia do Fogo; tocá-la com o Cajado mata Tharn (a 24ª criatura do
 executável, `*ITEM 73`) e mostra o final.
+
+### Trabalhos (missões secundárias)
+
+Como no original (modelos #0005..#0011 do `TEMPLATE.DAT`), quem paga por serviços são os governantes e os
+taverneiros. Um trabalho por vez, sempre com prazo; o diário (J) mostra o que falta, para onde ir e até quando.
+- **Governante** (ao entrar no palácio, de dia): entregar uma encomenda ao palácio de outra cidade, buscar algo
+  lá e trazer de volta, escoltar um parente, resgatar um parente preso numa masmorra ou matar uma fera no
+  fundo de uma masmorra. A proposta abre num painel com Aceitar (Enter) e Recusar (Esc).
+- **Taverneiro** (aba Conversa do balcão): levar uma encomenda a uma taverna de outra cidade ou achar um
+  objeto perdido numa masmorra e trazê-lo a uma taverna da cidade dele.
+- O destino fica na mesma província. As masmorras aleatórias (locais 34..47) não têm nome no `CITYDATA`: como
+  no original, recebem um nome ("Catacumbas de Hawkham") e só aparecem no mapa de viagem enquanto um trabalho
+  ou um artefato aponta para elas. O alvo fica no fundo do último andar: a pessoa (`PRINCE/PRINCESS.IMG`), o
+  objeto (`BAGAGE1.IMG`) ou a fera (uma criatura do nível do jogador, com o triplo da vida).
+- Recompensa pelo nível e pela distância; passado o prazo, quem pediu não paga. Cada lugar faz no máximo uma
+  proposta por dia. O trabalho fica no save (seção `[SideJob]`).
+
+### Artefatos
+
+Na aba Conversa da taverna, "Perguntar por artefatos": em alguns dias um estranho vende o paradeiro de um dos 16
+artefatos do original (Lâmina de Ébano, Chrysamere, Volendrung, Maça de Molag Bal, Cajado de Magnus, Cota de
+Ébano, Cota do Senhor, Escudo de Auriel, Quebra-Feitiço, Anel do Bruxo, Anel dos Khajiiti, Anel de Phynaster,
+Amuleto do Necromante, Chave do Esqueleto, Oghma Infinium e Cofre do Rei Orgnum). A masmorra dele tem 4 andares,
+e o artefato fica num baú no fundo do último. Armas e armaduras são de ébano (ou malha, no caso da Cota do Senhor)
+e os outros são anéis, amuleto, chave, livro e cofre. Os poderes valem com o artefato equipado: roubar vida ou
+magia a cada golpe, Força, Agilidade ou Inteligência a mais, regenerar vida ou magia, menos dano recebido,
+devolver parte do dano, acerto, velocidade e feitiços mais baratos. A Chave do Esqueleto abre qualquer porta
+trancada só de estar no inventário. Ler o Oghma Infinium dá +10 em todos os atributos e o livro some. O Cofre
+dá 100 de ouro por dia desde a última vez que foi aberto. Os achados ficam no save (seção `[Artifacts]`).
 
 ### Dia e noite
 
@@ -407,7 +436,7 @@ desconto de 10% nas vilas e 20% nas aldeias:
 1. ~~Formatos base, título e menu principal em PT-BR~~ ✅
 2. ~~Criação de personagem completa (perguntas de classe, lista de classes, nome, gênero, raça no mapa, atributos, rosto)~~ ✅
 3. Animações FLC (abertura, cenas) e áudio (VOC + música XMI/MIDI via FluidSynth)
-4. Mundo 3D — **em andamento**: ~~Prisão Imperial (START.MIF/INF) em widescreen com olhar livre, portas, água, plataformas, sprites e luzes~~ ✅; ~~criaturas (ratos e goblins) com animações CFA, IA e combate corpo a corpo~~ ✅; ~~sons, música, gatilhos de texto e travas~~ ✅; ~~inventário, equipamentos, saque e ficha em jogo~~ ✅; ~~gráficos modernos (água/lava animadas com reflexos, luz difusa, oclusão de ambiente, bloom, renderização em várias threads)~~ ✅; ~~texturas HD com detalhe e relevo~~ ✅; ~~renderização pela placa de vídeo (OpenGL)~~ ✅; ~~magias (livro, conjuração, projéteis e efeitos)~~ ✅; ~~níveis, salvar em 10 espaços e Portão de Transição~~ ✅; ~~sprites redesenhados em PNG~~ ✅; ~~primeira cidade gerada como no original~~ ✅; ~~interiores, comércio e serviços~~ ✅; ~~moradores, diálogos, dia e noite e tempo~~ ✅; ~~ermo e viagem por Tamriel~~ ✅; ~~masmorras do ermo e com nome~~ ✅; ~~criaturas no ermo~~ ✅; ~~criação de feitiços~~ ✅
+4. Mundo 3D — **em andamento**: ~~Prisão Imperial (START.MIF/INF) em widescreen com olhar livre, portas, água, plataformas, sprites e luzes~~ ✅; ~~criaturas (ratos e goblins) com animações CFA, IA e combate corpo a corpo~~ ✅; ~~sons, música, gatilhos de texto e travas~~ ✅; ~~inventário, equipamentos, saque e ficha em jogo~~ ✅; ~~gráficos modernos (água/lava animadas com reflexos, luz difusa, oclusão de ambiente, bloom, renderização em várias threads)~~ ✅; ~~texturas HD com detalhe e relevo~~ ✅; ~~renderização pela placa de vídeo (OpenGL)~~ ✅; ~~magias (livro, conjuração, projéteis e efeitos)~~ ✅; ~~níveis, salvar em 10 espaços e Portão de Transição~~ ✅; ~~sprites redesenhados em PNG~~ ✅; ~~primeira cidade gerada como no original~~ ✅; ~~interiores, comércio e serviços~~ ✅; ~~moradores, diálogos, dia e noite e tempo~~ ✅; ~~ermo e viagem por Tamriel~~ ✅; ~~masmorras do ermo e com nome~~ ✅; ~~criaturas no ermo~~ ✅; ~~criação de feitiços~~ ✅; ~~trabalhos dos governantes e taverneiros e artefatos~~ ✅
 5. Cidades, masmorras, NPCs, diálogos, lojas, guildas, magias, combate
 6. Viagem pelo mapa de Tamriel, missões principais e importação de saves originais
 7. Extras modernos: ~~remapeamento de controles~~ ✅, ~~gamepad~~ ✅, ~~autosave~~ ✅, ~~interface escalável~~ ✅

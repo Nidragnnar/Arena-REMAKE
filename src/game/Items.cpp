@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "Artifacts.h"
 #include "Items.h"
 
 namespace
@@ -144,12 +145,14 @@ float arena::itemWeight(const Item &item, const ItemTables &tables)
 	{
 	case ItemKind::Weapon: return tables.weaponWeight[static_cast<size_t>(item.type)];
 	case ItemKind::Armor: return tables.armorWeight[static_cast<size_t>(item.armorClass)][static_cast<size_t>(item.type)];
+	case ItemKind::Trinket: return artifact::weight(item.type);
 	default: return 0.5f;
 	}
 }
 
 int arena::itemPrice(const Item &item, const ItemTables &tables)
 {
+	if (item.artifact >= 0) return artifact::price(item.artifact);
 	const int multiplier = std::max(1, tables.materialPriceMultiplier[static_cast<size_t>(std::clamp(item.material, 0, MaterialCount - 1))]);
 	switch (item.kind)
 	{

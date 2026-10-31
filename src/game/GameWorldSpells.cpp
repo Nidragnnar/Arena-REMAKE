@@ -6,6 +6,7 @@
 #include <cmath>
 
 #include "../render/Ui.h"
+#include "Artifacts.h"
 #include "GameWorldScreen.h"
 
 namespace
@@ -103,6 +104,9 @@ int arena::GameWorldScreen::fortifyBonus(int attribute) const
 		if (e.type == SpellEffectType::Fortify && e.sub == attribute) bonus += e.magnitude;
 	}
 
+	// Artefatos equipados: Volendrung (Força), Anel dos Khajiiti (Agilidade), Amuleto do Necromante (Inteligência).
+	const artifact::Powers powers = artifact::powersOf(this->game.getCharacter());
+	bonus += attribute == 0 ? powers.strength : attribute == 3 ? powers.agility : attribute == 1 ? powers.intelligence : 0;
 	return bonus;
 }
 
@@ -124,7 +128,8 @@ void arena::GameWorldScreen::castReadySpell()
 		return;
 	}
 
-	const int cost = spell->castingCost();
+	// Anel do Bruxo e Cajado de Magnus: feitiços mais baratos.
+	const int cost = std::max(1, spell->castingCost() * (100 - artifact::powersOf(c).spellDiscount) / 100);
 	if (this->spellPoints < cost)
 	{
 		this->showMessage(ui::format(text.get("Spells.NotEnough"), { spellName(this->game, *spell), std::to_string(cost) }), 2.5);
@@ -231,6 +236,15 @@ void arena::GameWorldScreen::rewardKill(int target, int maxHp)
 	this->experience += gained;
 	this->corpseLoot[target] = generateLoot(LootSource::Creature, victim.definition, this->game.getData().getItems(), this->game.getRandom());
 	this->showMessage(ui::format(text.get("World.CreatureKilled"), { this->creatureRef(target, false), std::to_string(gained) }), 3.0);
+
+	// A fera caçada para o governante: falta voltar ao palácio para receber.
+	CharacterDraft &hero = this->game.getCharacter();
+	if (target == this->jobCreature && hero.job.kind == SideJob::Kind::Monster && hero.job.step == 0)
+	{
+		this->jobCreature = -1;
+		this->game.playSound("FANFARE2.VOC");
+		this->openVision(text.get("Jobs.FoundTitle"), jobs::targetDone(this->game));
+	}
 	this->persist();
 }
 

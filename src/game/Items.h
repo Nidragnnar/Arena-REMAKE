@@ -10,7 +10,8 @@
 
 namespace arena
 {
-	enum class ItemKind : uint8_t { Weapon, Armor, Potion };
+	// Trinket: anéis, amuleto, chave, livro e cofre dos artefatos (type = índice do artefato).
+	enum class ItemKind : uint8_t { Weapon, Armor, Potion, Trinket };
 
 	// Classes de armadura do original (placas, malha, couro).
 	enum class ArmorClass : uint8_t { Plate = 0, Chain = 1, Leather = 2 };
@@ -28,6 +29,7 @@ namespace arena
 		ArmorClass armorClass = ArmorClass::Leather;
 		int material = 1;                     // metais (armas e placas); 1 = Aço
 		bool equipped = false;
+		int artifact = -1;                    // artefato (ver Artifacts.h); -1 = item comum
 
 		bool isShield() const { return this->kind == ItemKind::Armor && this->type >= 7; }
 	};

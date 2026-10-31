@@ -335,7 +335,8 @@ void arena::CharacterMenu::renderInventory(kit::Painter &painter, const Game &ga
 		const Item &item = c.inventory[static_cast<size_t>(this->selected)];
 		painter.text(fonts.arena, itemName(game, item), r.x + pad, dy, col::Ink, TextAlign::Left, false);
 		painter.text(fonts.arena, itemDetails(game, item), r.x + pad, dy + 12 * u, col::InkSoft, TextAlign::Left, false);
-		const char *action = item.kind == ItemKind::Potion ? "Menu.Use" : item.equipped ? "Menu.Unequip" : "Menu.Equip";
+		const bool usable = item.kind == ItemKind::Potion || (item.kind == ItemKind::Trinket && (item.type == 14 || item.type == 15)); // poção, Oghma Infinium, Cofre de Orgnum
+		const char *action = usable ? "Menu.Use" : item.equipped ? "Menu.Unequip" : "Menu.Equip";
 		this->primaryRect = Rect{ r.x + pad, r.y + r.h - pad - 18 * u, 90 * u, 18 * u };
 		this->secondaryRect = Rect{ r.x + pad + 96 * u, r.y + r.h - pad - 18 * u, 80 * u, 18 * u };
 		this->primaryEnabled = this->secondaryEnabled = true;

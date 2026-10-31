@@ -2,6 +2,7 @@
 
 #include <array>
 #include <map>
+#include <optional>
 #include <set>
 #include <tuple>
 #include <string>
@@ -229,6 +230,25 @@ namespace arena
 		bool tryTakeQuestItem(size_t sprite);
 		void drawVision(kit::Painter &painter, int width, int height);
 		std::vector<std::tuple<float, float, std::string>> removedSprites;
+
+		// Missões secundárias (SideQuests.h): proposta no painel (aceitar/recusar), alvos nas
+		// masmorras (pessoa, objeto ou artefato num sprite; criatura marcada) e poderes dos artefatos.
+		std::optional<SideJob> offeredJob;
+		int offeredArtifact = -1;
+		bool offerPending() const { return this->offeredJob.has_value() || this->offeredArtifact >= 0; }
+		void offerJob(bool ruler);
+		void offerArtifact();
+		void answerOffer(bool accepted);
+		void placeDungeonTargets();
+		bool tryTakeDungeonTarget(size_t sprite);
+		int jobCreature = -1;   // criatura caçada neste andar
+		// Definições criadas pelo jogo (guardas, fera caçada) usam o texto de outra criatura (Creatures.NameN).
+		std::map<int, int> definitionText;
+		int textIndexOf(int definition) const { const auto it = this->definitionText.find(definition); return it != this->definitionText.end() ? it->second : definition; }
+		int dungeonFloors = 1;  // andares da masmorra gerada atual
+		static constexpr int JobTargetItem = 90, ArtifactItem = 91; // itemId dos sprites criados
+		double regenTimer = 0.0;
+		bool isPalace() const { return this->mifName.rfind("IN:PALACE", 0) == 0 || this->mifName.rfind("IN:TOWNPAL", 0) == 0 || this->mifName.rfind("IN:VILPAL", 0) == 0; }
 
 		// Magia: pontos, conjuração em andamento, projéteis, efeitos ativos no jogador e nas criaturas.
 		struct ScreenAnimation { std::vector<Texture> textures; std::vector<std::pair<int, int>> offsets; };

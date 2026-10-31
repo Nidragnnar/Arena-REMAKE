@@ -47,6 +47,7 @@ namespace arena
 		int healthDelta = 0;
 		int spellPointsDelta = 0;
 		bool rested = false; // dormiu: vida e magia cheias
+		int request = 0;     // conversa no balcão da taverna: 1 = trabalho, 2 = artefatos
 		std::string message;
 	};
 

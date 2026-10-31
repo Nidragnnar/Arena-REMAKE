@@ -15,7 +15,7 @@ bool arena::quest::dungeonKnown(const CharacterDraft &character, const CityLocat
 	for (int i = 0; i < character.staffPieces && i < PieceCount; i++)
 		if (StaffProvinces[i] == dungeon.province) return true; // já percorridas
 	if (dungeon.province != targetProvince(character)) return false;
-	return dungeon.localId == ClueDungeon ? character.questStep >= 2 : character.questStep >= 3;
+	return dungeon.localId == ClueDungeon ? character.questStep >= 2 : character.questStep >= 4;
 }
 
 bool arena::quest::dreamDue(const CharacterDraft &character)
@@ -45,6 +45,12 @@ std::string arena::quest::objective(const CharacterDraft &character, const Arena
 	const std::string pieceName = piece ? piece->name : std::string(), clueName = clue ? clue->name : std::string();
 	if (character.questStep == 1) return ui::format(text.get("Quest.ObjRumor"), { pieceName, provinceName });
 	if (character.questStep == 2) return ui::format(text.get("Quest.ObjClue"), { clueName, provinceName, text.get("Quest.Item" + std::to_string(character.staffPieces)) });
+	if (character.questStep == 3)
+	{
+		const CityLocation *giver = nullptr;
+		for (const CityLocation &c : data.getCities()) if (c.globalId == character.questGiver) giver = &c;
+		return ui::format(text.get("Quest.ObjReturn"), { text.get("Quest.Item" + std::to_string(character.staffPieces)), giver ? giver->name : std::string(), provinceName });
+	}
 	return ui::format(text.get("Quest.ObjPiece"), { pieceName, provinceName });
 }
 

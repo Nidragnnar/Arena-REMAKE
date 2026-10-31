@@ -234,6 +234,7 @@ arena::GameWorldScreen::GameWorldScreen(Game &game, const std::string &mifName) 
 	// Chegada numa cidade ou num prédio: anuncia e já grava o jogo neste lugar.
 	if (this->level.isExterior() || !this->returnMap.empty())
 	{
+		if (auto vision = game.takePendingVision(); !vision.second.empty()) this->openVision(vision.first, vision.second);
 		const std::string note = game.takePendingNote();
 		this->showMessage(!note.empty() ? note : ui::format(game.getText().get(this->level.isExterior() ? "City.Arrived" : "City.Entered"), { this->locationName }), 4.0);
 		this->helpTimer = 0.0;
@@ -1028,6 +1029,7 @@ void arena::GameWorldScreen::resolveSwing()
 	const int target = this->creatures.findTarget(this->x, this->z, this->yaw, 1.45f, 0.72f);
 	if (target < 0)
 	{
+		this->tryAttackCitizen();
 		return;
 	}
 
@@ -1395,9 +1397,10 @@ void arena::GameWorldScreen::handleInput(const InputEvent &event)
 			if (this->dialogueMenu.questRumorHeard && this->game.getCharacter().questStep == 1)
 			{
 				this->game.getCharacter().questStep = 2; // a masmorra da pista aparece no mapa de viagem
+				if (const CityLocation *here = this->currentCity()) this->game.getCharacter().questGiver = here->globalId;
 				const int questProvince = quest::targetProvince(this->game.getCharacter());
 				const CityLocation *piece = this->game.getData().getCity(questProvince, quest::PieceDungeon), *clue = this->game.getData().getCity(questProvince, quest::ClueDungeon);
-				if (piece && clue) quest::note(this->game.getCharacter(), ui::format(this->game.getText().get("Journal.Rumor"), { this->locationName, piece->name, clue->name }));
+				if (piece && clue) quest::note(this->game.getCharacter(), ui::format(this->game.getText().get("Journal.Rumor"), { this->locationName, this->game.getText().get("Quest.Item" + std::to_string(this->game.getCharacter().staffPieces)), clue->name }));
 				this->persist();
 			}
 			if (result.close) this->overlay = Overlay::None;
@@ -2485,6 +2488,19 @@ bool arena::GameWorldScreen::enterBuilding(int cellX, int cellZ, const Cell &cel
 	std::string prefix = it->second.prefix;
 	if (prefix == "PALACE")
 	{
+		// Missão: o governante que pediu o item da pista recebe-o e marca a masmorra do pedaço.
+		CharacterDraft &hero = this->game.getCharacter();
+		const CityLocation *here = this->currentCity();
+		if (hero.questStep == 3 && hero.staffPieces < quest::PieceCount && here && here->globalId == hero.questGiver)
+		{
+			const int questProvince = quest::targetProvince(hero);
+			const CityLocation *piece = this->game.getData().getCity(questProvince, quest::PieceDungeon);
+			const std::string item = text.get("Quest.Item" + std::to_string(hero.staffPieces));
+			hero.questStep = 4;
+			quest::note(hero, ui::format(text.get("Journal.Delivered"), { item, here->name, piece ? piece->name : std::string() }));
+			this->game.setPendingVision(text.get("Quest.RulerTitle"), ui::format(text.get("Quest.RulerThanks"), { hero.name, item, piece ? piece->name : std::string() }));
+		}
+
 		// Palácio: 3 variações pela semente do governante; vilas e aldeias têm o seu.
 		const CityLocation *city = this->currentCity();
 		if (city && city->type == CityLocation::Type::Town) prefix = "TOWNPAL";
@@ -2599,7 +2615,7 @@ bool arena::GameWorldScreen::tryTalkToCitizen()
 	const bool questRumor = character.questStep == 1 && pieceDungeon && clueDungeon;
 	if (questRumor)
 	{
-		rumors.insert(rumors.begin(), province == questProvince ? ui::format(text.get("Quest.RumorHere"), { pieceDungeon->name, clueDungeon->name })
+		rumors.insert(rumors.begin(), province == questProvince ? ui::format(text.get("Quest.RumorHere"), { pieceDungeon->name, text.get("Quest.Item" + std::to_string(character.staffPieces)), clueDungeon->name })
 			: ui::format(text.get("Quest.RumorElsewhere"), { pieceDungeon->name, text.get("Provinces.Name" + std::to_string(questProvince)) }));
 	}
 
@@ -2954,10 +2970,22 @@ bool arena::GameWorldScreen::tryTakeQuestItem(size_t sprite)
 	if (inside(clue) && character.questStep >= 1 && character.questStep <= 2)
 	{
 		this->removeSpriteAt(sprite);
-		character.questStep = 3; // a masmorra do pedaço aparece no mapa de viagem
-		quest::note(character, ui::format(text.get("Journal.Clue"), { text.get("Quest.Item" + std::to_string(character.staffPieces)), clue->name, piece ? piece->name : std::string() }));
+		const std::string item = text.get("Quest.Item" + std::to_string(character.staffPieces));
+		const CityLocation *giver = nullptr;
+		for (const CityLocation &c : this->game.getData().getCities()) if (c.globalId == character.questGiver) giver = &c;
 		this->game.playSound("FANFARE2.VOC");
-		this->openVision(text.get("Quest.ClueTitle"), ui::format(text.get("Quest.ClueFound"), { text.get("Quest.Item" + std::to_string(character.staffPieces)), piece ? piece->name : std::string() }));
+		if (giver)
+		{
+			character.questStep = 3; // levar ao governante, que revela a masmorra do pedaço
+			quest::note(character, ui::format(text.get("Journal.ClueHeld"), { item, clue->name, giver->name }));
+			this->openVision(text.get("Quest.ClueTitle"), ui::format(text.get("Quest.ClueHeld"), { item, giver->name }));
+		}
+		else
+		{
+			character.questStep = 4; // a masmorra do pedaço aparece no mapa de viagem
+			quest::note(character, ui::format(text.get("Journal.Clue"), { item, clue->name, piece ? piece->name : std::string() }));
+			this->openVision(text.get("Quest.ClueTitle"), ui::format(text.get("Quest.ClueFound"), { item, piece ? piece->name : std::string() }));
+		}
 		this->persist();
 		return true;
 	}
@@ -3033,4 +3061,55 @@ void arena::GameWorldScreen::openJournal()
 	this->overlay = Overlay::Journal;
 	this->heldKeys.clear();
 	this->holdLeft = this->holdRight = this->holdUp = this->holdDown = false;
+}
+
+bool arena::GameWorldScreen::tryAttackCitizen()
+{
+	const int index = this->citizens.findFacing(this->x, this->z, this->yaw, 1.45f);
+	if (index < 0) return false;
+	const auto [cx, cz] = this->citizens.position(index);
+	this->playAt("EHIT.VOC", cx, cz);
+	this->playAt(this->citizens.isMale(index) ? "MDIE.VOC" : "FDIE.VOC", cx, cz);
+	this->citizens.remove(index);
+	const Localization &text = this->game.getText();
+	this->showMessage(ui::format(text.get("World.CitizenKilled"), { this->locationName }), 4.0);
+	this->callGuards();
+	return true;
+}
+
+void arena::GameWorldScreen::callGuards()
+{
+	// Guardas da cidade (GUARD0@.CFA do original), mais fortes com o nível do jogador. Surgem de
+	// 6 a 11 passos, nas ruas em volta, já em alerta.
+	const CharacterDraft &character = this->game.getCharacter();
+	if (this->guardDefinition < 0)
+	{
+		CreatureDefinition guard;
+		guard.originalName = "Guard";
+		guard.animFilename = "GUARD0@.CFA";
+		guard.level = std::max(3, character.level + 2);
+		guard.minHp = 25 + 8 * guard.level;
+		guard.maxHp = guard.minHp + 20;
+		guard.minDamage = 2 + guard.level / 2;
+		guard.maxDamage = 6 + guard.level;
+		guard.baseExperience = 50 * guard.level;
+		guard.experienceMultiplier = 0;
+		this->guardDefinition = this->creatures.addDefinition(guard);
+	}
+
+	std::mt19937 &rng = this->game.getRandom();
+	int spawned = 0;
+	for (int tries = 0; tries < 80 && spawned < 3; tries++)
+	{
+		const float angle = std::uniform_real_distribution<float>(0.0f, 2.0f * Pi)(rng);
+		const float distance = std::uniform_real_distribution<float>(6.0f, 11.0f)(rng);
+		const int gx = static_cast<int>(std::floor(this->x + std::cos(angle) * distance)), gz = static_cast<int>(std::floor(this->z + std::sin(angle) * distance));
+		if (!this->level.inBounds(gx, gz) || this->level.blocksMovement(gx, gz) || this->level.cell(gx, gz).chasm) continue;
+		const int index = this->creatures.spawn(this->game.getAssets(), this->palette, this->guardDefinition, gx + 0.5f, gz + 0.5f, rng);
+		if (index < 0) break; // sem animação
+		this->creatures.wake(index);
+		spawned++;
+	}
+
+	if (spawned > 0) this->game.playSound("HALT.VOC");
 }

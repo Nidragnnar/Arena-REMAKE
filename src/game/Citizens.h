@@ -29,6 +29,7 @@ namespace arena
 		size_t count() const { return this->citizens.size(); }
 		std::pair<float, float> position(int index) const { return { this->citizens[static_cast<size_t>(index)].x, this->citizens[static_cast<size_t>(index)].z }; }
 		bool empty() const { return this->citizens.empty(); }
+		void remove(int index) { this->citizens.erase(this->citizens.begin() + index); }
 		// À noite só uma parte dos moradores fica na rua.
 		void setNight(bool value) { this->night = value; }
 

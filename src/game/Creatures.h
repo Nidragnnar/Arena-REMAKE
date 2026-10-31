@@ -78,6 +78,9 @@ namespace arena
 		int spawn(const AssetManager &assets, const Palette &palette, int definition, float x, float z, std::mt19937 &rng);
 		void vanishFarFrom(float x, float z, float distance);
 		int activeNear(float x, float z, float distance) const;
+		// Definição criada pelo jogo (guardas da cidade); devolve o índice novo.
+		int addDefinition(const CreatureDefinition &def) { this->definitions.push_back(def); return static_cast<int>(this->definitions.size()) - 1; }
+		void wake(int index) { this->creatures[static_cast<size_t>(index)].awake = true; }
 		const CreatureDefinition *definition(int index) const { return index >= 0 && index < static_cast<int>(this->definitions.size()) ? &this->definitions[static_cast<size_t>(index)] : nullptr; }
 
 		void restore(int index, int hp, float x, float z, bool dead)

@@ -158,6 +158,10 @@ namespace arena
 		DialogueMenu dialogueMenu;
 		JournalMenu journalMenu;
 		void openJournal();
+		// Crimes na cidade: golpear um morador o mata e chama os guardas.
+		bool tryAttackCitizen();
+		void callGuards();
+		int guardDefinition = -1;
 		TravelMenu travelMenu;
 		bool isWild() const { return this->mifName.rfind("WILD:", 0) == 0; }
 		// Cidade do mapa atual (cidade, ermo em volta dela ou prédio dentro dela).

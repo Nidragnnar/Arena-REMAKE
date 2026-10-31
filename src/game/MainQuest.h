@@ -12,7 +12,8 @@ namespace arena
 	// Missão principal: os oito pedaços do Cajado do Caos, na ordem de províncias do original
 	// (StaffProvinces do ACD.EXE). Cada pedaço segue os passos:
 	//   0 = esperando o sonho de Ria (ao descansar), 1 = sonhou (procurar boatos na província),
-	//   2 = conhece a masmorra da pista (local 33), 3 = conhece a masmorra do pedaço (local 32).
+	//   2 = conhece a masmorra da pista (local 33), 3 = tem o item da pista (levar ao governante),
+	//   4 = conhece a masmorra do pedaço (local 32).
 	// Com os oito pedaços: 0 = último sonho, 1 = ir ao Palácio Imperial, 2 = entrou no palácio,
 	//   3 = chegou à câmara da Joia do Fogo, 4 = Tharn derrotado (fim da missão).
 	namespace quest

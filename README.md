@@ -325,6 +325,12 @@ continuam os originais; com mais quadros, a cena passa a ser só os PNGs, na mes
 (o dobro de quadros deixa o movimento duas vezes mais fluido). PNGs em 16:10 (como o 320x200
 original) são esticados para 4:3 como num monitor VGA; outras proporções aparecem como são.
 
+### Crimes e guardas
+
+Golpear um morador (tecla F; o clique perto de alguém abre a conversa) o mata e chama a guarda: três
+guardas (`GUARD0@.CFA` do original) surgem nas ruas em volta, já em alerta, com nível, vida e dano
+acima dos do jogador. Os guardas não ficam no save: ao recarregar a cidade, a confusão é esquecida.
+
 ### Diário
 
 A tecla J (ou Diário, no menu de pausa) abre o diário: a missão atual em uma frase (o que fazer e
@@ -340,12 +346,12 @@ Valenwood, Elsweyr, Summerset, Rocha Alta, Pântano Negro e Morrowind). Ao desca
 nível 2), Ria Silmane aparece em sonho com o lugar do próximo pedaço (textos do `TEMPLATE.DAT`,
 traduzidos). Nas cidades da província certa, o primeiro boato aponta a masmorra da pista, que passa
 a aparecer no mapa de viagem; o item da pista (`*ITEM 13` do mapa pronto) revela a masmorra do
-pedaço, e o pedaço em si leva ao próximo sonho. As masmorras da missão ficam escondidas no mapa
+pedaço só depois de entregue ao governante da cidade onde se ouviu o boato (no palácio, de dia),
+e o pedaço em si leva ao próximo sonho. As masmorras da missão ficam escondidas no mapa
 até serem descobertas. Com os oito pedaços, o último sonho manda ao Palácio Imperial: viajar para a
 Cidade Imperial leva direto ao mapa pronto do original (`IMPPAL.MIF`, 4 andares), onde Tharn recebe o
 jogador. No último andar está a Joia do Fogo; tocá-la com o Cajado mata Tharn (a 24ª criatura do
-executável, `*ITEM 73`) e mostra o final. Simplificado: no original o item da pista é entregue a um
-rei ou sábio.
+executável, `*ITEM 73`) e mostra o final.
 
 ### Dia e noite
 

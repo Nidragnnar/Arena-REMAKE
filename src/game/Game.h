@@ -80,6 +80,7 @@ namespace arena
 		bool spellbookKnown = false; // a ficha já tinha a seção [Spellbook]
 		int staffPieces = 0; // missão principal: pedaços do Cajado do Caos (ver MainQuest.h)
 		int questStep = 0;   // passo da busca do próximo pedaço
+		int questGiver = -1; // cidade (id global) cujo governante espera o item da pista
 		std::vector<JournalEntry> journal; // diário, do mais antigo ao mais recente
 	};
 
@@ -159,6 +160,9 @@ namespace arena
 		// Mensagem para mostrar ao abrir o próximo mundo (ex.: chegada de viagem).
 		void setPendingNote(std::string note) { this->pendingNote = std::move(note); }
 		std::string takePendingNote() { return std::exchange(this->pendingNote, std::string()); }
+		// Painel (título, texto) para a próxima tela do mundo mostrar ao abrir (ex.: fala do governante).
+		void setPendingVision(std::string title, std::string body) { this->pendingVision = { std::move(title), std::move(body) }; }
+		std::pair<std::string, std::string> takePendingVision() { return std::exchange(this->pendingVision, {}); }
 		// Mapa do jogo carregado (World.Map) ou a Prisão Imperial.
 		std::string startingMap() const
 		{
@@ -235,6 +239,7 @@ namespace arena
 		std::vector<std::pair<std::string, std::string>> pendingWorld;
 		std::string pendingSpawn;
 		std::string pendingNote;
+		std::pair<std::string, std::string> pendingVision;
 		GpuBackend *gpu = nullptr;
 		std::unique_ptr<MusicPlayer> music;
 		std::string currentMusic;

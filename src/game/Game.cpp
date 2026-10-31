@@ -297,7 +297,8 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 {
 	std::vector<std::pair<std::string, std::string>> world;
 	CharacterDraft loaded;
-	const bool ok = parseKeyValueFile(path, [&loaded, &world](const std::string &key, const std::string &value)
+	int questVersion = 1;
+	const bool ok = parseKeyValueFile(path, [&loaded, &world, &questVersion](const std::string &key, const std::string &value)
 	{
 		if (key.rfind("World.", 0) == 0 || key.rfind("Creatures.", 0) == 0 || key.rfind("Loot.", 0) == 0)
 		{
@@ -324,6 +325,8 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 		else if (key == "Spellbook.Ready") loaded.readySpell = number;
 		else if (key == "Quest.StaffPieces") loaded.staffPieces = std::clamp(number, 0, 8);
 		else if (key == "Quest.Step") loaded.questStep = std::clamp(number, 0, 4);
+		else if (key == "Quest.Giver") loaded.questGiver = number;
+		else if (key == "Quest.Version") questVersion = number;
 		else if (key.rfind("Journal.Entry", 0) == 0)
 		{
 			// minutos|chave do texto completo|texto
@@ -368,6 +371,9 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 	{
 		return false;
 	}
+
+	// Missão da versão 1 (sem a entrega ao governante): passo 3 era "masmorra do pedaço conhecida".
+	if (questVersion < 2 && loaded.staffPieces < 8 && loaded.questStep == 3) loaded.questStep = 4;
 
 	// Fichas antigas (antes do inventário) recebem o equipamento inicial da classe.
 	if (loaded.inventory.empty())
@@ -442,7 +448,7 @@ bool arena::Game::saveCharacter(const std::filesystem::path &path, const std::st
 	file << "\n[Spellbook]\n# feitiços conhecidos (índices do SPELLSG.65) e o preparado para a tecla Q\nKnown=";
 	for (size_t i = 0; i < c.spells.size(); i++) file << (i ? "," : "") << c.spells[i];
 	file << "\nReady=" << c.readySpell << "\n";
-	file << "\n[Quest]\n# missão principal: pedaços do Cajado do Caos e passo da busca do próximo\nStaffPieces=" << c.staffPieces << "\nStep=" << c.questStep << "\n";
+	file << "\n[Quest]\n# missão principal: pedaços do Cajado do Caos e passo da busca do próximo\nStaffPieces=" << c.staffPieces << "\nStep=" << c.questStep << "\nGiver=" << c.questGiver << "\nVersion=2\n";
 	file << "\n[Journal]\n# diário: minutos de jogo|texto completo para reler|resumo\n";
 	for (size_t i = 0; i < c.journal.size(); i++)
 		file << "Entry" << i << "=" << static_cast<long long>(c.journal[i].minutes) << "|" << c.journal[i].detail << "|" << c.journal[i].text << "\n";

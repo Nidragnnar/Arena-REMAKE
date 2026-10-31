@@ -312,6 +312,18 @@ cada província ligadas à missão principal usam o mapa pronto do original (`NN
 número da semente, com os monstros que o mapa traz); as outras são geradas. A escada de subida do
 andar de cima leva para fora (aos arredores da cidade mais próxima, quando se chegou viajando).
 
+### Cutscenes
+
+As animações do original (.FLC) tocam em tela cheia: o livro do `INTRO.FLC` ao abrir o jogo, o
+Imperador e a traição de Tharn (`KING.FLC`, `MORPH.FLC`) no novo jogo e Ria Silmane
+(`VISION.FLC`, mais `CHAOSVSN.FLC` no primeiro sonho) antes de cada sonho. Qualquer tecla ou
+clique pula a cena atual; Esc pula todas. Para trocar por versões redesenhadas, coloque PNGs em
+`data/mods/` (em qualquer subpasta) com os nomes da exportação: `INTRO_000.png`, `INTRO_001.png`...
+Com até o número original de quadros, cada PNG troca o quadro de mesmo número e os que faltarem
+continuam os originais; com mais quadros, a cena passa a ser só os PNGs, na mesma duração total
+(o dobro de quadros deixa o movimento duas vezes mais fluido). PNGs em 16:10 (como o 320x200
+original) são esticados para 4:3 como num monitor VGA; outras proporções aparecem como são.
+
 ### Missão principal
 
 Os oito pedaços do Cajado do Caos, na ordem de províncias do executável (Hammerfell, Skyrim,

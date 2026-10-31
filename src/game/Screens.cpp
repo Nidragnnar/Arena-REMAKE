@@ -2,6 +2,7 @@
 
 #include "../core/Utf8.h"
 #include "CharacterCreation.h"
+#include "Cutscene.h"
 #include "GameWorldScreen.h"
 #include "NewCharacter.h"
 #include "../world/SpriteOverrides.h"
@@ -182,8 +183,10 @@ void arena::MainMenuScreen::activate(Action action)
 		this->loadOpen = true;
 		break;
 	case Action::NewGame:
+		// Novo jogo: o Imperador e a traição de Tharn (KING e MORPH) antes da criação.
 		this->game.getCharacter() = CharacterDraft{};
-		this->game.changeScreen(std::make_unique<NewCharacterScreen>(this->game));
+		this->game.changeScreen(std::make_unique<CutsceneScreen>(this->game, std::vector<std::string>{ "KING.FLC", "MORPH.FLC" },
+			[](Game &owner) -> std::unique_ptr<Screen> { return std::make_unique<NewCharacterScreen>(owner); }));
 		break;
 	case Action::Exit:
 		this->game.requestQuit();

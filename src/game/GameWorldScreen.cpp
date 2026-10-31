@@ -1263,6 +1263,15 @@ void arena::GameWorldScreen::handleInput(const InputEvent &event)
 		}
 	}
 
+	if (this->cutscene.active())
+	{
+		if (event.isKey(InputEvent::Key::Escape)) this->cutscene.stop();
+		else if (event.type == InputEvent::Type::KeyDown || event.isClick()) this->cutscene.skip();
+		this->heldKeys.clear();
+		this->holdLeft = this->holdRight = this->holdUp = this->holdDown = false;
+		return;
+	}
+
 	// Mouse sobre os botões de pausa/morte (interface em resolução nativa).
 	eventToPixels(event, this->uiFrameW, this->uiFrameH, this->uiMouseX, this->uiMouseY);
 	if (this->gateTimer > 0.0) return;
@@ -1462,6 +1471,12 @@ void arena::GameWorldScreen::handleInput(const InputEvent &event)
 
 void arena::GameWorldScreen::update(double dt)
 {
+	if (this->cutscene.active())
+	{
+		this->cutscene.update(dt);
+		return;
+	}
+
 	this->time += dt;
 	this->messageTimer -= dt;
 	this->helpTimer -= dt;
@@ -2217,7 +2232,11 @@ void arena::GameWorldScreen::drawHud(std::vector<uint32_t> &pixels, int width, i
 		}
 	};
 
-	if (this->health <= 0)
+	if (this->cutscene.active())
+	{
+		this->cutscene.draw(painter, width, height);
+	}
+	else if (this->health <= 0)
 	{
 		screenPanel(text.get("World.Dead"), rgb(230, 70, 50), { { text.get("Pause.Load"), 'l' }, { text.get("Pause.Restart"), 'r' }, { text.get("Pause.MainMenu"), 'm' } }, rgb(60, 0, 0, 160));
 	}
@@ -2822,6 +2841,10 @@ void arena::GameWorldScreen::tryDream()
 	const std::string body = ui::format(text.get("Quest.Dream" + std::to_string(character.staffPieces)), { character.name, character.name, character.name });
 	character.questStep = 1;
 	this->openVision(text.get("Quest.DreamTitle"), body);
+	// Ria aparece (VISION.FLC); no primeiro sonho ela mostra o Cajado do Caos (CHAOSVSN.FLC).
+	std::vector<std::string> scenes{ "VISION.FLC" };
+	if (character.staffPieces == 0) scenes.push_back("CHAOSVSN.FLC");
+	this->cutscene.start(this->game, scenes);
 	this->persist();
 }
 

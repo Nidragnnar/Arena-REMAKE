@@ -14,6 +14,7 @@
 #include "GameMenus.h"
 #include "ServiceMenu.h"
 #include "Citizens.h"
+#include "Cutscene.h"
 #include "DialogueMenu.h"
 #include "TravelMenu.h"
 #include "SpellbookUi.h"
@@ -34,7 +35,7 @@ namespace arena
 		bool usesWorldView() const override { return true; }
 		void renderWorld(std::vector<uint32_t> &pixels, int width, int height) override;
 		bool debugCommand(const std::string &name, const std::string &arg) override;
-		bool wantsRelativeMouse() const override { return this->loaded && !this->paused && this->health > 0 && this->overlay == Overlay::None && !this->chapterOpen && this->visionText.empty() && this->gateTimer <= 0.0; }
+		bool wantsRelativeMouse() const override { return this->loaded && !this->paused && this->health > 0 && this->overlay == Overlay::None && !this->chapterOpen && this->visionText.empty() && !this->cutscene.active() && this->gateTimer <= 0.0; }
 
 	private:
 		// Arma em primeira pessoa (CIF do original) e seus golpes.
@@ -207,6 +208,7 @@ namespace arena
 
 		// Missão principal (MainQuest.h): sonhos de Ria e achados, num painel que pausa o jogo.
 		std::string visionTitle, visionText; // aberto quando visionText não está vazio
+		Cutscene cutscene; // cena do original antes do painel (Ria em VISION.FLC)
 		void openVision(const std::string &title, const std::string &body);
 		void tryDream();
 		bool tryTakeQuestItem(size_t sprite);

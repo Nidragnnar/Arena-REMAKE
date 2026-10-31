@@ -15,6 +15,7 @@ add_library(arena_core STATIC
 	src/assets/Compression.cpp
 	src/assets/AssetManager.cpp
 	src/assets/Image.cpp
+	src/assets/Flc.cpp
 	src/assets/Font.cpp
 	src/render/Canvas.cpp
 	src/render/ImageOps.cpp
@@ -43,6 +44,7 @@ add_library(arena_core STATIC
 	src/game/WildGen.cpp
 	src/game/DungeonGen.cpp
 	src/game/MainQuest.cpp
+	src/game/Cutscene.cpp
 	src/game/TravelMenu.cpp
 	src/game/NewCharacter.cpp
 	src/game/InventoryUi.cpp

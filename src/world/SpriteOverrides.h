@@ -18,6 +18,10 @@ namespace arena
 	void loadSpriteOverrides(const std::filesystem::path &modDir);
 	size_t spriteOverrideCount();
 
+	// PNG da pasta de mods pelo nome do arquivo sem extensão (ex.: "INTRO_000"), em RGBA 0xAABBGGRR.
+	bool hasModPng(const std::string &stem);
+	bool loadModPng(const std::string &stem, std::vector<uint32_t> &out, int &width, int &height);
+
 	// Textura do PNG que substitui o quadro `frame` do arquivo `source` (frameCount = total de
 	// quadros do arquivo), ou nada se não houver. `original` dá o tamanho de referência.
 	std::optional<Texture> findSpriteOverride(const std::string &source, int frame, int frameCount, const IndexedImage &original);

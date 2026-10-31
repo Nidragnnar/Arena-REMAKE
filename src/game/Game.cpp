@@ -7,6 +7,7 @@
 #include "../render/Ui.h"
 #include "../world/SpriteOverrides.h"
 #include "Game.h"
+#include "Cutscene.h"
 #include "Screens.h"
 
 bool arena::Game::init(const std::filesystem::path &arenaDir, const std::filesystem::path &dataDir, std::string &outError)
@@ -59,7 +60,9 @@ bool arena::Game::init(const std::filesystem::path &arenaDir, const std::filesys
 
 	this->parchmentTiles = this->loadFrames("PARCH.CIF");
 
-	this->current = std::make_unique<TitleScreen>(*this);
+	// Abertura: o livro do INTRO.FLC (qualquer tecla pula) e depois a tela de título.
+	this->current = std::make_unique<CutsceneScreen>(*this, std::vector<std::string>{ "INTRO.FLC" },
+		[](Game &game) -> std::unique_ptr<Screen> { return std::make_unique<TitleScreen>(game); });
 	this->fadeTimer = FadeDuration;
 	return true;
 }

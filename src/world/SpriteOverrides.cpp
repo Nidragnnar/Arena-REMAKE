@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
+#include <cstring>
 #include <unordered_map>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -132,4 +133,22 @@ arena::RgbaImage arena::loadRgba(const IndexedImage &image, const Palette &palet
 	}
 
 	return out;
+}
+
+bool arena::hasModPng(const std::string &stem)
+{
+	return overrides.count(upper(stem)) > 0;
+}
+
+bool arena::loadModPng(const std::string &stem, std::vector<uint32_t> &out, int &width, int &height)
+{
+	const auto it = overrides.find(upper(stem));
+	if (it == overrides.end()) return false;
+	int channels = 0;
+	stbi_uc *rgba = stbi_load(it->second.string().c_str(), &width, &height, &channels, 4);
+	if (!rgba) return false;
+	out.resize(static_cast<size_t>(width) * height);
+	std::memcpy(out.data(), rgba, out.size() * 4); // bytes R,G,B,A = 0xAABBGGRR
+	stbi_image_free(rgba);
+	return true;
 }

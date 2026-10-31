@@ -330,7 +330,8 @@ No ermo surgem criaturas fora da vista (a 18..28 passos, atrás ou dos lados) e 
 longe (45 passos). De dia são poucas (até 2 por perto) e só bichos do campo: ratos, goblins,
 homens-lagarto, lobos (lobos da neve nas montanhas), orcs, aranhas e trolls. À noite são mais (até
 6) e aparecem mortos-vivos: esqueletos, carniçais, cães infernais, fantasmas, zumbis e espectros.
-Só criaturas até 2 níveis acima do jogador. O ermo não guarda criaturas no save.
+Só criaturas até 2 níveis acima do jogador. As criaturas vivas por perto ficam no save (tipo, vida e posição) e
+voltam ao carregar o jogo.
 
 Com **T** (na cidade ou no ermo) abre a viagem por Tamriel: o mapa com as províncias, a lista dos
 locais da província com os dias de viagem (pelo terreno do mapa-múndi e as tabelas de velocidade
@@ -368,7 +369,8 @@ original) são esticados para 4:3 como num monitor VGA; outras proporções apar
 
 Golpear um morador (clique ou F; conversar é com o E) o mata e chama a guarda: três
 guardas (`GUARD0@.CFA` do original) surgem nas ruas em volta, já em alerta, com nível, vida e dano
-acima dos do jogador. Os guardas não ficam no save: ao recarregar a cidade, a confusão é esquecida.
+acima dos do jogador. A guarda lembra do crime por 3 dias do jogo: voltar à cidade nesse tempo (ou carregar o
+jogo nela) traz os guardas de novo, assim que o jogador aparece. Os crimes ficam no save (seção `[Crimes]`).
 
 ### Diário
 

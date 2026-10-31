@@ -160,6 +160,15 @@ arena::GameWorldScreen::GameWorldScreen(Game &game, const std::string &mifName) 
 
 	this->creatures.init(game.getAssets(), this->palette, game.getData(), this->level, game.getRandom());
 	if (this->isDungeon()) this->placeDungeonTargets();
+	if (this->level.isExterior() && !this->isWild())
+	{
+		// Procurado nesta cidade? Os guardas vêm assim que o jogador aparece (ver update).
+		CharacterDraft &hero = game.getCharacter();
+		const CityLocation *city = this->currentCity();
+		const auto crime = city ? hero.wanted.find(city->globalId) : hero.wanted.end();
+		if (crime != hero.wanted.end() && crime->second > hero.gameMinutes) this->guardsOnArrival = true;
+		else if (crime != hero.wanted.end()) hero.wanted.erase(crime);
+	}
 	this->setupWeapon();
 
 	// Música: dia de sol nas cidades; masmorra (DUNGEON1 tem problemas no original; sorteia entre 2 e 5).
@@ -1002,6 +1011,15 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 		return true;
 	}
 
+	if (name == "crime" && this->currentCity())
+	{
+		// crime marca o jogador como procurado nesta cidade, como ao matar um morador (teste).
+		CharacterDraft &hero = this->game.getCharacter();
+		hero.wanted[this->currentCity()->globalId] = hero.gameMinutes + WantedDays * clock::MinutesPerDay;
+		std::printf("procurado em %s\n", this->currentCity()->name.c_str());
+		return true;
+	}
+
 	if (name == "importoriginal")
 	{
 		// importoriginal:N importa o N-ésimo save do Arena original e começa por ele (teste).
@@ -1822,6 +1840,12 @@ void arena::GameWorldScreen::update(double dt)
 		return;
 	}
 	this->updateDisease(dt);
+	if (this->guardsOnArrival)
+	{
+		this->guardsOnArrival = false;
+		this->callGuards();
+		this->showMessage(this->game.getText().get("World.Wanted"), 4.0);
+	}
 	if (this->paralysisTimer > 0.0)
 	{
 		// Paralisado: só dá para olhar em volta até passar.
@@ -3378,6 +3402,10 @@ bool arena::GameWorldScreen::tryAttackCitizen()
 	const Localization &text = this->game.getText();
 	this->showMessage(ui::format(text.get("World.CitizenKilled"), { this->locationName }), 4.0);
 	this->callGuards();
+	// A guarda lembra do crime por alguns dias: voltar à cidade nesse tempo traz os guardas de novo.
+	CharacterDraft &hero = this->game.getCharacter();
+	if (const CityLocation *city = this->currentCity()) hero.wanted[city->globalId] = hero.gameMinutes + WantedDays * clock::MinutesPerDay;
+	this->persist();
 	return true;
 }
 

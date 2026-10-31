@@ -330,6 +330,7 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 		else if (key == "Character.Gold") loaded.gold = number;
 		else if (key == "Character.Disease") loaded.disease = number;
 		else if (key == "Character.DiseaseEnd") loaded.diseaseEnd = std::atof(value.c_str());
+		else if (key.rfind("Crimes.City", 0) == 0) loaded.wanted[std::atoi(key.c_str() + 11)] = std::atof(value.c_str());
 		else if (key == "Character.Experience") loaded.experience = number;
 		else if (key == "Character.Level") loaded.level = std::max(1, number);
 		else if (key == "Character.LevelPoints") loaded.levelPoints = std::max(0, number);
@@ -517,6 +518,8 @@ bool arena::Game::saveCharacter(const std::filesystem::path &path, const std::st
 		<< "Kind=" << static_cast<int>(job.kind) << "\nGiver=" << job.giver << "\nTarget=" << job.target << "\nReward=" << job.reward
 		<< "\nDeadline=" << static_cast<long long>(job.deadline) << "\nStep=" << job.step << "\nSubject=" << job.subject << "\nName=" << job.name << "\n";
 	file << "\n[Artifacts]\n# achados (bit por artefato), artefato procurado e último dia do cofre\nFound=" << c.artifactsFound << "\nHunt=" << c.hunt.artifact << "\nCofferDay=" << c.cofferDay << "\n";
+	file << "\n[Crimes]\n# cidade (id global) = minutos do jogo até a guarda esquecer o crime\n";
+	for (const auto &[city, until] : c.wanted) if (until > c.gameMinutes) file << "City" << city << "=" << static_cast<long long>(until) << "\n";
 	file << "\n[Journal]\n# diário: minutos de jogo|texto completo para reler|resumo\n";
 	for (size_t i = 0; i < c.journal.size(); i++)
 		file << "Entry" << i << "=" << static_cast<long long>(c.journal[i].minutes) << "|" << c.journal[i].detail << "|" << c.journal[i].text << "\n";

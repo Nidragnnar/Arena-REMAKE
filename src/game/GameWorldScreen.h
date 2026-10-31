@@ -177,6 +177,8 @@ namespace arena
 		// Crimes na cidade: golpear um morador o mata e chama os guardas.
 		bool tryAttackCitizen();
 		void callGuards();
+		bool guardsOnArrival = false; // procurado nesta cidade: os guardas aparecem logo ao chegar
+		static constexpr double WantedDays = 3.0; // dias até a guarda esquecer um crime
 		int guardDefinition = -1;
 		TravelMenu travelMenu;
 		bool isWild() const { return this->mifName.rfind("WILD:", 0) == 0; }

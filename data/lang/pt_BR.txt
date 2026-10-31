@@ -278,6 +278,7 @@ CreatureKilled=Mataste %s! +%s de experiência.
 CreatureHit=%s te acerta! (-%s de vida)
 Paralyzed=O golpe d%s te paralisa! Não consegues te mexer.
 ParalysisGone=Voltas a te mexer.
+Wanted=Os guardas te reconhecem! Ainda és procurado nesta cidade.
 Diseased=Sentes-te mal: pegaste %s. Procura um templo ou o feitiço Curar Doença.
 DiseaseGone=A doença (%s) passou.
 CreatureMiss=%s erra o ataque.

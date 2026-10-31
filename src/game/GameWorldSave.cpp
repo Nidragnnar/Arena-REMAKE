@@ -83,13 +83,19 @@ std::string arena::GameWorldScreen::serializeWorld() const
 	first = true;
 	for (const auto &[rx, rz, name] : this->removedSprites) { out << (first ? "" : ";") << number(rx) << ":" << number(rz) << ":" << name; first = false; }
 
-	out << "\n\n[Creatures]\n# vida, x, z, morta\n";
+	out << "\n\n[Creatures]\n# vida, x, z, morta (no ermo: W = tipo, vida, x, z das criaturas vivas por perto)\n";
 	const auto &all = this->creatures.getCreatures();
 	for (size_t i = 0; i < all.size(); i++)
 	{
 		const Creature &c = all[i];
-		if (this->isWild()) break; // o ermo sorteia criaturas de novo a cada visita
 		const bool dead = c.state == Creature::State::Dead || c.state == Creature::State::Dying;
+		if (this->isWild())
+		{
+			// O ermo cria as criaturas na hora: grava as vivas (do executável) para recriá-las ao carregar.
+			if (!dead && !c.gone && this->game.getData().getCreature(c.definition))
+				out << "W" << i << "=" << c.definition << "," << c.hp << "," << number(c.x) << "," << number(c.z) << "\n";
+			continue;
+		}
 		out << "C" << i << "=" << c.hp << "," << number(c.x) << "," << number(c.z) << "," << (dead ? 1 : 0) << "\n";
 	}
 
@@ -160,6 +166,16 @@ void arena::GameWorldScreen::restoreWorld(const std::vector<std::pair<std::strin
 			int hp = 0, dead = 0;
 			float cx = 0, cz = 0;
 			if (std::sscanf(value.c_str(), "%d,%f,%f,%d", &hp, &cx, &cz, &dead) == 4) this->creatures.restore(std::atoi(key.c_str() + 11), hp, cx, cz, dead != 0);
+		}
+		else if (key.rfind("Creatures.W", 0) == 0 && this->isWild())
+		{
+			int definition = 0, hp = 0;
+			float cx = 0, cz = 0;
+			if (std::sscanf(value.c_str(), "%d,%d,%f,%f", &definition, &hp, &cx, &cz) == 4 && this->game.getData().getCreature(definition))
+			{
+				const int index = this->creatures.spawn(this->game.getAssets(), this->palette, definition, cx, cz, this->game.getRandom());
+				if (index >= 0) this->creatures.restore(index, hp, cx, cz, false);
+			}
 		}
 		else if (key.rfind("Loot.Box", 0) == 0 || key.rfind("Loot.Corpse", 0) == 0)
 		{

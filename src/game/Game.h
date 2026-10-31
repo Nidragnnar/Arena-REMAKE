@@ -91,6 +91,7 @@ namespace arena
 		int cofferDay = -1;                // último dia em que o Cofre do Rei Orgnum foi aberto
 		int disease = -1;                  // doença pega de uma criatura (índice de DiseaseNames), -1 = saudável
 		double diseaseEnd = 0.0;           // minutos do jogo em que a doença passa sozinha
+		std::map<int, double> wanted;      // crimes: cidade (id global) -> minutos do jogo até a guarda esquecer
 	};
 
 	class Game;

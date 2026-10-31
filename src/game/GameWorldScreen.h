@@ -247,7 +247,7 @@ namespace arena
 		int textIndexOf(int definition) const { const auto it = this->definitionText.find(definition); return it != this->definitionText.end() ? it->second : definition; }
 		int dungeonFloors = 1;  // andares da masmorra gerada atual
 		static constexpr int JobTargetItem = 90, ArtifactItem = 91; // itemId dos sprites criados
-		double regenTimer = 0.0;
+		std::map<int, double> powerRecharge; // poder de artefato (feitiço) -> segundos até recarregar
 		bool isPalace() const { return this->mifName.rfind("IN:PALACE", 0) == 0 || this->mifName.rfind("IN:TOWNPAL", 0) == 0 || this->mifName.rfind("IN:VILPAL", 0) == 0; }
 
 		// Magia: pontos, conjuração em andamento, projéteis, efeitos ativos no jogador e nas criaturas.

@@ -104,9 +104,6 @@ int arena::GameWorldScreen::fortifyBonus(int attribute) const
 		if (e.type == SpellEffectType::Fortify && e.sub == attribute) bonus += e.magnitude;
 	}
 
-	// Artefatos equipados: Volendrung (Força), Anel dos Khajiiti (Agilidade), Amuleto do Necromante (Inteligência).
-	const artifact::Powers powers = artifact::powersOf(this->game.getCharacter());
-	bonus += attribute == 0 ? powers.strength : attribute == 3 ? powers.agility : attribute == 1 ? powers.intelligence : 0;
 	return bonus;
 }
 
@@ -128,8 +125,14 @@ void arena::GameWorldScreen::castReadySpell()
 		return;
 	}
 
-	// Anel do Bruxo e Cajado de Magnus: feitiços mais baratos.
-	const int cost = std::max(1, spell->castingCost() * (100 - artifact::powersOf(c).spellDiscount) / 100);
+	// Poder de artefato: grátis, mas precisa recarregar entre um uso e outro.
+	if (spell->artifactPower() && this->powerRecharge[spell->index] > 0.0)
+	{
+		this->showMessage(ui::format(text.get("Artifacts.Recharging"), { spellName(this->game, *spell), std::to_string(static_cast<int>(std::ceil(this->powerRecharge[spell->index]))) }), 2.5);
+		return;
+	}
+	if (spell->artifactPower()) this->powerRecharge[spell->index] = artifact::PowerRecharge;
+	const int cost = spell->castingCost();
 	if (this->spellPoints < cost)
 	{
 		this->showMessage(ui::format(text.get("Spells.NotEnough"), { spellName(this->game, *spell), std::to_string(cost) }), 2.5);
@@ -479,6 +482,8 @@ void arena::GameWorldScreen::updateMagic(double dt)
 {
 	const Localization &text = this->game.getText();
 	const float fdt = static_cast<float>(dt);
+
+	for (auto &[power, seconds] : this->powerRecharge) seconds -= dt;
 
 	if (this->casting)
 	{
@@ -870,8 +875,8 @@ void arena::GameWorldScreen::boltHitsPlayer(const EnemyBolt &bolt)
 		}
 	}
 
-	// Dano: artefatos reduzem; o Escudo mágico absorve primeiro.
-	int amount = std::max(1, bolt.damage * (100 - artifact::powersOf(this->game.getCharacter()).damageReduction) / 100);
+	// Dano: o Escudo mágico absorve primeiro.
+	int amount = bolt.damage;
 	const int absorbed = std::min(this->shieldPoints, amount);
 	this->shieldPoints -= absorbed;
 	amount -= absorbed;

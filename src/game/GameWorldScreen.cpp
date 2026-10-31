@@ -465,6 +465,8 @@ bool arena::GameWorldScreen::tryOpenLoot()
 
 void arena::GameWorldScreen::applyOverlayResult(const OverlayResult &result)
 {
+	if (result.inventoryChanged) artifact::syncSpells(this->game.getCharacter()); // poderes dos artefatos equipados
+
 	if (result.spellPointsDelta != 0)
 	{
 		this->spellPoints = std::clamp(this->spellPoints + result.spellPointsDelta, 0, this->game.getCharacter().maxSpellPoints);
@@ -979,6 +981,18 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 		return true;
 	}
 
+	if (name == "artifact")
+	{
+		// artifact:N põe o artefato N no inventário, equipado (teste).
+		CharacterDraft &character = this->game.getCharacter();
+		Item item = artifact::makeItem(std::clamp(std::atoi(arg.c_str()), 0, artifact::Count - 1));
+		item.equipped = true;
+		character.inventory.push_back(item);
+		artifact::syncSpells(character);
+		if (const int power = artifact::spellOf(item.artifact); power >= 0) character.readySpell = power;
+		return true;
+	}
+
 	if (name == "hp" && this->loaded)
 	{
 		// hp:N muda a vida atual (teste).
@@ -1182,8 +1196,7 @@ void arena::GameWorldScreen::resolveSwing()
 
 	std::mt19937 &rng = this->game.getRandom();
 	const CreatureDefinition &def = this->creatures.definitionOf(target);
-	const artifact::Powers powers = artifact::powersOf(character);
-	const int chance = std::clamp(55 + 5 * (hitBonusFor(character.attributes[3] + this->fortifyBonus(3)) + powers.hitBonus) + 5 * (1 - def.level) + this->weaponMaterialBonus / 5, 10, 95);
+	const int chance = std::clamp(55 + 5 * hitBonusFor(character.attributes[3] + this->fortifyBonus(3)) + 5 * (1 - def.level) + this->weaponMaterialBonus / 5, 10, 95);
 	if (static_cast<int>(rng() % 100) >= chance)
 	{
 		this->showMessage(ui::format(text.get("World.PlayerMiss"), { this->creatureRef(target, false) }), 2.0);
@@ -1195,10 +1208,9 @@ void arena::GameWorldScreen::resolveSwing()
 	const Creature &victim = this->creatures.getCreatures()[static_cast<size_t>(target)];
 	const int maxHp = victim.maxHp;
 	this->playAt("EHIT.VOC", victim.x, victim.z);
-	// Lâmina de Ébano e Maça de Molag Bal: parte do dano volta como vida ou magia.
-	const int dealt = std::min(amount, victim.hp);
-	this->health = std::min(character.maxHealth, this->health + dealt * powers.lifeSteal / 100);
-	this->spellPoints = std::min(character.maxSpellPoints, this->spellPoints + dealt * powers.manaSteal / 100);
+	// Maça de Molag Bal: o dano causado volta como magia.
+	const int stolen = std::min(amount, victim.hp) * artifact::powersOf(character).manaSteal / 100;
+	this->spellPoints = std::min(character.maxSpellPoints, this->spellPoints + stolen);
 	if (this->creatures.damage(target, amount))
 	{
 		this->rewardKill(target, maxHp);
@@ -1226,15 +1238,7 @@ void arena::GameWorldScreen::handleCombatEvents(const std::vector<CombatEvent> &
 		}
 		case CombatEvent::Type::CreatureHitPlayer:
 		{
-			// Artefatos: menos dano (escudos, anéis) e parte dele devolvida ao atacante (Cota de Ébano).
-			const artifact::Powers powers = artifact::powersOf(this->game.getCharacter());
-			const int amount = std::max(1, event.amount * (100 - powers.damageReduction) / 100);
-			const int reflected = amount * powers.reflect / 100;
-			if (reflected > 0 && this->creatures.isAlive(event.creature))
-			{
-				const int maxHp = this->creatures.getCreatures()[static_cast<size_t>(event.creature)].maxHp;
-				if (this->creatures.damage(event.creature, reflected)) this->rewardKill(event.creature, maxHp);
-			}
+			const int amount = event.amount;
 			if (this->shieldPoints > 0)
 			{
 				const int absorbed = std::min(this->shieldPoints, amount);
@@ -1771,16 +1775,6 @@ void arena::GameWorldScreen::update(double dt)
 	this->updateMagic(dt);
 	this->updateArrows(dt);
 
-	// Artefatos que regeneram vida (Cota do Senhor) e magia (Cajado de Magnus, Amuleto do Necromante).
-	this->regenTimer += dt;
-	if (this->regenTimer >= 5.0)
-	{
-		this->regenTimer -= 5.0;
-		const CharacterDraft &hero = this->game.getCharacter();
-		const artifact::Powers powers = artifact::powersOf(hero);
-		if (powers.healthRegen > 0 && this->health > 0) this->health = std::min(hero.maxHealth, this->health + (powers.healthRegen + 6) / 12);
-		if (powers.magicRegen > 0) this->spellPoints = std::min(hero.maxSpellPoints, this->spellPoints + (powers.magicRegen + 6) / 12);
-	}
 	this->checkLevelUp();
 	if (this->health <= 0)
 	{
@@ -1798,8 +1792,7 @@ void arena::GameWorldScreen::update(double dt)
 	const float length = std::sqrt(forwardInput * forwardInput + strafeInput * strafeInput);
 	if (length > 0.0f)
 	{
-		const float boost = 1.0f + artifact::powersOf(this->game.getCharacter()).speed / 100.0f; // Anel dos Khajiiti
-		const float speed = (this->holdShift ? RunSpeed : WalkSpeed) * boost * fdt / length;
+		const float speed = (this->holdShift ? RunSpeed : WalkSpeed) * fdt / length;
 		const float fx = std::cos(this->yaw), fz = std::sin(this->yaw);
 		// Direita = forward x up = (-fz, fx) no plano XZ.
 		const float rx = -fz, rz = fx;

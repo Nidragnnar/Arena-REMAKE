@@ -45,7 +45,9 @@ namespace arena
 
 		// Custo em pontos de magia. No original é custo ÷ nível; o remake usa o valor de um
 		// personagem de nível 10 (custo ÷ 10) até existirem guildas e níveis.
-		int castingCost() const { return std::max(1, this->goldCost / 10); }
+		// Poderes dos artefatos (46..58 no SPELLSG.65): grátis, só com o artefato equipado (Artifacts.h).
+		bool artifactPower() const { return this->index >= 46 && this->index <= 58; }
+		int castingCost() const { return this->artifactPower() ? 0 : std::max(1, this->goldCost / 10); }
 		bool harmful() const { return this->target != SpellTarget::Caster && this->target != SpellTarget::Other; }
 	};
 

@@ -392,15 +392,18 @@ taverneiros. Um trabalho por vez, sempre com prazo; o diário (J) mostra o que f
 
 ### Artefatos
 
-Na aba Conversa da taverna, "Perguntar por artefatos": em alguns dias um estranho vende o paradeiro de um dos 16
+Na aba Conversa da taverna, "Perguntar por artefatos": em alguns dias um estranho vende o paradeiro de um dos 17
 artefatos do original (Lâmina de Ébano, Chrysamere, Volendrung, Maça de Molag Bal, Cajado de Magnus, Cota de
 Ébano, Cota do Senhor, Escudo de Auriel, Quebra-Feitiço, Anel do Bruxo, Anel dos Khajiiti, Anel de Phynaster,
-Amuleto do Necromante, Chave do Esqueleto, Oghma Infinium e Cofre do Rei Orgnum). A masmorra dele tem 4 andares,
-e o artefato fica num baú no fundo do último. Armas e armaduras são de ébano (ou malha, no caso da Cota do Senhor)
-e os outros são anéis, amuleto, chave, livro e cofre. Os poderes valem com o artefato equipado: roubar vida ou
-magia a cada golpe, Força, Agilidade ou Inteligência a mais, regenerar vida ou magia, menos dano recebido,
-devolver parte do dano, acerto, velocidade e feitiços mais baratos. A Chave do Esqueleto abre qualquer porta
-trancada só de estar no inventário. Ler o Oghma Infinium dá +10 em todos os atributos e o livro some. O Cofre
+Amuleto do Necromante, Chave do Esqueleto, Oghma Infinium, Cofre do Rei Orgnum e Arco de Auriel). A masmorra dele tem
+4 andares, e o artefato fica num baú no fundo do último. Armas e armaduras são de ébano (a Cota do Senhor é de malha);
+os outros são anéis, amuleto, chave, livro e cofre.
+
+Como no original, o poder de cada artefato é o feitiço dele no `SPELLSG.65` (46..58: Chrysamere cura, reflete
+feitiços e resiste ao fogo; a Lâmina de Ébano rouba vida à distância; Volendrung fere, amaldiçoa e drena...).
+Equipado, o artefato põe o poder no livro de feitiços (B); preparado, sai com Q sem gastar magia, com 30 s de
+recarga. Sem feitiço: a Maça de Molag Bal rouba magia a cada golpe, a Chave do Esqueleto abre qualquer porta
+trancada só de estar no inventário, ler o Oghma Infinium dá +10 em todos os atributos (e o livro some) e o Cofre
 dá 100 de ouro por dia desde a última vez que foi aberto. Os achados ficam no save (seção `[Artifacts]`).
 
 ### Dia e noite

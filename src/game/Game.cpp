@@ -6,6 +6,7 @@
 #include "../core/KeyValueFile.h"
 #include "../render/Ui.h"
 #include "../world/SpriteOverrides.h"
+#include "Artifacts.h"
 #include "Game.h"
 #include "Cutscene.h"
 #include "Screens.h"
@@ -436,6 +437,7 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 	}
 
 	this->character = loaded;
+	artifact::syncSpells(this->character);
 	setCustomSpells(this->character.customSpells);
 	this->pendingWorld = std::move(world);
 	return true;

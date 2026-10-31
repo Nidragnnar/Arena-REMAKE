@@ -284,6 +284,7 @@ arena::OverlayResult arena::useInventoryItem(Game &game, int index, int currentH
 	{
 		item.equipped = true;
 		game.playSound("CLICKS.VOC", 0.5f);
+		if (artifact::spellOf(item.type) >= 0) result.message = ui::format(text.get("Artifacts.PowerReady"), { itemName(game, item) });
 		return result;
 	}
 
@@ -309,6 +310,7 @@ arena::OverlayResult arena::useInventoryItem(Game &game, int index, int currentH
 
 	item.equipped = true;
 	game.playSound("CLANK.VOC", 0.4f);
+	if (item.artifact >= 0 && artifact::spellOf(item.artifact) >= 0) result.message = ui::format(text.get("Artifacts.PowerReady"), { itemName(game, item) });
 	return result;
 }
 

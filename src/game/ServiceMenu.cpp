@@ -156,7 +156,7 @@ void arena::ServiceMenu::rebuild(const Game &game)
 			// Feitiços do livro do original que o personagem ainda não conhece.
 			std::vector<const Spell *> list;
 			for (const Spell &spell : game.getData().getSpells().getSpells())
-				if (spell.goldCost > 0 && std::find(c.spells.begin(), c.spells.end(), spell.index) == c.spells.end()) list.push_back(&spell);
+				if (spell.goldCost > 0 && !spell.artifactPower() && std::find(c.spells.begin(), c.spells.end(), spell.index) == c.spells.end()) list.push_back(&spell);
 			std::stable_sort(list.begin(), list.end(), [](const Spell *a, const Spell *b) { return a->goldCost < b->goldCost; });
 			for (const Spell *spell : list)
 				this->rows.push_back({ spellName(game, *spell), ui::format(text.get("Shop.SpellDetail"), { std::to_string(spell->castingCost()) }), this->price(spell->goldCost * 2), BuySpell, spell->index, true });

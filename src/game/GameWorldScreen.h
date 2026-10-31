@@ -49,6 +49,7 @@ namespace arena
 			std::vector<Texture> textures;
 			int idleFrame = 32;
 			bool fists = false;
+			bool bow = false; // ARROWHLF.CFA: flecha encaixada (0) e disparo (1)
 		};
 
 		void setupWeapon();
@@ -239,6 +240,13 @@ namespace arena
 		Texture castHands;
 		std::array<Texture, 6> orbTextures;            // projétil por elemento
 		std::vector<Projectile> projectiles;
+		// Flechas do arco: voam em linha reta e acertam a primeira criatura (ou parede) no caminho.
+		struct Arrow { float x, y, z, dx, dy, dz; float travelled = 0.0f; int damage = 1; int hitChanceBonus = 0; };
+		std::vector<Arrow> arrows;
+		std::vector<Texture> arrowTextures; // ARROW02.CFA (a flecha vista de longe)
+		void shootArrow();
+		void updateArrows(double dt);
+		void drawArrows();
 		std::vector<Burst> bursts;
 		std::vector<PlayerEffect> playerEffects;
 		std::vector<CreatureDot> creatureDots;

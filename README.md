@@ -205,8 +205,11 @@ Comandos: `k:X`, `enter`, `esc`, `up`, `down`, `left`, `right`, `bs`, `click:x,y
   (placas/malha/couro, escudos), 8 materiais (Ferro…Ébano, bônus de dano/acerto/proteção) e 15 poções.
 - Kit inicial por classe (arma de aço + armadura permitida + Poção de Cura). A arma equipada
   define o dano e a animação em primeira pessoa (SWORD/AXE/MACE/STAR/HAMMER/STAFF.CIF).
-- Restrições do original: armadura permitida pela classe, arma de duas mãos não combina com escudo;
-  arcos ainda não podem ser usados. Limite de carga = Força × 2 kg.
+- Restrições do original: armadura permitida pela classe, arma de duas mãos não combina com escudo. Limite de carga = Força × 2 kg.
+- **Arcos** (curto e longo): a flecha encaixada (`ARROWHLF.CFA`) aparece embaixo da tela; o ataque
+  dispara uma flecha (`ARROW02.CFA`, sons `ARROWFR`/`ARROWHT.VOC`) na direção do olhar, com o dano da
+  arma e o mesmo teste de acerto do corpo a corpo. As flechas são infinitas, como no original; o
+  Arqueiro começa com um arco longo.
 - Ficha em jogo (CHARSTAT/EQUIP.IMG) com o boneco vestido pelas peças de 0EQUIP/1EQUIP.CIF.
 - Saque (NEWPOP.IMG): pilhas de tesouro/equipamento, baús, restos mortais do mapa (*ITEM 2–7)
   e corpos das criaturas mortas (chances de saque por criatura do ACD.EXE). Pilhas vazias somem.
@@ -249,8 +252,8 @@ sobrou em baús e corpos.
 
 Ao tocar o Portão de Transição (canto sudoeste da prisão), um clarão leva o jogador para fora e a
 visão de Ria Silmane encerra o primeiro capítulo, com um resumo da fuga. O jogo é salvo como
-"Fora das Masmorras". As cidades e a viagem por Tamriel ainda não existem, então dá para continuar
-explorando a prisão.
+"Fora das Masmorras". Dali dá para seguir para uma cidade da província natal (ou continuar
+explorando a prisão).
 
 ### Cidades
 

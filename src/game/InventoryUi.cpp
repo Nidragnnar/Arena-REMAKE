@@ -253,13 +253,6 @@ arena::OverlayResult arena::useInventoryItem(Game &game, int index, int currentH
 		return result;
 	}
 
-	if (item.kind == ItemKind::Weapon && item.type >= 16)
-	{
-		result.inventoryChanged = false;
-		notice = text.get("Items.BowsNotSupported");
-		return result;
-	}
-
 	if (item.kind == ItemKind::Armor && !canWearArmor(game, item))
 	{
 		result.inventoryChanged = false;

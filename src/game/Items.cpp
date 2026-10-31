@@ -43,7 +43,7 @@ namespace
 		if (randomInt(rng, 0, 99) < 60)
 		{
 			item.kind = arena::ItemKind::Weapon;
-			item.type = randomInt(rng, 0, 15); // arcos ficam de fora até haver combate à distância
+			item.type = randomInt(rng, 0, arena::WeaponTypeCount - 1);
 			item.material = rollMaterial(tables, rng);
 		}
 		else
@@ -209,7 +209,7 @@ std::string arena::weaponAnimationFile(int weaponType, const ItemTables &tables)
 std::vector<arena::Item> arena::startingKit(int classIndex, int armorAllowance)
 {
 	// Arma inicial por classe (o original sorteia; aqui uma escolha fixa e coerente).
-	constexpr int Weapons[18] = { 0, 2, 0, 0, 11, 2, 2, 1, 4, 1, 2, 7, -1, 2, 2, 15, 5, 5 };
+	constexpr int Weapons[18] = { 0, 2, 0, 0, 11, 2, 2, 1, 4, 1, 2, 7, -1, 17, 2, 15, 5, 5 }; // Arqueiro: arco longo
 	std::vector<Item> kit;
 	if (classIndex >= 0 && classIndex < 18 && Weapons[classIndex] >= 0)
 	{

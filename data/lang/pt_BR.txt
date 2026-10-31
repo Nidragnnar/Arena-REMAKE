@@ -418,7 +418,6 @@ PotionDetails=Bebe para sentir o efeito.
 PotionHealed=Bebeste a poção e recuperaste %s de vida.
 PotionNoEffect=Bebeste a poção, mas nada parece mudar.
 PotionRestoredMagic=Bebeste a poção e recuperaste %s de magia.
-BowsNotSupported=Arcos ainda não podem ser usados nesta versão.
 ClassForbidden=Tua classe não pode usar este equipamento.
 NoSpellbook=Não conheces nenhum feitiço.
 Empty=(sem itens)

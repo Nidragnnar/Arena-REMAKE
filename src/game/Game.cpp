@@ -135,7 +135,10 @@ arena::IndexedImage arena::Game::loadImage(const std::string &name) const
 std::vector<arena::IndexedImage> arena::Game::loadFrames(const std::string &name) const
 {
 	const auto data = this->assets.read(name);
-	return data ? loadCif(name, *data) : std::vector<IndexedImage>{};
+	if (!data) return {};
+	// Animações .CFA (flecha do arco) ou quadros .CIF.
+	if (name.size() > 4 && toUpperAscii(name.substr(name.size() - 4)) == ".CFA") return loadCfa(*data);
+	return loadCif(name, *data);
 }
 
 std::optional<arena::Palette> arena::Game::loadPalette(const std::string &name) const

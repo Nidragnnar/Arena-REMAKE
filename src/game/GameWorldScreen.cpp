@@ -353,12 +353,15 @@ void arena::GameWorldScreen::setupWeapon()
 		this->weapon.maxDamage = (character.classIndex == 12) ? 8 : 3;
 	}
 
-	this->weapon.idleFrame = this->weapon.fists ? 12 : 32;
+	this->weapon.bow = equipped != character.inventory.end() && equipped->type >= 16;
+	this->weapon.idleFrame = this->weapon.bow ? 0 : this->weapon.fists ? 12 : 32;
 	const std::vector<IndexedImage> images = this->game.loadFrames(file);
 	for (size_t i = 0; i < images.size(); i++)
 	{
 		const IndexedImage &image = images[i];
-		this->weapon.frames.push_back({ static_cast<int>(this->weapon.textures.size()), image.offsetX, image.offsetY });
+		// O .CFA do arco não tem posição: embaixo, no centro da área 3D original (320x147).
+		const int offsetX = this->weapon.bow ? 160 - image.width / 2 : image.offsetX, offsetY = this->weapon.bow ? 147 - image.height : image.offsetY;
+		this->weapon.frames.push_back({ static_cast<int>(this->weapon.textures.size()), offsetX, offsetY });
 		this->weapon.textures.push_back(toTexture(image, this->palette, file, static_cast<int>(i), static_cast<int>(images.size())));
 	}
 }
@@ -1003,7 +1006,12 @@ void arena::GameWorldScreen::startSwing()
 		MeleeDown = { 0, 1, 2, 3, 4 }, MeleeDownRight = { 20, 21, 22, 23, 24 }, MeleeDownLeft = { 5, 6, 7, 8, 9 },
 		MeleeForward = { 25, 26, 27, 28, 29 }, FistsA = { 0, 1, 2, 3, 4 }, FistsB = { 5, 6, 7, 8, 9 };
 	const bool forward = this->heldKeys.contains('W') || this->holdUp;
-	if (this->weapon.fists)
+	if (this->weapon.bow)
+	{
+		static const std::vector<int> Shot = { 1, 1, 1, 1, 0, 0, 0, 0 };
+		this->swingFrames = Shot;
+	}
+	else if (this->weapon.fists)
 	{
 		this->swingFrames = (this->swingCycle++ % 2 == 0) ? FistsA : FistsB;
 	}
@@ -1019,11 +1027,17 @@ void arena::GameWorldScreen::startSwing()
 	this->swinging = true;
 	this->swingResolved = false;
 	this->swingTime = 0.0;
-	this->game.playSound("SWISH.VOC", 0.7f);
+	this->game.playSound(this->weapon.bow ? "ARROWFR.VOC" : "SWISH.VOC", 0.7f);
 }
 
 void arena::GameWorldScreen::resolveSwing()
 {
+	if (this->weapon.bow)
+	{
+		this->shootArrow();
+		return;
+	}
+
 	const Localization &text = this->game.getText();
 	const CharacterDraft &character = this->game.getCharacter();
 	const int target = this->creatures.findTarget(this->x, this->z, this->yaw, 1.45f, 0.72f);
@@ -1596,6 +1610,7 @@ void arena::GameWorldScreen::update(double dt)
 	if (this->isWild()) this->updateWildCreatures(dt);
 	this->handleCombatEvents(events);
 	this->updateMagic(dt);
+	this->updateArrows(dt);
 	this->checkLevelUp();
 	if (this->health <= 0)
 	{
@@ -1904,6 +1919,7 @@ void arena::GameWorldScreen::drawLevel()
 	}
 
 	this->drawMagic();
+	this->drawArrows();
 	this->creatures.draw(this->renderer, this->level, this->x, this->z, static_cast<float>(DrawRadius));
 	this->citizens.draw(this->renderer, this->level, this->x, this->z, static_cast<float>(ExteriorDrawRadius));
 }
@@ -3112,4 +3128,98 @@ void arena::GameWorldScreen::callGuards()
 	}
 
 	if (spawned > 0) this->game.playSound("HALT.VOC");
+}
+
+void arena::GameWorldScreen::shootArrow()
+{
+	// Flecha na direção do olhar (com a inclinação da câmera); flechas são infinitas, como no original.
+	const CharacterDraft &character = this->game.getCharacter();
+	std::mt19937 &rng = this->game.getRandom();
+	Arrow arrow;
+	const float cosPitch = std::cos(this->pitch);
+	arrow.dx = std::cos(this->yaw) * cosPitch;
+	arrow.dz = std::sin(this->yaw) * cosPitch;
+	arrow.dy = std::sin(this->pitch);
+	arrow.x = this->x + arrow.dx * 0.3f;
+	arrow.z = this->z + arrow.dz * 0.3f;
+	arrow.y = EyeHeight + this->eyeOffset - 0.1f;
+	const int roll = this->weapon.minDamage + static_cast<int>(rng() % static_cast<uint32_t>(this->weapon.maxDamage - this->weapon.minDamage + 1));
+	arrow.damage = std::max(1, roll + damageBonusFor(character.attributes[0] + this->fortifyBonus(0)));
+	arrow.hitChanceBonus = 5 * hitBonusFor(character.attributes[3]) + this->weaponMaterialBonus / 5;
+	this->arrows.push_back(arrow);
+
+	if (this->arrowTextures.empty())
+	{
+		const std::vector<IndexedImage> frames = this->game.loadFrames("ARROW02.CFA");
+		for (size_t i = 0; i < frames.size(); i++) this->arrowTextures.push_back(toTexture(frames[i], this->palette, "ARROW02.CFA", static_cast<int>(i), static_cast<int>(frames.size())));
+	}
+}
+
+void arena::GameWorldScreen::updateArrows(double dt)
+{
+	constexpr float Speed = 18.0f, Range = 30.0f;
+	const Localization &text = this->game.getText();
+	const float ceiling = this->level.getWallHeight();
+	std::mt19937 &rng = this->game.getRandom();
+	for (size_t i = 0; i < this->arrows.size();)
+	{
+		Arrow &a = this->arrows[i];
+		bool done = false;
+		float remaining = Speed * static_cast<float>(dt);
+		while (!done && remaining > 0.0f)
+		{
+			const float step = std::min(0.1f, remaining);
+			remaining -= step;
+			a.x += a.dx * step; a.y += a.dy * step; a.z += a.dz * step;
+			a.travelled += step;
+
+			int hit = -1;
+			const auto &all = this->creatures.getCreatures();
+			for (size_t c = 0; c < all.size() && hit < 0; c++)
+			{
+				const float dx = all[c].x - a.x, dz = all[c].z - a.z;
+				if (this->creatures.isAlive(static_cast<int>(c)) && dx * dx + dz * dz < 0.4f * 0.4f && a.y < 1.1f) hit = static_cast<int>(c);
+			}
+
+			if (hit >= 0)
+			{
+				// Mesmo teste de acerto do corpo a corpo.
+				const CreatureDefinition &def = this->creatures.definitionOf(hit);
+				const int chance = std::clamp(55 + a.hitChanceBonus + 5 * (1 - def.level), 10, 95);
+				const Creature &victim = all[static_cast<size_t>(hit)];
+				if (static_cast<int>(rng() % 100) >= chance) this->showMessage(ui::format(text.get("World.PlayerMiss"), { this->creatureRef(hit, false) }), 2.0);
+				else
+				{
+					const int maxHp = victim.maxHp;
+					this->playAt("ARROWHT.VOC", victim.x, victim.z);
+					if (this->creatures.damage(hit, a.damage)) this->rewardKill(hit, maxHp);
+					else this->showMessage(ui::format(text.get("World.PlayerHit"), { this->creatureRef(hit, false), std::to_string(a.damage) }), 2.0);
+				}
+				done = true;
+				break;
+			}
+
+			const int cx = static_cast<int>(std::floor(a.x)), cz = static_cast<int>(std::floor(a.z));
+			const bool wall = this->level.blocksMovement(cx, cz) && this->level.cell(cx, cz).type != CellType::Empty;
+			if (wall || a.y < this->level.floorHeightAt(cx, cz) || a.y > ceiling || a.travelled > Range) done = true;
+		}
+
+		if (done) this->arrows.erase(this->arrows.begin() + static_cast<std::ptrdiff_t>(i));
+		else i++;
+	}
+}
+
+void arena::GameWorldScreen::drawArrows()
+{
+	if (this->arrowTextures.empty()) return;
+	const Vec3 right = this->renderer.getRight();
+	for (const Arrow &a : this->arrows)
+	{
+		const Texture &texture = this->arrowTextures[static_cast<size_t>(static_cast<int>(a.travelled * 3.0f) % static_cast<int>(this->arrowTextures.size()))];
+		const float h = 0.08f;
+		const Vec3 v[4] = { { a.x - right.x * h, a.y + h, a.z - right.z * h }, { a.x + right.x * h, a.y + h, a.z + right.z * h },
+			{ a.x + right.x * h, a.y - h, a.z + right.z * h }, { a.x - right.x * h, a.y - h, a.z - right.z * h } };
+		const float uv[4][2] = { { 0, 0 }, { 0.999f, 0 }, { 0.999f, 0.999f }, { 0, 0.999f } };
+		this->renderer.drawQuad(v, uv, texture, true, Surface{});
+	}
 }

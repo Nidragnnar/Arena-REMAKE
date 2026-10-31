@@ -316,7 +316,8 @@ andar de cima leva para fora (aos arredores da cidade mais próxima, quando se c
 
 As animações do original (.FLC) tocam em tela cheia: o livro do `INTRO.FLC` ao abrir o jogo, o
 Imperador e a traição de Tharn (`KING.FLC`, `MORPH.FLC`) no novo jogo e Ria Silmane
-(`VISION.FLC`, mais `CHAOSVSN.FLC` no primeiro sonho) antes de cada sonho. Qualquer tecla ou
+(`VISION.FLC`, mais `CHAOSVSN.FLC` no primeiro sonho) antes de cada sonho; no Palácio Imperial,
+Tharn (`JAGAR.FLC`), a câmara da Joia (`WALK.FLC`) e o final (`JAGARDTH`, `END01`, `END02`, `NUKING`). Qualquer tecla ou
 clique pula a cena atual; Esc pula todas. Para trocar por versões redesenhadas, coloque PNGs em
 `data/mods/` (em qualquer subpasta) com os nomes da exportação: `INTRO_000.png`, `INTRO_001.png`...
 Com até o número original de quadros, cada PNG troca o quadro de mesmo número e os que faltarem
@@ -332,8 +333,11 @@ nível 2), Ria Silmane aparece em sonho com o lugar do próximo pedaço (textos 
 traduzidos). Nas cidades da província certa, o primeiro boato aponta a masmorra da pista, que passa
 a aparecer no mapa de viagem; o item da pista (`*ITEM 13` do mapa pronto) revela a masmorra do
 pedaço, e o pedaço em si leva ao próximo sonho. As masmorras da missão ficam escondidas no mapa
-até serem descobertas. Simplificado por enquanto: no original o item da pista é entregue a um rei
-ou sábio, e o confronto final no Palácio Imperial ainda não existe.
+até serem descobertas. Com os oito pedaços, o último sonho manda ao Palácio Imperial: viajar para a
+Cidade Imperial leva direto ao mapa pronto do original (`IMPPAL.MIF`, 4 andares), onde Tharn recebe o
+jogador. No último andar está a Joia do Fogo; tocá-la com o Cajado mata Tharn (a 24ª criatura do
+executável, `*ITEM 73`) e mostra o final. Simplificado: no original o item da pista é entregue a um
+rei ou sábio.
 
 ### Dia e noite
 

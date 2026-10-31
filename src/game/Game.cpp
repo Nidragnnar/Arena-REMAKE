@@ -323,7 +323,7 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 		else if (key == "Character.SpellPoints") loaded.spellPoints = number;
 		else if (key == "Spellbook.Ready") loaded.readySpell = number;
 		else if (key == "Quest.StaffPieces") loaded.staffPieces = std::clamp(number, 0, 8);
-		else if (key == "Quest.Step") loaded.questStep = std::clamp(number, 0, 3);
+		else if (key == "Quest.Step") loaded.questStep = std::clamp(number, 0, 4);
 		else if (key == "Spellbook.Known")
 		{
 			loaded.spellbookKnown = true;

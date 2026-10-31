@@ -193,6 +193,7 @@ arena::GameWorldScreen::GameWorldScreen(Game &game, const std::string &mifName) 
 		const std::string note = game.takePendingNote();
 		this->showMessage(!note.empty() ? note : ui::format(game.getText().get("Dungeon.Entered"), { this->locationName }), 4.0);
 		this->helpTimer = 0.0;
+		this->palaceArrival();
 		this->persist();
 		return;
 	}
@@ -666,14 +667,16 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 		for (const Sprite &sprite : this->level.getSprites())
 		{
 			if (toUpperAscii(sprite.name).find(toUpperAscii(pattern)) == std::string::npos || wanted-- > 0) continue;
-			for (int d = 0; d < 4; d++)
-			{
-				const float gx = sprite.x + dirX[d] * 1.6f, gz = sprite.z + dirZ[d] * 1.6f;
-				if (this->collides(gx, gz)) continue;
-				char where[96];
-				std::snprintf(where, sizeof(where), "%.2f,%.2f,%.1f", gx, gz, std::atan2(static_cast<float>(-dirZ[d]), static_cast<float>(-dirX[d])) * 180.0f / Pi);
-				return this->debugCommand("goto", where);
-			}
+			for (const float reach : { 1.6f, 1.2f, 0.9f })
+				for (int d = 0; d < 4; d++)
+				{
+					const float gx = sprite.x + dirX[d] * reach, gz = sprite.z + dirZ[d] * reach;
+					if (this->collides(gx, gz)) continue;
+					char where[96];
+					std::snprintf(where, sizeof(where), "%.2f,%.2f,%.1f", gx, gz, std::atan2(static_cast<float>(-dirZ[d]), static_cast<float>(-dirX[d])) * 180.0f / Pi);
+					return this->debugCommand("goto", where);
+				}
+			std::printf("gotosprite: %s em %.1f,%.1f cercado\n", sprite.name.c_str(), sprite.x, sprite.z);
 		}
 
 		std::printf("gotosprite: nenhum sprite \"%s\" acessível; sprites do nível:", pattern.c_str());
@@ -804,6 +807,23 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 		return true;
 	}
 
+	if (name == "menus" && this->loaded)
+	{
+		// menus lista os tipos de porta (*MENU) do mapa e quantas há de cada (depuração).
+		std::map<int, int> counts;
+		for (int cx = 0; cx < this->level.getWidth(); cx++)
+			for (int cz = 0; cz < this->level.getDepth(); cz++)
+				if (this->level.cell(cx, cz).menu >= 0) counts[this->level.cell(cx, cz).menu]++;
+		std::printf("portas:");
+		for (const auto &[menu, count] : counts) std::printf(" %d(x%d)", menu, count);
+		std::printf("\n");
+		const int only = arg.empty() ? -1 : std::atoi(arg.c_str());
+		for (int cx = 0; only >= 0 && cx < this->level.getWidth(); cx++)
+			for (int cz = 0; cz < this->level.getDepth(); cz++)
+				if (this->level.cell(cx, cz).menu == only) std::printf("  menu %d em %d,%d (textura %d)\n", only, cx, cz, this->level.cell(cx, cz).wallTexture);
+		return true;
+	}
+
 	if (name == "stairs" && this->loaded)
 	{
 		// stairs lista as saídas e descidas do andar (depuração).
@@ -837,6 +857,20 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 		for (const CityLocation &c : this->game.getData().getCities())
 			if (c.mainQuest() && quest::dungeonKnown(character, c)) std::printf(" %s", c.name.c_str());
 		std::printf("\n");
+		return true;
+	}
+
+	if (name == "dlevel" && this->isDungeon())
+	{
+		// dlevel:+1 / dlevel:-1 troca de andar como pela escada (teste).
+		this->changeDungeonLevel(std::atoi(arg.c_str()));
+		return true;
+	}
+
+	if (name == "gopalace")
+	{
+		// gopalace entra no Palácio Imperial como a viagem com o Cajado completo (teste).
+		this->game.changeScreen(std::make_unique<GameWorldScreen>(this->game, std::string("IN:MIFL:") + quest::PalaceMif + "@WILD:8:0@-1@-1@0@" + this->game.getText().get("Quest.PalaceName")));
 		return true;
 	}
 
@@ -1317,6 +1351,18 @@ void arena::GameWorldScreen::handleInput(const InputEvent &event)
 			{
 				this->travelToDungeon(*choice.destination, choice.days);
 				this->overlay = Overlay::None;
+				return;
+			}
+
+			const CharacterDraft &hero = this->game.getCharacter();
+			if (choice.destination && choice.destination->province == CenterProvinceID && hero.staffPieces >= quest::PieceCount && hero.questStep >= 1 && hero.questStep < 4)
+			{
+				// Com o Cajado completo, a viagem à Cidade Imperial leva direto ao Palácio (IMPPAL.MIF).
+				this->persist();
+				this->game.getCharacter().gameMinutes += choice.days * clock::MinutesPerDay;
+				this->game.setPendingNote(this->game.getText().get("Quest.PalaceArrived"));
+				this->game.changeScreen(std::make_unique<GameWorldScreen>(this->game, std::string("IN:MIFL:") + quest::PalaceMif + "@WILD:" + std::to_string(choice.destination->province) + ":"
+					+ std::to_string(choice.destination->localId) + "@-1@-1@0@" + this->game.getText().get("Quest.PalaceName")));
 				return;
 			}
 
@@ -2858,6 +2904,30 @@ bool arena::GameWorldScreen::tryTakeQuestItem(size_t sprite)
 	const CityLocation *clue = province >= 0 ? this->game.getData().getCity(province, quest::ClueDungeon) : nullptr;
 	auto inside = [&](const CityLocation *dungeon) { return dungeon && this->mifName.find("MIFL:" + quest::premadeMif(*dungeon)) != std::string::npos; };
 
+	if (this->mifName.find(std::string("MIFL:") + quest::PalaceMif) != std::string::npos)
+	{
+		// A Joia do Fogo: tocada com o Cajado completo, leva junto a força vital de Tharn.
+		if (character.staffPieces < quest::PieceCount || character.questStep >= 4)
+		{
+			this->showMessage(text.get(character.questStep >= 4 ? "Quest.NothingLeft" : "Quest.JewelNeedsStaff"), 4.0);
+			return true;
+		}
+		this->removeSpriteAt(sprite);
+		const auto &all = this->creatures.getCreatures();
+		for (size_t i = 0; i < all.size(); i++)
+		{
+			if (all[i].definition != quest::TharnCreature || !this->creatures.isAlive(static_cast<int>(i))) continue;
+			const int maxHp = all[i].maxHp;
+			if (this->creatures.damage(static_cast<int>(i), maxHp + 1)) this->rewardKill(static_cast<int>(i), maxHp);
+		}
+		character.questStep = 4;
+		this->game.playSound("FANFARE2.VOC");
+		this->openVision(text.get("Quest.EndTitle"), ui::format(text.get("Quest.Ending"), { character.name }));
+		this->cutscene.start(this->game, { "JAGARDTH.FLC", "END01.FLC", "END02.FLC", "NUKING.FLC" });
+		this->persist();
+		return true;
+	}
+
 	if (inside(clue) && character.questStep >= 1 && character.questStep <= 2)
 	{
 		this->removeSpriteAt(sprite);
@@ -2907,4 +2977,25 @@ void arena::GameWorldScreen::drawVision(kit::Painter &painter, int width, int he
 	const Rect r{ box.x + (w - 130 * u) / 2, box.y + h - 26 * u, 130 * u, 18 * u };
 	painter.button(r, this->game.getText().get("Quest.Continue"), kit::hit(r, this->uiMouseX, this->uiMouseY), false);
 	this->screenButtons.push_back({ r, 'v' });
+}
+
+void arena::GameWorldScreen::palaceArrival()
+{
+	// Palácio Imperial: Tharn recebe o jogador (JAGAR.FLC); no último andar, a câmara da Joia (WALK.FLC).
+	if (this->mifName.find(std::string("MIFL:") + quest::PalaceMif) == std::string::npos) return;
+	CharacterDraft &character = this->game.getCharacter();
+	if (character.staffPieces < quest::PieceCount || character.questStep >= 4) return;
+	const Localization &text = this->game.getText();
+	if (character.questStep < 2)
+	{
+		character.questStep = 2;
+		this->openVision(text.get("Quest.TharnTitle"), ui::format(text.get("Quest.TharnTaunt"), { character.name }));
+		this->cutscene.start(this->game, { "JAGAR.FLC" });
+	}
+	else if (character.questStep == 2 && this->dungeonLevel == quest::JewelLevel)
+	{
+		character.questStep = 3;
+		this->openVision(text.get("Quest.JewelTitle"), text.get("Quest.JewelChamber"));
+		this->cutscene.start(this->game, { "WALK.FLC" });
+	}
 }

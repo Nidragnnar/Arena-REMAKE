@@ -210,6 +210,7 @@ namespace arena
 		std::string visionTitle, visionText; // aberto quando visionText não está vazio
 		Cutscene cutscene; // cena do original antes do painel (Ria em VISION.FLC)
 		void openVision(const std::string &title, const std::string &body);
+		void palaceArrival();
 		void tryDream();
 		bool tryTakeQuestItem(size_t sprite);
 		void drawVision(kit::Painter &painter, int width, int height);

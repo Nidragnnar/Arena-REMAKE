@@ -12,11 +12,16 @@ namespace arena
 	// (StaffProvinces do ACD.EXE). Cada pedaço segue os passos:
 	//   0 = esperando o sonho de Ria (ao descansar), 1 = sonhou (procurar boatos na província),
 	//   2 = conhece a masmorra da pista (local 33), 3 = conhece a masmorra do pedaço (local 32).
+	// Com os oito pedaços: 0 = último sonho, 1 = ir ao Palácio Imperial, 2 = entrou no palácio,
+	//   3 = chegou à câmara da Joia do Fogo, 4 = Tharn derrotado (fim da missão).
 	namespace quest
 	{
 		constexpr int PieceCount = 8;
 		constexpr int StaffProvinces[PieceCount] = { 1, 2, 5, 6, 4, 0, 7, 3 };
 		constexpr int PieceDungeon = 32, ClueDungeon = 33;
+		constexpr int TharnCreature = 23;   // criatura do executável (*ITEM 73 no IMPPAL.MIF)
+		constexpr int JewelLevel = 3;       // último andar do IMPPAL.MIF, com a Joia do Fogo
+		constexpr const char *PalaceMif = "IMPPAL.MIF";
 
 		// Província do pedaço que o jogador procura agora (-1 com o cajado completo).
 		int targetProvince(const CharacterDraft &character);

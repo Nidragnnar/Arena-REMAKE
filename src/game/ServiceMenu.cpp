@@ -14,7 +14,7 @@ namespace
 	using namespace arena;
 	namespace col = kit::color;
 
-	enum Action { None, BuyItem, SellItem, Drink, Room, Heal, BuySpell, BuyPotion, Talk = 20 };
+	enum Action { None, BuyItem, SellItem, Drink, Room, Heal, BuySpell, BuyPotion, CureDisease, Talk = 20 };
 
 	// Modelos da criação de feitiços: efeito, sub (-1 = o elemento escolhido), se é de ataque
 	// (precisa de alvo) e o peso no custo. Os parâmetros saem da potência (ver makerSpell).
@@ -148,6 +148,9 @@ void arena::ServiceMenu::rebuild(const Game &game)
 		const int missing = std::max(0, c.maxHealth - this->health);
 		this->rows.push_back({ text.get("Shop.Heal"), ui::format(text.get("Shop.HealDetail"), { std::to_string(this->health), std::to_string(c.maxHealth) }),
 			this->price(std::max(10, missing * 2)), Heal, 0, missing > 0 });
+		// Doença pega de uma criatura: o sacerdote cura por 100 de ouro (mais nas doenças demoradas).
+		if (c.disease >= 0)
+			this->rows.push_back({ text.get("Shop.CureDisease"), text.get("Shop.CureDiseaseDetail"), this->price(game.getData().longDisease(c.disease) ? 300 : 100), CureDisease, 0, true });
 		break;
 	}
 	case Kind::MagesGuild:
@@ -232,7 +235,10 @@ arena::OverlayResult arena::ServiceMenu::confirm(Game &game, const Row &row)
 		result.inventoryChanged = true;
 		done(ui::format(text.get("Shop.Learned"), { row.label }));
 		break;
-	case BuyPotion + 1: // criar feitiço (makerOpen)
+	case CureDisease:
+		c.gold -= row.price;
+		c.disease = -1;
+		done(text.get("Shop.DiseaseCured"));
 		break;
 	case Talk:
 		result.request = row.index;

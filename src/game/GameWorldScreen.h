@@ -104,6 +104,12 @@ namespace arena
 		struct TempWall { int x, z; double remaining; };
 		std::vector<TempWall> tempWalls; // Earth Wall: some depois de algumas rodadas
 		std::vector<TempWall> tempPits;  // Pitfalls: o fosso fecha depois de algumas rodadas
+		// Ataques que paralisam ou passam doença (tabelas do executável, como no OpenTESArena).
+		void creatureAfflicts(int creature);
+		void updateDisease(double dt);
+		std::string diseaseName(int disease) const;
+		double paralysisTimer = 0.0; // segundos sem poder andar nem atacar
+		double diseaseTick = 0.0;    // minutos do jogo desde o último dano da doença
 		bool openPitAhead(double seconds);
 		void rewardKill(int creature, int maxHp);
 		void updateMagic(double dt);

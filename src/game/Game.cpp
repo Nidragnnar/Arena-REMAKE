@@ -8,12 +8,14 @@
 #include "../world/SpriteOverrides.h"
 #include "Artifacts.h"
 #include "Game.h"
+#include "OriginalSave.h"
 #include "Cutscene.h"
 #include "Screens.h"
 
 bool arena::Game::init(const std::filesystem::path &arenaDir, const std::filesystem::path &dataDir, std::string &outError)
 {
 	loadSpriteOverrides(dataDir / "mods");
+	this->arenaDirectory = arenaDir;
 	if (!this->assets.init(arenaDir, dataDir / "mods", outError))
 	{
 		return false;
@@ -326,6 +328,8 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 		else if (key == "Character.MaxStamina") loaded.maxStamina = number;
 		else if (key == "Character.MaxSpellPoints") loaded.maxSpellPoints = number;
 		else if (key == "Character.Gold") loaded.gold = number;
+		else if (key == "Character.Disease") loaded.disease = number;
+		else if (key == "Character.DiseaseEnd") loaded.diseaseEnd = std::atof(value.c_str());
 		else if (key == "Character.Experience") loaded.experience = number;
 		else if (key == "Character.Level") loaded.level = std::max(1, number);
 		else if (key == "Character.LevelPoints") loaded.levelPoints = std::max(0, number);
@@ -437,6 +441,7 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 	}
 
 	this->character = loaded;
+	this->importedMap.clear();
 	artifact::syncSpells(this->character);
 	setCustomSpells(this->character.customSpells);
 	this->pendingWorld = std::move(world);
@@ -481,7 +486,7 @@ bool arena::Game::saveCharacter(const std::filesystem::path &path, const std::st
 		<< "Name=" << c.name << "\nMale=" << (c.male ? 1 : 0) << "\nClass=" << c.classIndex << "\nRace=" << c.raceIndex
 		<< "\nPortrait=" << c.portraitIndex << "\nMaxHealth=" << c.maxHealth << "\nMaxStamina=" << c.maxStamina
 		<< "\nMaxSpellPoints=" << c.maxSpellPoints << "\nGold=" << c.gold << "\nLevel=" << c.level << "\nLevelPoints=" << c.levelPoints << "\nTime=" << static_cast<long long>(c.gameMinutes) << "\nExperience=" << c.experience
-		<< "\nHealth=" << c.health << "\nSpellPoints=" << c.spellPoints << "\n";
+		<< "\nHealth=" << c.health << "\nSpellPoints=" << c.spellPoints << "\nDisease=" << c.disease << "\nDiseaseEnd=" << static_cast<long long>(c.diseaseEnd) << "\n";
 	for (int i = 0; i < AttributeCount; i++)
 	{
 		file << "Attribute" << i << "=" << c.attributes[static_cast<size_t>(i)] << "\n";
@@ -556,4 +561,14 @@ void arena::Game::saveSetting(const std::string &section, const std::string &key
 
 	std::ofstream out(path, std::ios::trunc);
 	for (const std::string &line : lines) out << line << "\n";
+}
+
+bool arena::Game::importOriginalSave(int slot, std::string &outError)
+{
+	std::string map;
+	if (!original::import(*this, this->arenaDirectory, slot, map, outError)) return false;
+	this->pendingWorld.clear();
+	this->importedMap = map;
+	setCustomSpells({});
+	return true;
 }

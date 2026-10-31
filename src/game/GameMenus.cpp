@@ -5,6 +5,7 @@
 #include "../render/Ui.h"
 #include "GameMenus.h"
 #include "Leveling.h"
+#include "OriginalSave.h"
 
 namespace
 {
@@ -656,7 +657,14 @@ void arena::SaveLoadMenu::open(const Game &game, Mode openMode)
 	this->confirm = -1;
 	this->frameW = this->frameH = 1;
 	this->selected = 0;
-	for (int i = 0; i < Game::SaveSlots; i++) this->slots[static_cast<size_t>(i)] = game.readSaveSummary(game.getSlotPath(i + 1));
+	this->original = false;
+	for (int i = 0; i < Game::SaveSlots; i++)
+	{
+		this->remakeSlots[static_cast<size_t>(i)] = game.readSaveSummary(game.getSlotPath(i + 1));
+		const original::Summary s = original::summary(game.getArenaDir(), i + 1);
+		this->originalSlots[static_cast<size_t>(i)] = Game::SaveSummary{ s.exists, s.name, std::string(), game.getText().get("Saves.OriginalTag"), s.level };
+	}
+	this->slots = this->remakeSlots;
 }
 
 arena::SaveLoadMenu::Choice arena::SaveLoadMenu::choose(int slot)
@@ -667,7 +675,7 @@ arena::SaveLoadMenu::Choice arena::SaveLoadMenu::choose(int slot)
 	const bool occupied = this->slots[static_cast<size_t>(slot)].exists;
 	if (this->mode == Mode::Load)
 	{
-		if (occupied) choice.slot = slot + 1;
+		if (occupied) { choice.slot = slot + 1; choice.original = this->original; }
 		return choice;
 	}
 
@@ -687,7 +695,12 @@ arena::SaveLoadMenu::Choice arena::SaveLoadMenu::handleInput(const InputEvent &e
 	else if (event.isKey(InputEvent::Key::Enter)) return this->choose(this->selected);
 	else if (event.isClick() && this->frameW > 1)
 	{
-		if (kit::hit(this->closeRect, this->mouseX, this->mouseY) || !kit::hit(this->window, this->mouseX, this->mouseY)) choice.close = true;
+		if (this->mode == Mode::Load && kit::hit(this->sourceRect, this->mouseX, this->mouseY))
+		{
+			this->original = !this->original;
+			this->slots = this->original ? this->originalSlots : this->remakeSlots;
+		}
+		else if (kit::hit(this->closeRect, this->mouseX, this->mouseY) || !kit::hit(this->window, this->mouseX, this->mouseY)) choice.close = true;
 		else if (kit::hit(this->listRect, this->mouseX, this->mouseY)) return this->choose((this->mouseY - this->listRect.y) / std::max(1, this->rowH));
 	}
 
@@ -707,7 +720,7 @@ void arena::SaveLoadMenu::render(kit::Painter &painter, const Game &game)
 
 	painter.fill(Rect{ 0, 0, this->frameW, this->frameH }, hud::rgb(0, 0, 0, 150));
 	painter.woodPanel(this->window, 245);
-	painter.text(fonts.a, text.get(this->mode == Mode::Save ? "Saves.TitleSave" : "Saves.TitleLoad"), this->window.x + w / 2, this->window.y + pad, col::GoldBright, TextAlign::Center);
+	painter.text(fonts.a, text.get(this->mode == Mode::Save ? "Saves.TitleSave" : this->original ? "Saves.TitleOriginal" : "Saves.TitleLoad"), this->window.x + w / 2, this->window.y + pad, col::GoldBright, TextAlign::Center);
 	painter.divider(this->window.x + pad, this->window.y + pad + 22 * u, w - 2 * pad, col::GoldDim);
 
 	this->rowH = 17 * u;
@@ -736,6 +749,14 @@ void arena::SaveLoadMenu::render(kit::Painter &painter, const Game &game)
 	const std::string hint = (this->confirm >= 0) ? ui::format(text.get("Saves.ConfirmOverwrite"), { std::to_string(this->confirm + 1) })
 		: text.get(this->mode == Mode::Save ? "Saves.HintSave" : "Saves.HintLoad");
 	painter.text(fonts.arena, hint, this->window.x + w / 2, this->listRect.y + this->listRect.h + 8 * u, this->confirm >= 0 ? col::Danger : col::TextDim, TextAlign::Center);
-	this->closeRect = Rect{ this->window.x + w / 2 - 50 * u, this->window.y + h - pad - 18 * u, 100 * u, 18 * u };
+	const int by = this->window.y + h - pad - 18 * u;
+	if (this->mode == Mode::Load)
+	{
+		// Botão para os saves do Arena original (ou de volta aos do remake).
+		this->sourceRect = Rect{ this->window.x + w / 2 - 135 * u, by, 130 * u, 18 * u };
+		painter.button(this->sourceRect, text.get(this->original ? "Saves.ShowRemake" : "Saves.ShowOriginal"), kit::hit(this->sourceRect, this->mouseX, this->mouseY), false);
+		this->closeRect = Rect{ this->window.x + w / 2 + 5 * u, by, 100 * u, 18 * u };
+	}
+	else this->closeRect = Rect{ this->window.x + w / 2 - 50 * u, by, 100 * u, 18 * u };
 	painter.button(this->closeRect, text.get("Menu.Close"), kit::hit(this->closeRect, this->mouseX, this->mouseY), false);
 }

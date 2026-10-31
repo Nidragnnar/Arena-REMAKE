@@ -50,6 +50,8 @@ namespace arena
 		bool hasCorpse = true;
 		std::string soundFile;    // ex.: "RATS.VOC"
 		int spellElement = -1;    // conjura projéteis deste elemento (SpellElement); -1 = só corpo a corpo
+		int diseaseChance = 0;    // % de, ao acertar, paralisar ou passar doença (CreatureDiseaseChances)
+		std::vector<int> diseases; // doenças que transmite (índices de DiseaseNames)
 	};
 
 	struct ClassQuestion
@@ -135,6 +137,10 @@ namespace arena
 		// Atributos iniciais (0..100) por raça e gênero.
 		std::array<int, AttributeCount> getBaseAttributes(int raceIndex, bool male) const;
 
+		// Doenças: nomes do executável (17) e as de cura demorada (3 a 17 dias em vez de 1).
+		const std::vector<std::string> &getDiseaseNames() const { return this->diseaseNames; }
+		bool longDisease(int id) const { return std::find(this->longDiseases.begin(), this->longDiseases.end(), id) != this->longDiseases.end(); }
+
 		// Locais e geração de cidades.
 		const CityLocation *getCity(int province, int localId) const;
 		const CityGenTables &getCityGen() const { return this->cityGen; }
@@ -155,6 +161,8 @@ namespace arena
 		bool loadWorldMap(const AssetManager &assets, const ByteBuffer &exe, const std::function<size_t(const char *)> &offsetOf, std::string &outError);
 
 		std::vector<CityLocation> cities;
+		std::vector<std::string> diseaseNames;
+		std::vector<int> longDiseases;
 		std::vector<std::vector<std::string>> nameChunks;
 		std::array<std::pair<int, int>, 9> provinceOrigins{};
 		std::vector<uint8_t> terrain;                     // TERRAIN.IMG (320x200)

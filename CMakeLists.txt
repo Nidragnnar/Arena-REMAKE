@@ -47,6 +47,7 @@ add_library(arena_core STATIC
 	src/game/MainQuest.cpp
 	src/game/SideQuests.cpp
 	src/game/Artifacts.cpp
+	src/game/OriginalSave.cpp
 	src/game/Cutscene.cpp
 	src/game/JournalMenu.cpp
 	src/game/TravelMenu.cpp

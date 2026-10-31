@@ -107,7 +107,7 @@ namespace arena
 	{
 	public:
 		enum class Mode { Save, Load };
-		struct Choice { bool close = false; int slot = -1; };
+		struct Choice { bool close = false; int slot = -1; bool original = false; }; // original: save do Arena original
 
 		void open(const Game &game, Mode mode);
 		Mode getMode() const { return this->mode; }
@@ -119,6 +119,10 @@ namespace arena
 
 		Mode mode = Mode::Load;
 		std::array<Game::SaveSummary, Game::SaveSlots> slots{};
+		// Carregar: alterna entre os saves do remake e os do Arena original (pasta do jogo).
+		bool original = false;
+		std::array<Game::SaveSummary, Game::SaveSlots> remakeSlots{}, originalSlots{};
+		Rect sourceRect;
 		int selected = 0;
 		int confirm = -1; // espaço ocupado aguardando o segundo clique para sobrescrever
 		int frameW = 1, frameH = 1;

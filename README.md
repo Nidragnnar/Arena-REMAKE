@@ -216,6 +216,11 @@ Comandos: `k:X`, `enter`, `esc`, `up`, `down`, `left`, `right`, `bs`, `click:x,y
 - Experiência ao matar = experiência base + vida máxima × multiplicador (fórmula do original).
 - A armadura vestida protege a parte do corpo atingida (peito, mãos, pernas, ombros, cabeça,
   pés; o escudo soma a todas): −5% de chance de acerto da criatura por ponto de proteção.
+- Doença e paralisia ao ser atingido, com as tabelas do executável (como no OpenTESArena): Rato, Carniçal, Zumbi e
+  Vampiro passam uma das doenças da lista deles (17 doenças, com os nomes do original; três demoram de 3 a 17 dias
+  para sarar, as outras um dia); Homem-Lagarto e Aranha paralisam por 1 a 6 rodadas. Altos Elfos e Cavaleiros não
+  são paralisados, Bárbaros não pegam doença e resistir a veneno protege de ambos. Doente, perde 1 de vida por hora
+  do jogo (nunca abaixo de 1) até sarar, usar Curar Doença ou pagar o templo.
 - Ao morrer: Enter recomeça na cela, S volta ao menu. A armadura ainda é aproximada (5% de acerto a menos por
   ponto de proteção), porque a tabela de classe de armadura do original ainda não foi decifrada.
 
@@ -268,6 +273,15 @@ principal, além do salvamento automático (`saves/personagem.ini`, gravado ao t
 achados e a cada minuto explorando). O save guarda o personagem e o
 estado do mundo: posição, portas abertas e trancadas, gatilhos já lidos, criaturas mortas e o que
 sobrou em baús e corpos.
+
+### Saves do Arena original
+
+Na janela de carregar (pausa ou menu principal), o botão "Arena original" lista os 10 espaços do jogo original
+(`NAMES.DAT` e `SAVEENGN.0x` na pasta do Arena). O começo do SAVEENGN é desembaralhado como no OpenTESArena e
+dele vêm nome, raça, classe, sexo, rosto, nível, experiência, atributos, vida, magia, ouro, feitiços conhecidos e a
+data; o personagem começa diante do portão da cidade onde estava (achada pelo nome no save) ou da cidade natal.
+Itens e o progresso das missões ainda não são importados (o formato não foi decifrado): o personagem recebe o
+equipamento inicial da classe. Testado com um save montado no formato do original, não com um save real.
 
 ### Portão de Transição
 

@@ -200,7 +200,8 @@ void arena::MainMenuScreen::handleInput(const InputEvent &event)
 	if (this->loadOpen)
 	{
 		const SaveLoadMenu::Choice choice = this->loadMenu->handleInput(event, this->game);
-		if (choice.slot > 0 && this->game.loadSavedCharacter(this->game.getSlotPath(choice.slot)))
+		std::string error;
+		if (choice.slot > 0 && (choice.original ? this->game.importOriginalSave(choice.slot, error) : this->game.loadSavedCharacter(this->game.getSlotPath(choice.slot))))
 		{
 			this->game.changeScreen(std::make_unique<GameWorldScreen>(this->game, this->game.startingMap()));
 		}

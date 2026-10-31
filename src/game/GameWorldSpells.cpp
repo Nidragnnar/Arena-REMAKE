@@ -7,7 +7,9 @@
 
 #include "../render/Ui.h"
 #include "Artifacts.h"
+#include "GameClock.h"
 #include "GameWorldScreen.h"
+#include "MainQuest.h"
 
 namespace
 {
@@ -109,7 +111,7 @@ int arena::GameWorldScreen::fortifyBonus(int attribute) const
 
 void arena::GameWorldScreen::castReadySpell()
 {
-	if (this->casting || this->health <= 0) return;
+	if (this->casting || this->health <= 0 || this->paralysisTimer > 0.0) return;
 	const Localization &text = this->game.getText();
 	const CharacterDraft &c = this->game.getCharacter();
 	if (c.spells.empty())
@@ -448,8 +450,22 @@ void arena::GameWorldScreen::applySpellToSelf(const Spell &spell)
 			this->showMessage(text.get("Spells.RegenerateOn"), 3.0);
 			break;
 		case SpellEffectType::Cure:
-			this->showMessage(text.get("Spells.NothingToCure"), 2.5);
+		{
+			// Curar doença (0), veneno (1) e paralisia (2).
+			CharacterDraft &hero = this->game.getCharacter();
+			if (effect.sub == 0 && hero.disease >= 0)
+			{
+				this->showMessage(ui::format(text.get("Spells.DiseaseCured"), { this->diseaseName(hero.disease) }), 3.0);
+				hero.disease = -1;
+			}
+			else if (effect.sub == 2 && this->paralysisTimer > 0.0)
+			{
+				this->paralysisTimer = 0.0;
+				this->showMessage(text.get("World.ParalysisGone"), 2.5);
+			}
+			else this->showMessage(text.get("Spells.NothingToCure"), 2.5);
 			break;
+		}
 		case SpellEffectType::Open:
 			this->openDoorAhead(effect);
 			break;
@@ -949,4 +965,62 @@ void arena::GameWorldScreen::boltHitsPlayer(const EnemyBolt &bolt)
 		this->heldKeys.clear();
 		this->showMessage(text.get("World.DeathMessage"), 1e9);
 	}
+}
+
+std::string arena::GameWorldScreen::diseaseName(int disease) const
+{
+	const auto &names = this->game.getData().getDiseaseNames();
+	return this->game.getText().getOr("Diseases.Name" + std::to_string(disease), disease >= 0 && disease < static_cast<int>(names.size()) ? names[static_cast<size_t>(disease)] : std::string("?"));
+}
+
+void arena::GameWorldScreen::creatureAfflicts(int creature)
+{
+	// Regras do original (paralysisOrDiseaseOnHit do OpenTESArena): a criatura tem uma chance por golpe;
+	// Homem-Lagarto e Aranha paralisam (1 a 6 rodadas), e as que transmitem doença sorteiam uma da lista.
+	// Altos Elfos e Cavaleiros não são paralisados; Bárbaros não pegam doença; resistir a veneno protege de tudo.
+	const CreatureDefinition *base = this->game.getData().getCreature(this->textIndexOf(this->creatures.getCreatures()[static_cast<size_t>(creature)].definition));
+	if (!base || base->diseaseChance <= 0) return;
+	std::mt19937 &rng = this->game.getRandom();
+	if (static_cast<int>(rng() % 100u) > base->diseaseChance) return;
+
+	CharacterDraft &hero = this->game.getCharacter();
+	const Localization &text = this->game.getText();
+	constexpr int SavingThrow = 90; // o OpenTESArena também usa 90 até decifrar o teste contra veneno
+	const int roll = static_cast<int>(rng() % 100u);
+	const bool poisonWard = std::any_of(this->playerEffects.begin(), this->playerEffects.end(), [](const PlayerEffect &e) { return e.type == SpellEffectType::ElementalResistance && e.sub == 4; });
+	const bool paralyzer = base == this->game.getData().getCreature(2) || base == this->game.getData().getCreature(8);
+	if (paralyzer && !poisonWard && hero.raceIndex != 4 && hero.classIndex != 17 && roll < SavingThrow)
+	{
+		this->paralysisTimer = (1 + static_cast<int>(rng() % 6u)) * SecondsPerRound;
+		this->showMessage(ui::format(text.get("World.Paralyzed"), { this->creatureRef(creature, false) }), 3.5);
+		return;
+	}
+
+	if (base->diseases.empty() || poisonWard || hero.classIndex == 15 || roll >= SavingThrow || hero.disease >= 0) return;
+	const int disease = base->diseases[rng() % base->diseases.size()];
+	const double days = this->game.getData().longDisease(disease) ? 3 + static_cast<int>(rng() % 15u) : 1;
+	hero.disease = disease;
+	hero.diseaseEnd = hero.gameMinutes + days * clock::MinutesPerDay;
+	this->diseaseTick = 0.0;
+	quest::note(hero, ui::format(text.get("Journal.Diseased"), { this->diseaseName(disease), this->creatureRef(creature, false) }));
+	this->showMessage(ui::format(text.get("World.Diseased"), { this->diseaseName(disease) }), 4.5);
+}
+
+void arena::GameWorldScreen::updateDisease(double dt)
+{
+	// Doente: perde 1 de vida a cada hora do jogo (nunca abaixo de 1) até sarar sozinho ou ser curado
+	// (feitiço Curar Doença ou o templo).
+	CharacterDraft &hero = this->game.getCharacter();
+	if (hero.disease < 0) return;
+	if (hero.gameMinutes >= hero.diseaseEnd)
+	{
+		this->showMessage(ui::format(this->game.getText().get("World.DiseaseGone"), { this->diseaseName(hero.disease) }), 4.0);
+		hero.disease = -1;
+		return;
+	}
+
+	this->diseaseTick += dt * clock::GameMinutesPerRealSecond;
+	if (this->diseaseTick < 60.0) return;
+	this->diseaseTick -= 60.0;
+	if (this->health > 1) this->health--;
 }

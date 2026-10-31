@@ -267,6 +267,27 @@ bool arena::ArenaData::load(const AssetManager &assets, const std::filesystem::p
 				def.soundFile = soundIndex < soundNames.size() ? toUpperAscii(soundNames[soundIndex]) : std::string();
 				this->creatures.push_back(std::move(def));
 			}
+
+			// Doenças (como no OpenTESArena): chance por criatura (o Vampiro tem 5% fixos), as 4 criaturas que
+			// transmitem doença com a lista de cada uma (terminada em 0xFF) e as doenças de cura demorada. Os ids do
+			// executável começam em 10 (26 = a 17ª doença, Febre do Mago); aqui viram índices de DiseaseNames.
+			constexpr int DiseaseIdBase = 10;
+			const size_t chancesAt = offsetOf("Entities.CreatureDiseaseChances"), giversAt = offsetOf("Entities.DiseaseGivingCreatureIDs");
+			const size_t listsAt = offsetOf("Entities.CreatureDiseaseLists"), longAt = offsetOf("Entities.RandomHealingTimeDiseaseIDs");
+			if (chancesAt != 0 && giversAt != 0 && listsAt != 0 && longAt != 0)
+			{
+				for (size_t i = 0; i < this->creatures.size(); i++) this->creatures[i].diseaseChance = i == 21 ? 5 : static_cast<int8_t>(exe[chancesAt + i]);
+				size_t at = listsAt;
+				for (size_t g = 0; g < 4; g++)
+				{
+					const size_t creature = static_cast<size_t>(exe[giversAt + g]) - 1;
+					for (; at < exe.size() && exe[at] != 0xFF; at++)
+						if (creature < this->creatures.size() && exe[at] >= DiseaseIdBase) this->creatures[creature].diseases.push_back(exe[at] - DiseaseIdBase);
+					at++;
+				}
+				for (size_t i = 0; i < 3; i++) this->longDiseases.push_back(exe[longAt + i] - DiseaseIdBase);
+				this->diseaseNames = readStrings(exe, offsetOf("Status.DiseaseNames"), 17);
+			}
 		}
 	}
 

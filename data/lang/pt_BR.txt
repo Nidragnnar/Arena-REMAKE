@@ -276,6 +276,10 @@ PlayerHit=Acertaste %s! (-%s)
 PlayerMiss=Erraste o golpe em %s.
 CreatureKilled=Mataste %s! +%s de experiência.
 CreatureHit=%s te acerta! (-%s de vida)
+Paralyzed=O golpe d%s te paralisa! Não consegues te mexer.
+ParalysisGone=Voltas a te mexer.
+Diseased=Sentes-te mal: pegaste %s. Procura um templo ou o feitiço Curar Doença.
+DiseaseGone=A doença (%s) passou.
 CreatureMiss=%s erra o ataque.
 CreatureNoticed=%s te notou!
 DeathMessage=Tua visão escurece...
@@ -509,6 +513,7 @@ LevitateOn=Teus pés deixam o chão: flutuas sobre água, lama e lava.
 LevitateGone=Teus pés voltam a tocar o chão.
 MagicWardOn=Uma proteção contra magia te envolve.
 MagicWardGone=A proteção contra magia se desfaz.
+DiseaseCured=A doença (%s) deixa teu corpo.
 PitOpened=O chão se abre num fosso escuro.
 PitFall=%s cai no fosso e não sai mais!
 CreatureCasts=%s conjura um feitiço!
@@ -697,6 +702,8 @@ D6=O
 D7=NO
 
 [Effects]
+Paralyzed=Paralisado: %s s
+Disease=Doente: %s
 Shield=Escudo: %s pts
 Light=Luz: %s s
 Invisible=Invisível: %s s
@@ -779,6 +786,12 @@ Confirm=Confirmar
 Confirmed=Agora és nível %s.
 
 [Saves]
+TitleOriginal=Saves do Arena original
+ShowOriginal=Arena original
+ShowRemake=Saves do remake
+OriginalTag=Arena original
+OriginalMissing=Esse save do Arena original não foi encontrado.
+OriginalInvalid=Esse save do Arena original não pôde ser lido.
 TitleSave=Salvar jogo
 TitleLoad=Carregar jogo
 Empty=- vazio -
@@ -813,6 +826,9 @@ ActionBuy=Comprar
 ActionSell=Vender
 ActionDrink=Pedir
 ActionRent=Alugar
+CureDisease=Curar doença
+CureDiseaseDetail=O sacerdote expulsa a doença do teu corpo
+DiseaseCured=O sacerdote reza e a doença deixa teu corpo.
 TabTalk=Conversa
 ActionAsk=Perguntar
 AskWork=Perguntar por trabalho
@@ -1078,6 +1094,8 @@ Ordinal7=sétimo
 Ordinal8=último
 Palace=Entraste no Palácio Imperial. Jagar Tharn sabe que estás aqui.
 Jewel=Chegaste à câmara da Joia do Fogo, no fundo do palácio.
+Diseased=Pegaste %s de %s.
+Imported=Personagem trazido de um save do Arena original, a partir de %s. Os itens e o progresso das missões começam do zero.
 End=Tocaste a Joia do Fogo com o Cajado: Jagar Tharn caiu e o Imperador foi libertado.
 
 [Maker]
@@ -1268,3 +1286,23 @@ CofferGold=Abres o cofre e encontras %s de ouro.
 CofferEmpty=O cofre está vazio. Volta amanhã.
 PowerReady=%s equipado: o poder dele está no livro de feitiços (B). Prepara e usa com Q, sem gastar magia.
 Recharging=O poder de %s ainda está se recarregando (%s s).
+
+[Diseases]
+# Nomes das 17 doenças do executável (DiseaseNames).
+Name0=Varíola das Bruxas
+Name1=Peste
+Name2=Febre Amarela
+Name3=Podridão do Estômago
+Name4=Tísica
+Name5=Febre Cerebral
+Name6=Podridão do Pântano
+Name7=Maldição de Caliron
+Name8=Cólera
+Name9=Lepra
+Name10=Podridão das Feridas
+Name11=Morte Vermelha
+Name12=Podridão do Sangue
+Name13=Febre Tifoide
+Name14=Demência
+Name15=Crondíase
+Name16=Febre do Mago

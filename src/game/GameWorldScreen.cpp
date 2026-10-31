@@ -591,6 +591,8 @@ std::vector<std::string> arena::GameWorldScreen::describeEffects() const
 	const Localization &text = this->game.getText();
 	std::vector<std::string> lines;
 	if (this->shieldPoints > 0) lines.push_back(ui::format(text.get("Effects.Shield"), { std::to_string(this->shieldPoints) }));
+	if (this->paralysisTimer > 0.0) lines.push_back(ui::format(text.get("Effects.Paralyzed"), { std::to_string(static_cast<int>(std::ceil(this->paralysisTimer))) }));
+	if (this->game.getCharacter().disease >= 0) lines.push_back(ui::format(text.get("Effects.Disease"), { this->diseaseName(this->game.getCharacter().disease) }));
 	for (const PlayerEffect &e : this->playerEffects)
 	{
 		const std::string seconds = std::to_string(static_cast<int>(std::ceil(e.remaining)));
@@ -994,6 +996,31 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 		return true;
 	}
 
+	if (name == "importoriginal")
+	{
+		// importoriginal:N importa o N-ésimo save do Arena original e começa por ele (teste).
+		std::string error;
+		if (!this->game.importOriginalSave(std::max(1, std::atoi(arg.c_str())), error)) { std::printf("importar: %s\n", error.c_str()); return false; }
+		this->game.changeScreen(std::make_unique<GameWorldScreen>(this->game, this->game.startingMap()));
+		return true;
+	}
+
+	if (name == "diseases")
+	{
+		// diseases lista as doenças do executável e quem as transmite (depuração).
+		const auto &names = this->game.getData().getDiseaseNames();
+		for (size_t i = 0; i < names.size(); i++) std::printf("doença %zu: %s%s\n", i, names[i].c_str(), this->game.getData().longDisease(static_cast<int>(i)) ? " (demorada)" : "");
+		for (int id = 0; id < 40; id++) if (this->game.getData().longDisease(id)) std::printf("demorada: %d\n", id);
+		for (int k = 0; const CreatureDefinition *def = this->game.getData().getCreature(k); k++)
+		{
+			std::printf("criatura %d %s: %d%%", k, def->originalName.c_str(), def->diseaseChance);
+			for (int d : def->diseases) std::printf(" %d", d);
+			std::printf("\n");
+		}
+		if (!arg.empty()) { this->game.getCharacter().disease = std::atoi(arg.c_str()); this->game.getCharacter().diseaseEnd = this->game.getCharacter().gameMinutes + 1440.0; }
+		return true;
+	}
+
 	if (name == "hp" && this->loaded)
 	{
 		// hp:N muda a vida atual (teste).
@@ -1144,7 +1171,7 @@ std::string arena::GameWorldScreen::creatureRef(int creature, bool capitalized) 
 
 void arena::GameWorldScreen::startSwing()
 {
-	if (this->swinging || this->weapon.frames.empty())
+	if (this->swinging || this->weapon.frames.empty() || this->paralysisTimer > 0.0)
 	{
 		return;
 	}
@@ -1256,6 +1283,7 @@ void arena::GameWorldScreen::handleCombatEvents(const std::vector<CombatEvent> &
 			this->hurtTimer = 0.4;
 			this->game.playSound(this->health > 0 ? "UHIT.VOC" : (this->game.getCharacter().male ? "MDIE.VOC" : "FDIE.VOC"));
 			this->showMessage(ui::format(text.get("World.CreatureHit"), { this->creatureRef(event.creature, true), std::to_string(amount) }), 2.5);
+			if (this->health > 0) this->creatureAfflicts(event.creature);
 			if (this->health <= 0)
 			{
 				this->swinging = false;
@@ -1610,7 +1638,12 @@ void arena::GameWorldScreen::handleInput(const InputEvent &event)
 				this->saveToSlot(choice.slot);
 				this->overlay = Overlay::None;
 			}
-			else if (choice.slot > 0 && this->game.loadSavedCharacter(this->game.getSlotPath(choice.slot)))
+			else if (choice.slot > 0 && choice.original && !this->game.importOriginalSave(choice.slot, this->loadError))
+			{
+				this->showMessage(this->loadError, 4.0);
+				this->loadError.clear();
+			}
+			else if (choice.slot > 0 && (choice.original || this->game.loadSavedCharacter(this->game.getSlotPath(choice.slot))))
 			{
 				this->game.changeScreen(std::make_unique<GameWorldScreen>(this->game, this->game.startingMap()));
 			}
@@ -1780,6 +1813,14 @@ void arena::GameWorldScreen::update(double dt)
 	this->checkLevelUp();
 	if (this->health <= 0)
 	{
+		return;
+	}
+	this->updateDisease(dt);
+	if (this->paralysisTimer > 0.0)
+	{
+		// Paralisado: só dá para olhar em volta até passar.
+		this->paralysisTimer -= dt;
+		if (this->paralysisTimer <= 0.0) this->showMessage(this->game.getText().get("World.ParalysisGone"), 2.5);
 		return;
 	}
 	if (this->holdLeft) this->yaw -= TurnSpeed * fdt;

@@ -89,6 +89,8 @@ namespace arena
 		ArtifactHunt hunt;                 // artefato cuja masmorra o jogador conhece
 		int artifactsFound = 0;            // bit por artefato já achado (Artifacts.h)
 		int cofferDay = -1;                // último dia em que o Cofre do Rei Orgnum foi aberto
+		int disease = -1;                  // doença pega de uma criatura (índice de DiseaseNames), -1 = saudável
+		double diseaseEnd = 0.0;           // minutos do jogo em que a doença passa sozinha
 	};
 
 	class Game;
@@ -174,7 +176,12 @@ namespace arena
 		std::string startingMap() const
 		{
 			for (const auto &[key, value] : this->pendingWorld) if (key == "World.Map" && !value.empty()) return value;
+			if (!this->importedMap.empty()) return this->importedMap;
 			return this->text.get("World.StartDungeonMif");
+		}
+		// Save do Arena original (OriginalSave.h): troca o personagem e guarda o mapa de partida.
+		bool importOriginalSave(int slot, std::string &outError);
+		const std::filesystem::path &getArenaDir() const { return this->arenaDirectory;
 		}
 
 		bool shouldQuit() const { return this->quitRequested; }
@@ -240,7 +247,8 @@ namespace arena
 		Fonts fonts;
 		Palette defaultPalette{};
 		ArenaData rules;
-		std::filesystem::path dataDirectory;
+		std::filesystem::path dataDirectory, arenaDirectory;
+		std::string importedMap; // mapa de partida do último save do original importado
 		CharacterDraft character;
 		std::mt19937 rng{ std::random_device{}() };
 		std::vector<IndexedImage> parchmentTiles;

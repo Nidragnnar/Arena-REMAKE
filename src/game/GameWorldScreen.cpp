@@ -63,12 +63,19 @@ arena::GameWorldScreen::GameWorldScreen(Game &game, const std::string &mifName) 
 	}
 	else if (std::sscanf(mifName.c_str(), "WILD:%d:%d", &province, &localId) == 2)
 	{
+		// "WILD:p:l" = janela em volta da cidade; "WILD:p:l:bx:by" = janela deslocada (ver shiftWilderness).
+		int firstX = WildWindowFirst, firstY = WildWindowFirst;
+		if (std::sscanf(mifName.c_str(), "WILD:%d:%d:%d:%d", &province, &localId, &firstX, &firstY) == 4)
+		{
+			this->wildFirstX = std::clamp(firstX, 0, WildLastFirst);
+			this->wildFirstY = std::clamp(firstY, 0, WildLastFirst);
+		}
 		// Ermo em volta da cidade (blocos do original sorteados pelo nome da cidade).
 		const CityLocation *city = game.getData().getCity(province, localId);
 		MifFile mif;
 		const Weather w = weatherFor(city, game.getCharacter().gameMinutes);
 		if (!city) this->loadError = "Ermo " + mifName + " não existe.";
-		else if (generateWilderness(game.getAssets(), game.getData(), *city, w == Snow ? 'S' : w == Clear ? 'N' : 'R', mif, this->loadError))
+		else if (generateWilderness(game.getAssets(), game.getData(), *city, w == Snow ? 'S' : w == Clear ? 'N' : 'R', mif, this->loadError, this->wildFirstX, this->wildFirstY))
 		{
 			this->loaded = this->level.build(game.getAssets(), this->palette, mif, true, this->loadError);
 			this->locationName = ui::format(game.getText().get("Wild.Name"), { city->name });
@@ -223,8 +230,7 @@ arena::GameWorldScreen::GameWorldScreen(Game &game, const std::string &mifName) 
 					const int ox = cx + dirX[d] * 2, oz = cz + dirZ[d] * 2;
 					if (this->level.blocksMovement(ox, oz) || this->level.blocksMovement(cx + dirX[d], cz + dirZ[d])) continue;
 					// Fora da cidade = longe do centro dela.
-					const float centre = WildCityOffset + WildChunk;
-					const float out = std::fabs(ox + 0.5f - centre) + std::fabs(oz + 0.5f - centre);
+					const float out = std::fabs(ox + 0.5f - this->wildCityX() - WildChunk) + std::fabs(oz + 0.5f - this->wildCityZ() - WildChunk);
 					if (-out >= bestOut) continue;
 					bestOut = -out;
 					this->x = ox + 0.5f; this->z = oz + 0.5f;
@@ -1805,7 +1811,7 @@ void arena::GameWorldScreen::update(double dt)
 	const PlayerCombatStats stats = this->combatStats();
 	this->creatures.update(dt, this->level, stats, this->game.getRandom(), events);
 	this->citizens.update(dt, this->level, this->x, this->z, this->game.getRandom());
-	if (this->isWild()) this->updateWildCreatures(dt);
+	if (this->isWild()) { this->updateWildCreatures(dt); this->shiftWilderness(); }
 	this->handleCombatEvents(events);
 	this->updateMagic(dt);
 	this->updateArrows(dt);
@@ -2707,7 +2713,7 @@ bool arena::GameWorldScreen::enterBuilding(int cellX, int cellZ, const Cell &cel
 		// Masmorra do ermo: semente pela província e pelo bloco do ermo (2x2 blocos de 32).
 		const CityLocation *city = this->currentCity();
 		if (!city) return false;
-		const int blockX = cellZ / WildChunk + WildWindowFirst, blockY = cellX / WildChunk + WildWindowFirst;
+		const int blockX = cellZ / WildChunk + this->wildFirstX, blockY = cellX / WildChunk + this->wildFirstY;
 		const uint32_t seed = wildDungeonSeed(this->game.getData(), city->province, blockX, blockY);
 		char back[160];
 		std::snprintf(back, sizeof(back), "@%s@%.2f@%.2f@%.3f@", this->mifName.c_str(), this->x, this->z, this->yaw + Pi);
@@ -3005,9 +3011,11 @@ bool arena::GameWorldScreen::useCityGate(int cellX, int cellZ)
 	const float dx = cellX + 0.5f - this->x, dz = cellZ + 0.5f - this->z;
 	const int sx = std::fabs(dx) >= std::fabs(dz) ? (dx > 0 ? 1 : -1) : 0;
 	const int sz = sx == 0 ? (dz > 0 ? 1 : -1) : 0;
-	const int shift = this->isWild() ? -WildCityOffset : WildCityOffset;
+	// Da cidade, o ermo abre com a janela padrão (cidade em WildCityOffset); do ermo, pela janela atual.
+	const float shiftX = this->isWild() ? -this->wildCityX() : static_cast<float>(WildCityOffset);
+	const float shiftZ = this->isWild() ? -this->wildCityZ() : static_cast<float>(WildCityOffset);
 	char where[96];
-	std::snprintf(where, sizeof(where), "%.2f,%.2f,%.1f", cellX + shift + 0.5f + sx * 1.6f, cellZ + shift + 0.5f + sz * 1.6f, std::atan2(static_cast<float>(sz), static_cast<float>(sx)) * 180.0f / Pi);
+	std::snprintf(where, sizeof(where), "%.2f,%.2f,%.1f", cellX + shiftX + 0.5f + sx * 1.6f, cellZ + shiftZ + 0.5f + sz * 1.6f, std::atan2(static_cast<float>(sz), static_cast<float>(sx)) * 180.0f / Pi);
 	this->persist();
 	this->game.playSound("OPENDOOR.VOC");
 	this->game.setPendingSpawn(where);
@@ -3121,6 +3129,28 @@ void arena::GameWorldScreen::travelToDungeon(const CityLocation &target, int day
 	this->game.changeScreen(std::make_unique<GameWorldScreen>(this->game, "IN:" + map + back + dungeon->name));
 }
 
+void arena::GameWorldScreen::shiftWilderness()
+{
+	// Perto da borda da janela (a 1,5 bloco dela), o ermo é remontado com o bloco do jogador no meio, e ele
+	// continua no mesmo ponto do mundo. Só a borda do ermo inteiro (64x64 blocos) é um limite de verdade.
+	constexpr float Margin = 1.5f * WildChunk;
+	const float size = static_cast<float>(WildWindow * WildChunk);
+	if (this->wildShifting || (this->x > Margin && this->z > Margin && this->x < size - Margin && this->z < size - Margin)) return;
+	const CityLocation *city = this->currentCity();
+	if (!city) return;
+	const int blockCol = static_cast<int>(this->z) / WildChunk + this->wildFirstX, blockRow = static_cast<int>(this->x) / WildChunk + this->wildFirstY;
+	const int firstX = std::clamp(blockCol - WildWindow / 2, 0, WildLastFirst), firstY = std::clamp(blockRow - WildWindow / 2, 0, WildLastFirst);
+	if (firstX == this->wildFirstX && firstY == this->wildFirstY) return;
+
+	char where[96];
+	std::snprintf(where, sizeof(where), "%.2f,%.2f,%.1f", this->x + (this->wildFirstY - firstY) * WildChunk, this->z + (this->wildFirstX - firstX) * WildChunk, this->yaw * 180.0f / Pi);
+	this->wildShifting = true;
+	this->persist();
+	this->game.setPendingSpawn(where);
+	this->game.changeScreen(std::make_unique<GameWorldScreen>(this->game, "WILD:" + std::to_string(city->province) + ":" + std::to_string(city->localId)
+		+ ":" + std::to_string(firstX) + ":" + std::to_string(firstY)));
+}
+
 void arena::GameWorldScreen::updateWildCreatures(double dt)
 {
 	// Ermo: criaturas surgem fora da vista, a 18..28 passos, e somem quando ficam longe. De dia
@@ -3162,8 +3192,7 @@ void arena::GameWorldScreen::updateWildCreatures(double dt)
 		if ((std::cos(angle) * fx + std::sin(angle) * fz) > 0.5f) continue; // na frente: aparece do nada
 		const int cx = static_cast<int>(std::floor(sx)), cz = static_cast<int>(std::floor(sz));
 		if (!this->level.inBounds(cx, cz) || this->level.blocksMovement(cx, cz) || this->level.cell(cx, cz).chasm) continue;
-		const float inCity = WildCityOffset + WildChunk;
-		if (std::fabs(sx - inCity) < WildChunk && std::fabs(sz - inCity) < WildChunk) continue;
+		if (std::fabs(sx - this->wildCityX() - WildChunk) < WildChunk && std::fabs(sz - this->wildCityZ() - WildChunk) < WildChunk) continue;
 		this->creatures.spawn(this->game.getAssets(), this->palette, kind, cx + 0.5f, cz + 0.5f, rng);
 		return;
 	}

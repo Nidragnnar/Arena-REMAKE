@@ -19,6 +19,7 @@
 #include "DialogueMenu.h"
 #include "JournalMenu.h"
 #include "TravelMenu.h"
+#include "WildGen.h"
 #include "SpellbookUi.h"
 
 namespace arena
@@ -179,6 +180,12 @@ namespace arena
 		int guardDefinition = -1;
 		TravelMenu travelMenu;
 		bool isWild() const { return this->mifName.rfind("WILD:", 0) == 0; }
+		// Janela do ermo: primeiro bloco (coluna, linha) e onde a cidade cai nela (voxels, X e Z do mundo).
+		int wildFirstX = WildWindowFirst, wildFirstY = WildWindowFirst;
+		float wildCityX() const { return static_cast<float>((WildCityChunk - this->wildFirstY) * WildChunk); }
+		float wildCityZ() const { return static_cast<float>((WildCityChunk - this->wildFirstX) * WildChunk); }
+		void shiftWilderness();
+		bool wildShifting = false;
 		// Cidade do mapa atual (cidade, ermo em volta dela ou prédio dentro dela).
 		const CityLocation *currentCity() const;
 		bool useCityGate(int cellX, int cellZ);

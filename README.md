@@ -320,8 +320,9 @@ e a distância a partir do morador) e boatos.
 Os portões da cidade levam ao ermo em volta dela, gerado como no original: 64x64 blocos de 64x64
 voxels (`WILDnnn.RMD`) sorteados pela semente do nome da cidade, com as listas de blocos do
 executável (comum, vilarejo, masmorra, taverna, templo) e as muralhas da cidade no centro. Aqui
-só uma janela de 10x10 blocos (640x640 voxels) em volta da cidade é montada; a borda dela é um
-limite invisível. O `.INF` do ermo segue o clima e o tempo (`TWN`, `MWS`...). Taverna, templo,
+uma janela de 10x10 blocos (640x640 voxels) é montada por vez: em volta da cidade ao sair pelo portão e,
+quando o jogador chega a um bloco e meio da borda, remontada com o bloco dele no meio (mapa `WILD:p:l:bx:by`),
+sem parede invisível. Só a borda do ermo inteiro é um limite. O `.INF` do ermo segue o clima e o tempo (`TWN`, `MWS`...). Taverna, templo,
 casas, criptas e torres do ermo têm interior. O portão
 visto de fora leva de volta para dentro da cidade.
 

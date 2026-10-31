@@ -9,7 +9,8 @@ namespace arena
 {
 	// Ermo em volta de uma cidade, como no original: 64x64 blocos de 64x64 voxels (WILDnnn.RMD)
 	// sorteados pela semente do nome da cidade, com as muralhas da cidade nos 4 blocos do centro.
-	// Aqui só uma janela de WildWindow x WildWindow blocos em volta da cidade é montada.
+	// Aqui só uma janela de WildWindow x WildWindow blocos é montada: em volta da cidade ao sair pelo
+	// portão, e remontada em volta do jogador quando ele chega perto da borda (mapa "WILD:p:l:bx:by").
 	constexpr int WildChunk = 64;
 	constexpr int WildWindow = 10;
 	constexpr int WildCityChunk = 31;                          // canto da cidade no ermo do original
@@ -17,5 +18,9 @@ namespace arena
 	constexpr int WildCityOffset = (WildCityChunk - WildWindowFirst) * WildChunk; // cidade na janela (voxels)
 
 	// weatherLetter: 'N' limpo, 'R' nublado/chuva, 'S' neve (como o .INF do original).
-	bool generateWilderness(const AssetManager &assets, const ArenaData &data, const CityLocation &city, char weatherLetter, MifFile &outMif, std::string &outError);
+	constexpr int WildBlocks = 64;
+	constexpr int WildLastFirst = WildBlocks - WildWindow; // último primeiro bloco possível
+	// firstX/firstY: primeiro bloco da janela (coluna = Z do mundo, linha = X do mundo).
+	bool generateWilderness(const AssetManager &assets, const ArenaData &data, const CityLocation &city, char weatherLetter, MifFile &outMif, std::string &outError,
+		int firstX = WildWindowFirst, int firstY = WildWindowFirst);
 }

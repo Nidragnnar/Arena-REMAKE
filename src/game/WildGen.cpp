@@ -53,7 +53,8 @@ namespace
 	}
 }
 
-bool arena::generateWilderness(const AssetManager &assets, const ArenaData &data, const CityLocation &city, char weatherLetter, MifFile &outMif, std::string &outError)
+bool arena::generateWilderness(const AssetManager &assets, const ArenaData &data, const CityLocation &city, char weatherLetter, MifFile &outMif, std::string &outError,
+	int firstX, int firstY)
 {
 	// Semente: as 4 primeiras letras do nome da cidade (little-endian).
 	uint32_t seed = 0;
@@ -76,7 +77,9 @@ bool arena::generateWilderness(const AssetManager &assets, const ArenaData &data
 		index = blocks.empty() ? 5 : blocks[static_cast<size_t>((random.next() & 0xFF) % static_cast<int>(blocks.size()))];
 	}
 
-	// Janela de blocos em volta da cidade.
+	// Janela de blocos (em volta da cidade ou, deslocada, em volta do jogador).
+	firstX = std::clamp(firstX, 0, WildLastFirst);
+	firstY = std::clamp(firstY, 0, WildLastFirst);
 	constexpr int Size = WildWindow * WildChunk;
 	MifFile mif;
 	mif.width = mif.depth = Size;
@@ -89,7 +92,7 @@ bool arena::generateWilderness(const AssetManager &assets, const ArenaData &data
 	{
 		for (int cx = 0; cx < WildWindow; cx++)
 		{
-			const int wx = WildWindowFirst + cx, wy = WildWindowFirst + cy;
+			const int wx = firstX + cx, wy = firstY + cy;
 			const bool cityBlock = wx >= WildCityChunk && wx <= WildCityChunk + 1 && wy >= WildCityChunk && wy <= WildCityChunk + 1;
 			if (cityBlock) continue;
 			const int id = indices[static_cast<size_t>(wy * 64 + wx)];
@@ -116,17 +119,19 @@ bool arena::generateWilderness(const AssetManager &assets, const ArenaData &data
 		}
 	}
 
-	// Cidade no centro: só as muralhas (e portões) ficam, com as texturas do ermo.
+	// Cidade no centro: só as muralhas (e portões) ficam, com as texturas do ermo (quando cabe na janela).
 	MifFile cityMif;
 	std::string cityInf;
-	if (generateCity(assets, data.getCityGen(), city, cityMif, cityInf, outError) && !cityMif.levels.empty())
+	const int cityX = (WildCityChunk - firstX) * WildChunk, cityY = (WildCityChunk - firstY) * WildChunk;
+	const bool cityInside = cityX >= 0 && cityY >= 0 && cityX + 2 * WildChunk <= Size && cityY + 2 * WildChunk <= Size;
+	if (cityInside && generateCity(assets, data.getCityGen(), city, cityMif, cityInf, outError) && !cityMif.levels.empty())
 	{
 		const MifLevel &src = cityMif.levels[0];
 		const std::vector<uint16_t> grass = level.flor; // chão do ermo por baixo
 		for (int z = 0; z < 2 * WildChunk; z++)
 			for (int x = 0; x < 2 * WildChunk; x++)
 			{
-				const size_t to = static_cast<size_t>((WildCityOffset + z) * Size + WildCityOffset + x);
+				const size_t to = static_cast<size_t>((cityY + z) * Size + cityX + x);
 				level.flor[to] = 0;
 				level.map1[to] = level.map2[to] = 0;
 				if (x >= cityMif.width || z >= cityMif.depth) continue;

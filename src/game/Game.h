@@ -43,6 +43,15 @@ namespace arena
 	};
 
 	// Personagem em construção durante a criação.
+	// Linha do diário: quando, o que aconteceu e, se houver, o texto completo para reler
+	// (chave do idioma, ex.: "Quest.Dream3", formatada com o nome do personagem).
+	struct JournalEntry
+	{
+		double minutes = 0.0;
+		std::string detail;
+		std::string text;
+	};
+
 	struct CharacterDraft
 	{
 		std::string name;
@@ -71,6 +80,7 @@ namespace arena
 		bool spellbookKnown = false; // a ficha já tinha a seção [Spellbook]
 		int staffPieces = 0; // missão principal: pedaços do Cajado do Caos (ver MainQuest.h)
 		int questStep = 0;   // passo da busca do próximo pedaço
+		std::vector<JournalEntry> journal; // diário, do mais antigo ao mais recente
 	};
 
 	class Game;

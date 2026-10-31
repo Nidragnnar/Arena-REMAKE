@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "../i18n/Localization.h"
 #include "ArenaData.h"
 
 namespace arena
@@ -29,6 +30,10 @@ namespace arena
 		bool dungeonKnown(const CharacterDraft &character, const CityLocation &dungeon);
 		// Ria aparece no sonho ao descansar (o primeiro só depois do nível 2, como ela avisa na cela).
 		bool dreamDue(const CharacterDraft &character);
+		// O que fazer agora, em uma frase (diário). inPrison: ainda nas Masmorras Imperiais.
+		std::string objective(const CharacterDraft &character, const ArenaData &data, const Localization &text, bool inPrison);
+		// Anota no diário com a hora atual do jogo.
+		void note(CharacterDraft &character, std::string text, std::string detail = {});
 		// Arquivo do mapa pronto de uma masmorra da missão ("42068779.MIF").
 		std::string premadeMif(const CityLocation &dungeon);
 	}

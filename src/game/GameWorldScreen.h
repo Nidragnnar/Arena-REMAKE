@@ -16,6 +16,7 @@
 #include "Citizens.h"
 #include "Cutscene.h"
 #include "DialogueMenu.h"
+#include "JournalMenu.h"
 #include "TravelMenu.h"
 #include "SpellbookUi.h"
 
@@ -147,7 +148,7 @@ namespace arena
 		bool leftFoot = false;
 
 		// Inventário e saque (janelas sobre o mundo; o jogo pausa enquanto abertas)
-		enum class Overlay { None, Character, Loot, LevelUp, SaveLoad, Service, Dialogue, Travel };
+		enum class Overlay { None, Character, Loot, LevelUp, SaveLoad, Service, Dialogue, Travel, Journal };
 		Overlay overlay = Overlay::None;
 		CharacterMenu characterMenu;
 		LootMenu lootMenu;
@@ -155,6 +156,8 @@ namespace arena
 		SaveLoadMenu saveLoadMenu;
 		ServiceMenu serviceMenu;
 		DialogueMenu dialogueMenu;
+		JournalMenu journalMenu;
+		void openJournal();
 		TravelMenu travelMenu;
 		bool isWild() const { return this->mifName.rfind("WILD:", 0) == 0; }
 		// Cidade do mapa atual (cidade, ermo em volta dela ou prédio dentro dela).

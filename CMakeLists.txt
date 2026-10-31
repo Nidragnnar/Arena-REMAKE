@@ -45,6 +45,7 @@ add_library(arena_core STATIC
 	src/game/DungeonGen.cpp
 	src/game/MainQuest.cpp
 	src/game/Cutscene.cpp
+	src/game/JournalMenu.cpp
 	src/game/TravelMenu.cpp
 	src/game/NewCharacter.cpp
 	src/game/InventoryUi.cpp

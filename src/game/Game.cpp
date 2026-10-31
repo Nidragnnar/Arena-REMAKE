@@ -324,6 +324,12 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 		else if (key == "Spellbook.Ready") loaded.readySpell = number;
 		else if (key == "Quest.StaffPieces") loaded.staffPieces = std::clamp(number, 0, 8);
 		else if (key == "Quest.Step") loaded.questStep = std::clamp(number, 0, 4);
+		else if (key.rfind("Journal.Entry", 0) == 0)
+		{
+			// minutos|chave do texto completo|texto
+			const size_t a = value.find('|'), b = a == std::string::npos ? a : value.find('|', a + 1);
+			if (b != std::string::npos) loaded.journal.push_back({ std::atof(value.c_str()), value.substr(a + 1, b - a - 1), value.substr(b + 1) });
+		}
 		else if (key == "Spellbook.Known")
 		{
 			loaded.spellbookKnown = true;
@@ -437,6 +443,9 @@ bool arena::Game::saveCharacter(const std::filesystem::path &path, const std::st
 	for (size_t i = 0; i < c.spells.size(); i++) file << (i ? "," : "") << c.spells[i];
 	file << "\nReady=" << c.readySpell << "\n";
 	file << "\n[Quest]\n# missão principal: pedaços do Cajado do Caos e passo da busca do próximo\nStaffPieces=" << c.staffPieces << "\nStep=" << c.questStep << "\n";
+	file << "\n[Journal]\n# diário: minutos de jogo|texto completo para reler|resumo\n";
+	for (size_t i = 0; i < c.journal.size(); i++)
+		file << "Entry" << i << "=" << static_cast<long long>(c.journal[i].minutes) << "|" << c.journal[i].detail << "|" << c.journal[i].text << "\n";
 	if (!world.empty()) file << "\n" << world;
 
 	return static_cast<bool>(file);

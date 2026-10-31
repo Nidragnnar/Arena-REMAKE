@@ -325,6 +325,14 @@ continuam os originais; com mais quadros, a cena passa a ser só os PNGs, na mes
 (o dobro de quadros deixa o movimento duas vezes mais fluido). PNGs em 16:10 (como o 320x200
 original) são esticados para 4:3 como num monitor VGA; outras proporções aparecem como são.
 
+### Diário
+
+A tecla J (ou Diário, no menu de pausa) abre o diário: a missão atual em uma frase (o que fazer e
+onde, sempre de acordo com o passo da missão), o progresso do Cajado do Caos e o registro com data
+de tudo o que aconteceu (fuga da prisão, sonhos, boatos, pistas, pedaços, palácio, final), do mais
+recente ao mais antigo. Linhas marcadas "clique para reler" abrem o texto completo (os sonhos de
+Ria, por exemplo). O registro fica salvo no personagem (seção `[Journal]`).
+
 ### Missão principal
 
 Os oito pedaços do Cajado do Caos, na ordem de províncias do executável (Hammerfell, Skyrim,

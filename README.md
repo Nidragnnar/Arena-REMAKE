@@ -209,13 +209,15 @@ Comandos: `k:X`, `enter`, `esc`, `up`, `down`, `left`, `right`, `bs`, `click:x,y
 - Criaturas vêm dos marcadores do mapa (*ITEM 32–54 do .INF) com vida, dano, nível, escala e
   experiência das tabelas do ACD.EXE (Rato: vida 1–6, dano 1–4; Goblin: vida 1–8, dano 1–5).
 - A arma equipada (ver Inventário) define dano e animação; sem arma, punhos (1–3; Monge 1–8).
-- Acerto do jogador: 55% + 5% × bônus de acerto (Agilidade) − 5% por nível da criatura acima do 1º;
-  dano = arma + bônus de dano (Força). Acerto da criatura: 45% + 5% × nível − 5% × defesa do jogador.
+- Acerto (jogador, flechas e criaturas) com o teste do original, em 256 avos, como reconstruído pelo OpenTESArena:
+  50% + 5% por nível de diferença + bônus de acerto do atacante − bônus de defesa do alvo (os dois pela Agilidade);
+  Guardas Vermelhos, Elfos Negros e Elfos da Floresta somam o próprio nível; Acrobatas e Monges defendem pelo nível
+  deles; mínimo de nível do atacante + 20%. Dano = arma + bônus de dano (Força).
 - Experiência ao matar = experiência base + vida máxima × multiplicador (fórmula do original).
 - A armadura vestida protege a parte do corpo atingida (peito, mãos, pernas, ombros, cabeça,
   pés; o escudo soma a todas): −5% de chance de acerto da criatura por ponto de proteção.
-- Ao morrer: Enter recomeça na cela, S volta ao menu. Fórmulas exatas do original para
-  acerto/defesa ainda são simplificações.
+- Ao morrer: Enter recomeça na cela, S volta ao menu. A armadura ainda é aproximada (5% de acerto a menos por
+  ponto de proteção), porque a tabela de classe de armadura do original ainda não foi decifrada.
 
 ### Inventário, equipamento e saque
 

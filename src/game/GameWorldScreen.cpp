@@ -386,6 +386,7 @@ arena::PlayerCombatStats arena::GameWorldScreen::combatStats() const
 	stats.invisible = this->hasPlayerEffect(SpellEffectType::Invisibility);
 	const CharacterDraft &character = this->game.getCharacter();
 	stats.level = character.level;
+	stats.classIndex = character.classIndex;
 	const ItemTables &tables = this->game.getData().getItems();
 	stats.defenseBonus = hitBonusFor(character.attributes[3]);
 	for (const Item &item : character.inventory)
@@ -1196,8 +1197,9 @@ void arena::GameWorldScreen::resolveSwing()
 
 	std::mt19937 &rng = this->game.getRandom();
 	const CreatureDefinition &def = this->creatures.definitionOf(target);
-	const int chance = std::clamp(55 + 5 * hitBonusFor(character.attributes[3] + this->fortifyBonus(3)) + 5 * (1 - def.level) + this->weaponMaterialBonus / 5, 10, 95);
-	if (static_cast<int>(rng() % 100) >= chance)
+	const int hitBonus = hitBonusFor(character.attributes[3] + this->fortifyBonus(3)) + this->weaponMaterialBonus / 5;
+	const int chance = meleeHitChance256(character.level, character.raceIndex, hitBonus, def.level, -1, 0, 0);
+	if (static_cast<int>(rng() % 256u) >= chance)
 	{
 		this->showMessage(ui::format(text.get("World.PlayerMiss"), { this->creatureRef(target, false) }), 2.0);
 		return;
@@ -3362,7 +3364,7 @@ void arena::GameWorldScreen::shootArrow()
 	arrow.y = EyeHeight + this->eyeOffset - 0.1f;
 	const int roll = this->weapon.minDamage + static_cast<int>(rng() % static_cast<uint32_t>(this->weapon.maxDamage - this->weapon.minDamage + 1));
 	arrow.damage = std::max(1, roll + damageBonusFor(character.attributes[0] + this->fortifyBonus(0)));
-	arrow.hitChanceBonus = 5 * hitBonusFor(character.attributes[3]) + this->weaponMaterialBonus / 5;
+	arrow.hitBonus = hitBonusFor(character.attributes[3] + this->fortifyBonus(3)) + this->weaponMaterialBonus / 5;
 	this->arrows.push_back(arrow);
 
 	if (this->arrowTextures.empty())
@@ -3402,9 +3404,10 @@ void arena::GameWorldScreen::updateArrows(double dt)
 			{
 				// Mesmo teste de acerto do corpo a corpo.
 				const CreatureDefinition &def = this->creatures.definitionOf(hit);
-				const int chance = std::clamp(55 + a.hitChanceBonus + 5 * (1 - def.level), 10, 95);
+				const CharacterDraft &hero = this->game.getCharacter();
+				const int chance = meleeHitChance256(hero.level, hero.raceIndex, a.hitBonus, def.level, -1, 0, 0);
 				const Creature &victim = all[static_cast<size_t>(hit)];
-				if (static_cast<int>(rng() % 100) >= chance) this->showMessage(ui::format(text.get("World.PlayerMiss"), { this->creatureRef(hit, false) }), 2.0);
+				if (static_cast<int>(rng() % 256u) >= chance) this->showMessage(ui::format(text.get("World.PlayerMiss"), { this->creatureRef(hit, false) }), 2.0);
 				else
 				{
 					const int maxHp = victim.maxHp;

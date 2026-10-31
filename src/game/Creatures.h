@@ -56,6 +56,7 @@ namespace arena
 	{
 		float x = 0, z = 0;
 		int level = 1;
+		int classIndex = -1;  // Acrobata e Monge defendem pelo nível
 		int defenseBonus = 0; // bônus de defesa (Agilidade)
 		std::array<int, 7> partArmor{}; // proteção por parte do corpo (peito, mãos, pernas, ombros, cabeça, pés)
 		int shieldArmor = 0;

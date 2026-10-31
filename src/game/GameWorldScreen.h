@@ -269,7 +269,7 @@ namespace arena
 		std::array<Texture, 6> orbTextures;            // projétil por elemento
 		std::vector<Projectile> projectiles;
 		// Flechas do arco: voam em linha reta e acertam a primeira criatura (ou parede) no caminho.
-		struct Arrow { float x, y, z, dx, dy, dz; float travelled = 0.0f; int damage = 1; int hitChanceBonus = 0; };
+		struct Arrow { float x, y, z, dx, dy, dz; float travelled = 0.0f; int damage = 1; int hitBonus = 0; };
 		std::vector<Arrow> arrows;
 		std::vector<Texture> arrowTextures; // ARROW02.CFA (a flecha vista de longe)
 		void shootArrow();

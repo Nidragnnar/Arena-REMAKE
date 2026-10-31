@@ -241,13 +241,13 @@ void arena::CreatureSystem::update(double dt, const Level &level, const PlayerCo
 				c.attackResolved = true;
 				if (player.alive && dist <= AttackRange + 0.25f)
 				{
-					// Chance de acerto: nível da criatura contra a defesa (Agilidade) do jogador.
+					// Teste de acerto do original (meleeHitChance256): nível da criatura contra o do jogador e a defesa dele (Agilidade).
 					// O golpe mira uma parte do corpo (o peito com o dobro de chance); armadura e escudo reduzem o acerto.
 					const int roll = randomInt(rng, 0, 7);
 					const int part = (roll == 7) ? 0 : roll;
 					const int armor = player.partArmor[static_cast<size_t>(part)] + player.shieldArmor;
-					const int chance = std::clamp(45 + 5 * def.level - 5 * player.defenseBonus - 2 * (player.level - 1) - 5 * armor, 5, 90);
-					if (randomInt(rng, 1, 100) <= chance)
+					const int chance = meleeHitChance256(def.level, -1, 0, player.level, player.classIndex, player.defenseBonus, armor);
+					if (randomInt(rng, 0, 255) < chance)
 						events.push_back({ CombatEvent::Type::CreatureHitPlayer, static_cast<int>(i), randomInt(rng, def.minDamage, def.maxDamage) });
 					else
 						events.push_back({ CombatEvent::Type::CreatureMissedPlayer, static_cast<int>(i), 0 });

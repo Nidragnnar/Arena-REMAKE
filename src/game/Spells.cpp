@@ -49,9 +49,28 @@ bool arena::SpellLibrary::load(const AssetManager &assets)
 	return !this->spells.empty();
 }
 
+namespace
+{
+	std::vector<arena::Spell> &customSpells()
+	{
+		static std::vector<arena::Spell> spells;
+		return spells;
+	}
+}
+
+void arena::setCustomSpells(std::vector<Spell> spells)
+{
+	customSpells() = std::move(spells);
+}
+
 const arena::Spell *arena::SpellLibrary::find(int index) const
 {
 	for (const Spell &spell : this->spells)
+	{
+		if (spell.index == index) return &spell;
+	}
+
+	for (const Spell &spell : customSpells())
 	{
 		if (spell.index == index) return &spell;
 	}

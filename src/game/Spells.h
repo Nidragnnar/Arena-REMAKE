@@ -49,6 +49,11 @@ namespace arena
 		bool harmful() const { return this->target != SpellTarget::Caster && this->target != SpellTarget::Other; }
 	};
 
+	// Feitiços criados pelo jogador (Guilda dos Magos): índices a partir de CustomSpellBase,
+	// encontrados por SpellLibrary::find junto com os do original.
+	constexpr int CustomSpellBase = 1000;
+	void setCustomSpells(std::vector<Spell> spells);
+
 	class SpellLibrary
 	{
 	public:

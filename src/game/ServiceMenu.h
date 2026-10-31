@@ -31,6 +31,16 @@ namespace arena
 		};
 
 		void rebuild(const Game &game);
+		int tabCount() const { return this->kind == Kind::Temple ? 1 : this->kind == Kind::MagesGuild ? 3 : 2; }
+
+		// Criação de feitiços (aba 3 da Guilda dos Magos): um efeito, elemento, alvo, potência e nome.
+		bool makerOpen() const { return this->kind == Kind::MagesGuild && this->tab == 2; }
+		Spell makerSpell(const Game &game) const;
+		OverlayResult createSpell(Game &game);
+		void renderMaker(kit::Painter &painter, const Game &game, const Rect &page);
+		int makerEffect = 0, makerElement = 0, makerTarget = 1, makerPotency = 3;
+		std::string makerName;
+		std::vector<std::pair<Rect, int>> makerButtons;
 		OverlayResult confirm(Game &game, const Row &row);
 		int price(int base) const { return std::max(1, base * this->priceFactor / 100); }
 

@@ -60,8 +60,15 @@ Ou defina `ArenaPath` em `settings.ini`. Teclas: **F11** / **Alt+Enter** tela ch
 | C / I / B | janela do personagem nas abas Personagem / Inventário / Feitiços (1 2 3 ou setas trocam de aba) |
 | R | descansar (recupera a vida se não houver inimigos por perto) |
 | M | minimapa |
+| J | diário de missões |
 | H | mostrar/ocultar ajuda |
 | Esc | pausa (S volta ao menu) |
+
+As teclas podem ser trocadas na seção `[Controls]` do `settings.ini` (ex.: `Forward=Z`). Também dá
+para jogar com **controle de videogame** (qualquer um reconhecido pelo SDL): analógico esquerdo anda,
+direito olha, RT ataca, LT conjura, A confirma, B volta, X usa, Y diário, LB ficha, RB descansa,
+Back viagem, Start pausa, direcional = setas e o analógico esquerdo apertado corre
+(`Gamepad=0` desliga; `GamepadLookSpeed` ajusta a velocidade do olhar).
 
 `Video.RenderScale` no `settings.ini` define a resolução 3D em relação à janela (padrão 0.6).
 Os efeitos modernos ficam em `[Graphics]` (veja "Gráficos" abaixo); `--classico` desliga todos.
@@ -183,7 +190,10 @@ Comandos: `k:X`, `enter`, `esc`, `up`, `down`, `left`, `right`, `bs`, `click:x,y
 - Efeitos implementados: dano, dano contínuo, veneno, paralisia (a criatura congela), roubo de vida,
   cura de vida/magia, luz (globo que acompanha o jogador), escudo mágico (absorve golpes), invisibilidade
   e Santuário (as criaturas não notam o jogador), resistências, reforço de atributo (Força aumenta o dano),
-  regeneração e Abrir (destranca a porta à frente). Os demais avisam que ainda não existem nesta versão.
+  regeneração, Abrir (destranca a porta à frente), Wizard Lock (tranca), Levitar (flutua sobre água e
+  lava), Passwall (abre a parede à frente), Earth Wall (ergue uma parede por algumas rodadas), doença,
+  maldição e drenar nas criaturas, Silêncio e as proteções contra magia (as criaturas ainda não
+  conjuram, então elas só duram). Pitfalls ainda avisa que não existe nesta versão.
 - Magia volta ao descansar (exceto Feiticeiro, como no original) e com a Poção de Restaurar Magia.
 
 ### Combate
@@ -244,7 +254,8 @@ Resistência, e o jogador distribui de 3 a 6 pontos de atributo; vigor e magia s
 ### Salvar e carregar
 
 Dez espaços (`saves/jogo1.ini` a `jogo10.ini`) pela pausa, pela tela de morte ou pelo menu
-principal, além do salvamento automático (`saves/personagem.ini`). O save guarda o personagem e o
+principal, além do salvamento automático (`saves/personagem.ini`, gravado ao trocar de lugar, em
+achados e a cada minuto explorando). O save guarda o personagem e o
 estado do mundo: posição, portas abertas e trancadas, gatilhos já lidos, criaturas mortas e o que
 sobrou em baús e corpos.
 
@@ -382,17 +393,20 @@ desconto de 10% nas vilas e 20% nas aldeias:
 - **Taverna:** as 15 bebidas do original e quatro quartos (uma noite recupera vida e magia).
 - **Templo:** cura dos ferimentos (2 de ouro por ponto de vida, mínimo 10).
 - **Guilda dos Magos:** os feitiços do livro do original que o personagem ainda não conhece (o
-  dobro do custo-base em ouro) e as poções.
+  dobro do custo-base em ouro), as poções e a criação de feitiços: um efeito (dano, dano contínuo,
+  paralisia, cura, escudo, luz, invisibilidade, resistência, força, regeneração, abrir ou levitar),
+  elemento, alvo (toque, à distância ou área), potência de 1 a 10 e nome. O custo em ouro e em magia
+  sai do efeito, da potência e do alvo; os feitiços criados ficam no save (seção `[CustomSpells]`).
 
 ## Roteiro
 
 1. ~~Formatos base, título e menu principal em PT-BR~~ ✅
 2. ~~Criação de personagem completa (perguntas de classe, lista de classes, nome, gênero, raça no mapa, atributos, rosto)~~ ✅
 3. Animações FLC (abertura, cenas) e áudio (VOC + música XMI/MIDI via FluidSynth)
-4. Mundo 3D — **em andamento**: ~~Prisão Imperial (START.MIF/INF) em widescreen com olhar livre, portas, água, plataformas, sprites e luzes~~ ✅; ~~criaturas (ratos e goblins) com animações CFA, IA e combate corpo a corpo~~ ✅; ~~sons, música, gatilhos de texto e travas~~ ✅; ~~inventário, equipamentos, saque e ficha em jogo~~ ✅; ~~gráficos modernos (água/lava animadas com reflexos, luz difusa, oclusão de ambiente, bloom, renderização em várias threads)~~ ✅; ~~texturas HD com detalhe e relevo~~ ✅; ~~renderização pela placa de vídeo (OpenGL)~~ ✅; ~~magias (livro, conjuração, projéteis e efeitos)~~ ✅; ~~níveis, salvar em 10 espaços e Portão de Transição~~ ✅; ~~sprites redesenhados em PNG~~ ✅; ~~primeira cidade gerada como no original~~ ✅; ~~interiores, comércio e serviços~~ ✅; ~~moradores, diálogos, dia e noite e tempo~~ ✅; ~~ermo e viagem por Tamriel~~ ✅; ~~masmorras do ermo e com nome~~ ✅; ~~criaturas no ermo~~ ✅; faltam outros andares/masmorras, guildas e criação de feitiços
+4. Mundo 3D — **em andamento**: ~~Prisão Imperial (START.MIF/INF) em widescreen com olhar livre, portas, água, plataformas, sprites e luzes~~ ✅; ~~criaturas (ratos e goblins) com animações CFA, IA e combate corpo a corpo~~ ✅; ~~sons, música, gatilhos de texto e travas~~ ✅; ~~inventário, equipamentos, saque e ficha em jogo~~ ✅; ~~gráficos modernos (água/lava animadas com reflexos, luz difusa, oclusão de ambiente, bloom, renderização em várias threads)~~ ✅; ~~texturas HD com detalhe e relevo~~ ✅; ~~renderização pela placa de vídeo (OpenGL)~~ ✅; ~~magias (livro, conjuração, projéteis e efeitos)~~ ✅; ~~níveis, salvar em 10 espaços e Portão de Transição~~ ✅; ~~sprites redesenhados em PNG~~ ✅; ~~primeira cidade gerada como no original~~ ✅; ~~interiores, comércio e serviços~~ ✅; ~~moradores, diálogos, dia e noite e tempo~~ ✅; ~~ermo e viagem por Tamriel~~ ✅; ~~masmorras do ermo e com nome~~ ✅; ~~criaturas no ermo~~ ✅; ~~criação de feitiços~~ ✅
 5. Cidades, masmorras, NPCs, diálogos, lojas, guildas, magias, combate
 6. Viagem pelo mapa de Tamriel, missões principais e importação de saves originais
-7. Extras modernos: remapeamento de controles, gamepad, interface escalável, autosave
+7. Extras modernos: ~~remapeamento de controles~~ ✅, ~~gamepad~~ ✅, ~~autosave~~ ✅, interface escalável
 
 ## Créditos
 

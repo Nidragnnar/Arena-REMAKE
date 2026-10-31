@@ -185,6 +185,7 @@ void arena::MainMenuScreen::activate(Action action)
 	case Action::NewGame:
 		// Novo jogo: o Imperador e a traição de Tharn (KING e MORPH) antes da criação.
 		this->game.getCharacter() = CharacterDraft{};
+		setCustomSpells({});
 		this->game.changeScreen(std::make_unique<CutsceneScreen>(this->game, std::vector<std::string>{ "KING.FLC", "MORPH.FLC" },
 			[](Game &owner) -> std::unique_ptr<Screen> { return std::make_unique<NewCharacterScreen>(owner); }));
 		break;

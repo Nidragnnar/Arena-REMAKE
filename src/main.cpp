@@ -18,6 +18,7 @@
 #endif
 
 #include <chrono>
+#include <map>
 #include <cmath>
 #include <cctype>
 #include <cstdio>
@@ -73,6 +74,17 @@ namespace
 		float soundVolume = 0.8f;
 		float musicVolume = 0.6f;
 		arena::GraphicsOptions graphics;
+		std::map<char, char> keyRemap; // tecla apertada -> tecla do jogo ([Controls])
+		bool gamepad = true;
+		float gamepadLookSpeed = 1.0f;
+	};
+
+	// Ações do teclado e a tecla padrão de cada uma ([Controls] em settings.ini).
+	const std::map<std::string, char> DefaultControls =
+	{
+		{ "Forward", 'W' }, { "Back", 'S' }, { "StrafeLeft", 'A' }, { "StrafeRight", 'D' }, { "Attack", 'F' }, { "Use", 'E' },
+		{ "Cast", 'Q' }, { "Rest", 'R' }, { "Character", 'C' }, { "Inventory", 'I' }, { "Spellbook", 'B' }, { "Map", 'M' },
+		{ "Travel", 'T' }, { "Journal", 'J' }, { "Help", 'H' }
 	};
 
 	Settings loadSettings(const std::filesystem::path &path)
@@ -102,6 +114,15 @@ namespace
 				else if (key == "Graphics.Relief") settings.graphics.relief = on;
 			}
 			else if (key == "Video.WindowHeight") settings.windowHeight = std::max(240, std::atoi(value.c_str()));
+			else if (key == "Controls.Gamepad") settings.gamepad = value == "1" || value == "true";
+			else if (key == "Controls.GamepadLookSpeed") settings.gamepadLookSpeed = std::clamp(static_cast<float>(std::atof(value.c_str())), 0.2f, 3.0f);
+			else if (key.rfind("Controls.", 0) == 0 && value.size() == 1)
+			{
+				// Ação=Tecla: a tecla escolhida passa a fazer o que a tecla padrão da ação faz.
+				const auto it = DefaultControls.find(key.substr(9));
+				const char chosen = static_cast<char>(std::toupper(static_cast<unsigned char>(value[0])));
+				if (it != DefaultControls.end() && std::isalnum(static_cast<unsigned char>(chosen)) && chosen != it->second) settings.keyRemap[chosen] = it->second;
+			}
 		});
 
 		return settings;
@@ -448,7 +469,7 @@ int main(int argc, char **argv)
 	// Atalho: entra direto no mundo com o personagem salvo.
 	if (continueSaved && game.loadSavedCharacter())
 	{
-		game.changeScreen(std::make_unique<GameWorldScreen>(game, game.getText().get("World.StartDungeonMif")));
+		game.changeScreen(std::make_unique<GameWorldScreen>(game, game.startingMap()));
 	}
 
 	GlDevice gpu;
@@ -489,7 +510,7 @@ int main(int argc, char **argv)
 		return result;
 	}
 
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO) != 0)
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) != 0)
 	{
 		std::fprintf(stderr, "SDL_Init: %s\n", SDL_GetError());
 		return 1;
@@ -569,6 +590,27 @@ int main(int argc, char **argv)
 	bool fullscreen = settings.fullscreen;
 	auto last = std::chrono::steady_clock::now();
 
+	// Controle de videogame (SDL_GameController): o primeiro conectado.
+	SDL_GameController *pad = nullptr;
+	auto openPad = [&]()
+	{
+		if (pad || !settings.gamepad) return;
+		for (int i = 0; i < SDL_NumJoysticks() && !pad; i++)
+			if (SDL_IsGameController(i)) pad = SDL_GameControllerOpen(i);
+		if (pad) std::printf("Controle conectado: %s\n", SDL_GameControllerName(pad));
+	};
+	openPad();
+	std::map<char, bool> stickKeys; // W/S/A/D seguradas pelo analógico esquerdo
+	bool rightTrigger = false, leftTrigger = false;
+	auto sendKey = [&game](InputEvent::Key key, char character, bool down)
+	{
+		InputEvent event;
+		event.type = down ? InputEvent::Type::KeyDown : InputEvent::Type::KeyUp;
+		event.key = key;
+		event.character = character;
+		game.handleInput(event);
+	};
+
 	while (running && !game.shouldQuit())
 	{
 		int outW = 0, outH = 0;
@@ -624,6 +666,7 @@ int main(int argc, char **argv)
 
 				event.type = InputEvent::Type::KeyDown;
 				event.key = translateKey(key, event.character);
+				if (event.key == InputEvent::Key::Character && settings.keyRemap.contains(event.character)) event.character = settings.keyRemap.at(event.character);
 				if (event.key != InputEvent::Key::None)
 				{
 					game.handleInput(event);
@@ -633,6 +676,7 @@ int main(int argc, char **argv)
 			case SDL_KEYUP:
 				event.type = InputEvent::Type::KeyUp;
 				event.key = translateKey(sdlEvent.key.keysym.sym, event.character);
+				if (event.key == InputEvent::Key::Character && settings.keyRemap.contains(event.character)) event.character = settings.keyRemap.at(event.character);
 				if (event.key != InputEvent::Key::None)
 				{
 					game.handleInput(event);
@@ -668,6 +712,36 @@ int main(int argc, char **argv)
 				event.text = sdlEvent.text.text;
 				game.handleInput(event);
 				break;
+			case SDL_CONTROLLERDEVICEADDED:
+				openPad();
+				break;
+			case SDL_CONTROLLERDEVICEREMOVED:
+				if (pad && !SDL_GameControllerGetAttached(pad)) { SDL_GameControllerClose(pad); pad = nullptr; }
+				break;
+			case SDL_CONTROLLERBUTTONDOWN:
+			case SDL_CONTROLLERBUTTONUP:
+			{
+				// A confirma, B volta, X usa, Y diário, LB ficha, RB descansa, Back viagem,
+				// Start pausa, direcional = setas, analógico esquerdo apertado = correr.
+				const bool down = sdlEvent.type == SDL_CONTROLLERBUTTONDOWN;
+				switch (sdlEvent.cbutton.button)
+				{
+				case SDL_CONTROLLER_BUTTON_A: sendKey(InputEvent::Key::Enter, 0, down); break;
+				case SDL_CONTROLLER_BUTTON_B: case SDL_CONTROLLER_BUTTON_START: sendKey(InputEvent::Key::Escape, 0, down); break;
+				case SDL_CONTROLLER_BUTTON_X: sendKey(InputEvent::Key::Character, 'E', down); break;
+				case SDL_CONTROLLER_BUTTON_Y: sendKey(InputEvent::Key::Character, 'J', down); break;
+				case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: sendKey(InputEvent::Key::Character, 'C', down); break;
+				case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: sendKey(InputEvent::Key::Character, 'R', down); break;
+				case SDL_CONTROLLER_BUTTON_BACK: sendKey(InputEvent::Key::Character, 'T', down); break;
+				case SDL_CONTROLLER_BUTTON_LEFTSTICK: sendKey(InputEvent::Key::Shift, 0, down); break;
+				case SDL_CONTROLLER_BUTTON_DPAD_UP: sendKey(InputEvent::Key::Up, 0, down); break;
+				case SDL_CONTROLLER_BUTTON_DPAD_DOWN: sendKey(InputEvent::Key::Down, 0, down); break;
+				case SDL_CONTROLLER_BUTTON_DPAD_LEFT: sendKey(InputEvent::Key::Left, 0, down); break;
+				case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: sendKey(InputEvent::Key::Right, 0, down); break;
+				default: break;
+				}
+				break;
+			}
 			default:
 				break;
 			}
@@ -676,6 +750,36 @@ int main(int argc, char **argv)
 		const auto now = std::chrono::steady_clock::now();
 		const double dt = std::min(0.1, std::chrono::duration<double>(now - last).count());
 		last = now;
+
+		if (pad)
+		{
+			auto axis = [pad](SDL_GameControllerAxis a) { return SDL_GameControllerGetAxis(pad, a) / 32767.0f; };
+			// Analógico esquerdo: segura W/S/A/D enquanto passa da zona morta.
+			const float lx = axis(SDL_CONTROLLER_AXIS_LEFTX), ly = axis(SDL_CONTROLLER_AXIS_LEFTY);
+			const std::pair<char, bool> stickWanted[] = { { 'W', ly < -0.35f }, { 'S', ly > 0.35f }, { 'A', lx < -0.35f }, { 'D', lx > 0.35f } };
+			for (const auto &[key, on] : stickWanted)
+				if (stickKeys[key] != on) { stickKeys[key] = on; sendKey(InputEvent::Key::Character, key, on); }
+
+			// Analógico direito: olhar (como o mouse) durante a exploração.
+			const float rx = axis(SDL_CONTROLLER_AXIS_RIGHTX), ry = axis(SDL_CONTROLLER_AXIS_RIGHTY);
+			if (game.wantsRelativeMouse() && (std::fabs(rx) > 0.15f || std::fabs(ry) > 0.15f))
+			{
+				InputEvent look;
+				look.type = InputEvent::Type::MouseMove;
+				const float speed = 900.0f * settings.gamepadLookSpeed * static_cast<float>(dt);
+				look.dx = (std::fabs(rx) > 0.15f ? rx * std::fabs(rx) : 0.0f) * speed;
+				look.dy = (std::fabs(ry) > 0.15f ? ry * std::fabs(ry) : 0.0f) * speed * 0.6f;
+				game.handleInput(look);
+			}
+
+			// Gatilhos: direito ataca (como o clique), esquerdo conjura (Q).
+			const bool rt = axis(SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 0.5f, lt = axis(SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 0.5f;
+			if (rt && !rightTrigger) { InputEvent attack; attack.type = InputEvent::Type::MouseDown; game.handleInput(attack); }
+			if (lt != leftTrigger) sendKey(InputEvent::Key::Character, 'Q', lt);
+			rightTrigger = rt;
+			leftTrigger = lt;
+		}
+
 		game.update(dt);
 
 		// Mouse preso à janela durante a exploração em primeira pessoa.

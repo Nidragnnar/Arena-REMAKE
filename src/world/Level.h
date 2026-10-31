@@ -146,6 +146,15 @@ namespace arena
 			return it != this->locks.end() ? it->second : 0;
 		}
 		void unlock(int x, int z) { this->locks.erase({ x, z }); }
+		void lock(int x, int z, int value) { this->locks[{ x, z }] = std::max(1, value); }
+		// Feitiços que mudam o mapa (Passwall abre a parede, Earth Wall ergue uma); não ficam no save.
+		void setWall(int x, int z, bool wall, int texture)
+		{
+			if (!this->inBounds(x, z)) return;
+			Cell &c = this->cells[static_cast<size_t>(x + z * this->width)];
+			c.type = wall ? CellType::Wall : CellType::Empty;
+			if (wall) c.wallTexture = texture;
+		}
 		const std::map<std::pair<int, int>, int> &getLocks() const { return this->locks; }
 		void setLocks(std::map<std::pair<int, int>, int> values) { this->locks = std::move(values); }
 		// Portas abertas (para salvar) e abertura imediata ao carregar.

@@ -869,6 +869,30 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 		return true;
 	}
 
+	if (name == "castspell" && this->loaded)
+	{
+		// castspell:N aprende (se preciso) e conjura o feitiço N com magia cheia (teste).
+		CharacterDraft &character = this->game.getCharacter();
+		const int index = std::atoi(arg.c_str());
+		if (std::find(character.spells.begin(), character.spells.end(), index) == character.spells.end()) character.spells.push_back(index);
+		character.readySpell = index;
+		this->spellPoints = std::max(this->spellPoints, 500);
+		this->castReadySpell();
+		return true;
+	}
+
+	if (name == "spells")
+	{
+		// spells lista os feitiços do SPELLSG.65 com alvo e efeitos (tipo/sub) (depuração).
+		for (const Spell &spell : this->game.getData().getSpells().getSpells())
+		{
+			std::printf("%2d %-24s alvo %d:", spell.index, spell.originalName.c_str(), static_cast<int>(spell.target));
+			for (const SpellEffect &e : spell.effects) if (e.valid()) std::printf(" %d/%d", e.type, e.sub);
+			std::printf("\n");
+		}
+		return true;
+	}
+
 	if (name == "dlevel" && this->isDungeon())
 	{
 		// dlevel:+1 / dlevel:-1 troca de andar como pela escada (teste).
@@ -1583,6 +1607,14 @@ void arena::GameWorldScreen::update(double dt)
 	}
 
 	this->game.getCharacter().gameMinutes += dt * clock::GameMinutesPerRealSecond;
+
+	// Salvamento automático: a cada minuto explorando (o "Continuar" do menu volta a este ponto).
+	this->autosaveTimer -= dt;
+	if (this->autosaveTimer <= 0.0 && this->health > 0)
+	{
+		this->autosaveTimer = 60.0;
+		this->persist();
+	}
 	this->updateDayNight(false);
 
 	this->level.update(dt);
@@ -1642,7 +1674,7 @@ void arena::GameWorldScreen::update(double dt)
 		{
 			this->stepDistance = 0.0f;
 			this->leftFoot = !this->leftFoot;
-			const bool inWater = this->level.cell(static_cast<int>(std::floor(this->x)), static_cast<int>(std::floor(this->z))).chasm;
+			const bool inWater = this->level.cell(static_cast<int>(std::floor(this->x)), static_cast<int>(std::floor(this->z))).chasm && !this->hasPlayerEffect(SpellEffectType::Levitate);
 			this->game.playSound(inWater ? "SWIMMING.VOC" : (this->leftFoot ? "DIRTL.VOC" : "DIRTR.VOC"), inWater ? 0.5f : 0.35f);
 		}
 	}
@@ -1652,14 +1684,15 @@ void arena::GameWorldScreen::update(double dt)
 	const int cellZ = static_cast<int>(std::floor(this->z));
 	if (cellX != this->lastCellX || cellZ != this->lastCellZ)
 	{
-		if (this->level.cell(cellX, cellZ).chasm && !this->level.cell(this->lastCellX, this->lastCellZ).chasm) this->game.playSound("SPLASH.VOC", 0.7f);
+		if (this->level.cell(cellX, cellZ).chasm && !this->level.cell(this->lastCellX, this->lastCellZ).chasm && !this->hasPlayerEffect(SpellEffectType::Levitate)) this->game.playSound("SPLASH.VOC", 0.7f);
 		this->lastCellX = cellX;
 		this->lastCellZ = cellZ;
 		this->checkTriggers(cellX, cellZ);
 	}
 
 	// Suaviza a altura dos olhos ao subir em plataformas ou entrar na água.
-	const float target = this->level.floorHeightAt(static_cast<int>(std::floor(this->x)), static_cast<int>(std::floor(this->z)));
+	const float floorTarget = this->level.floorHeightAt(static_cast<int>(std::floor(this->x)), static_cast<int>(std::floor(this->z)));
+	const float target = this->hasPlayerEffect(SpellEffectType::Levitate) ? std::max(floorTarget, 0.15f) : floorTarget;
 	this->eyeOffset += (target - this->eyeOffset) * std::min(1.0f, fdt * 10.0f);
 }
 
@@ -2246,8 +2279,21 @@ void arena::GameWorldScreen::drawHud(std::vector<uint32_t> &pixels, int width, i
 	const Rect right{ width - margin - panelW, height - margin - panelH, panelW, panelH };
 	painter.woodPanel(right, 225);
 	int ry = right.y + 8 * u;
+	// Rótulo à esquerda e valor à direita; o valor é encurtado (com reticências) se não couber.
+	auto fitted = [&](const std::string &label, std::string value)
+	{
+		const int room = right.w - 18 * u - painter.textWidth(fonts.arena, label) - 6 * u;
+		if (painter.textWidth(fonts.arena, value) <= room) return value;
+		while (!value.empty() && painter.textWidth(fonts.arena, value + "...") > room)
+		{
+			value.pop_back();
+			while (!value.empty() && (static_cast<unsigned char>(value.back()) & 0xC0) == 0x80) value.pop_back(); // UTF-8
+			if (!value.empty() && (static_cast<unsigned char>(value.back()) & 0x80)) value.pop_back();
+		}
+		return value + "...";
+	};
 	painter.text(fonts.arena, text.get("Hud.Weapon"), right.x + 9 * u, ry, col::TextDim);
-	painter.text(fonts.arena, this->weapon.name, right.x + right.w - 9 * u, ry, col::Text, TextAlign::Right);
+	painter.text(fonts.arena, fitted(text.get("Hud.Weapon"), this->weapon.name), right.x + right.w - 9 * u, ry, col::Text, TextAlign::Right);
 	ry += 13 * u;
 	std::string spellLine = text.get("Hud.NoSpell");
 	if (const Spell *ready = this->game.getData().getSpells().find(character.readySpell))
@@ -2255,7 +2301,7 @@ void arena::GameWorldScreen::drawHud(std::vector<uint32_t> &pixels, int width, i
 		spellLine = spellName(this->game, *ready) + " (" + std::to_string(ready->castingCost()) + ")";
 	}
 	painter.text(fonts.arena, text.get("Hud.Spell"), right.x + 9 * u, ry, col::TextDim);
-	painter.text(fonts.arena, spellLine, right.x + right.w - 9 * u, ry, rgb(170, 190, 255), TextAlign::Right);
+	painter.text(fonts.arena, fitted(text.get("Hud.Spell"), spellLine), right.x + right.w - 9 * u, ry, rgb(170, 190, 255), TextAlign::Right);
 	ry += 15 * u;
 	painter.divider(right.x + 9 * u, ry, right.w - 18 * u, col::GoldDim);
 	ry += 6 * u;

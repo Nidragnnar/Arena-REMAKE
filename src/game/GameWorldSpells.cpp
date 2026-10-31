@@ -2,6 +2,7 @@
 // FIRE/ICE/SHOCK/MAGIC/SPARKLE.CFA), projéteis luminosos, áreas e efeitos no jogador e nas criaturas.
 
 #include <algorithm>
+#include <map>
 #include <cmath>
 
 #include "../render/Ui.h"
@@ -276,16 +277,24 @@ void arena::GameWorldScreen::applySpellToCreature(const Spell &spell, int creatu
 				this->creatures.paralyze(creature, spellRounds(effect, Level) * SecondsPerRound);
 				this->showMessage(ui::format(text.get("Spells.CreatureParalyzed"), { this->creatureRef(creature, true) }), 3.0);
 			}
-			else if (effect.sub == 1 || effect.sub == 2)
+			else if ((effect.sub == 0 || effect.sub == 3) && success)
 			{
-				this->showMessage(ui::format(text.get("Spells.CreatureResisted"), { this->creatureRef(creature, true) }), 2.0);
+				// Doença e maldição: a criatura definha devagar (1 ou 2 pontos a cada meia rodada).
+				this->creatureDots.push_back(CreatureDot{ creature, std::max(3, spellRounds(effect, Level)) * SecondsPerRound, 0.0, effect.sub == 3 ? 2 : 1 });
+				this->showMessage(ui::format(text.get(effect.sub == 3 ? "Spells.CreatureCursed" : "Spells.CreatureDiseased"), { this->creatureRef(creature, true) }), 2.5);
 			}
 			else
 			{
-				this->showMessage(ui::format(text.get("Spells.NotAvailable"), { spellName(this->game, spell) }), 3.0);
+				this->showMessage(ui::format(text.get("Spells.CreatureResisted"), { this->creatureRef(creature, true) }), 2.0);
 			}
 			break;
 		}
+		case SpellEffectType::Silence:
+			this->showMessage(ui::format(text.get("Spells.CreatureSilenced"), { this->creatureRef(creature, true) }), 2.5);
+			break;
+		case SpellEffectType::Drain:
+			hurt(std::max(1, spellAmount(effect, Level, rng)));
+			break;
 		case SpellEffectType::Transfer:
 		{
 			// Rouba vida: o dano ao alvo volta como cura para o conjurador.
@@ -388,6 +397,11 @@ void arena::GameWorldScreen::applySpellToSelf(const Spell &spell)
 				this->shieldPoints += p[0] + p[1] * (Level / std::max(1, p[4]));
 				this->showMessage(ui::format(text.get("Spells.ShieldOn"), { std::to_string(this->shieldPoints) }), 3.0);
 			}
+			else if (effect.sub == 1)
+			{
+				// Earth Wall: uma parede de terra à frente por algumas rodadas.
+				this->raiseWallAhead(std::max(2, spellRounds(effect, Level)) * SecondsPerRound);
+			}
 			else
 			{
 				this->showMessage(ui::format(text.get("Spells.NotAvailable"), { name }), 3.0);
@@ -420,6 +434,24 @@ void arena::GameWorldScreen::applySpellToSelf(const Spell &spell)
 			break;
 		case SpellEffectType::Open:
 			this->openDoorAhead(effect);
+			break;
+		case SpellEffectType::Lock:
+			this->lockDoorAhead(effect);
+			break;
+		case SpellEffectType::Levitate:
+			addEffect(SpellEffectType::Levitate, spellRounds(effect, Level) * SecondsPerRound, 0, 0);
+			this->showMessage(text.get("Spells.LevitateOn"), 3.0);
+			break;
+		case SpellEffectType::Destroy:
+			if (effect.sub == 0) this->passWallAhead();
+			else this->showMessage(ui::format(text.get("Spells.NotAvailable"), { name }), 3.0);
+			break;
+		case SpellEffectType::SpellResistance:
+		case SpellEffectType::SpellReflection:
+		case SpellEffectType::SpellAbsorption:
+			// Proteções contra magia: as criaturas deste remake ainda não conjuram, então só duram.
+			addEffect(static_cast<SpellEffectType>(effect.type), std::max(1, spellRounds(effect, Level)) * SecondsPerRound, spellChance(effect, Level), 0);
+			this->showMessage(text.get("Spells.MagicWardOn"), 3.0);
 			break;
 		default:
 			this->showMessage(ui::format(text.get("Spells.NotAvailable"), { name }), 3.0);
@@ -487,6 +519,13 @@ void arena::GameWorldScreen::updateMagic(double dt)
 		else i++;
 	}
 
+	for (TempWall &w : this->tempWalls)
+	{
+		w.remaining -= dt;
+		if (w.remaining <= 0.0) this->level.setWall(w.x, w.z, false, -1);
+	}
+	this->tempWalls.erase(std::remove_if(this->tempWalls.begin(), this->tempWalls.end(), [](const TempWall &w) { return w.remaining <= 0.0; }), this->tempWalls.end());
+
 	for (Burst &b : this->bursts) b.age += dt;
 	this->bursts.erase(std::remove_if(this->bursts.begin(), this->bursts.end(), [](const Burst &b) { return b.age > BurstLength; }), this->bursts.end());
 
@@ -514,6 +553,8 @@ void arena::GameWorldScreen::updateMagic(double dt)
 		if (e.type == SpellEffectType::Light) this->showMessage(text.get("Spells.LightGone"), 2.5);
 		else if (e.type == SpellEffectType::Invisibility) this->showMessage(text.get("Spells.InvisibleGone"), 2.5);
 		else if (e.type == SpellEffectType::Fortify) this->showMessage(text.get("Spells.FortifyGone"), 2.5);
+		else if (e.type == SpellEffectType::Levitate) this->showMessage(text.get("Spells.LevitateGone"), 2.5);
+		else if (e.type == SpellEffectType::SpellResistance || e.type == SpellEffectType::SpellReflection || e.type == SpellEffectType::SpellAbsorption) this->showMessage(text.get("Spells.MagicWardGone"), 2.5);
 		this->playerEffects.erase(this->playerEffects.begin() + static_cast<std::ptrdiff_t>(i));
 	}
 
@@ -631,4 +672,84 @@ void arena::GameWorldScreen::drawCasting(std::vector<uint32_t> &pixels, int widt
 	const int frameWidth = texture.width / std::max(1, texture.scale);
 	blit(texture, ox, oy, false);
 	blit(texture, 320 - ox - frameWidth, oy, true);
+}
+
+bool arena::GameWorldScreen::lockDoorAhead(const SpellEffect &effect)
+{
+	// Wizard Lock: tranca a porta à frente (nível da trava pela chance do feitiço).
+	const Localization &text = this->game.getText();
+	const float fx = std::cos(this->yaw), fz = std::sin(this->yaw);
+	for (float d = 0.1f; d < 2.0f; d += 0.05f)
+	{
+		const int cx = static_cast<int>(std::floor(this->x + fx * d)), cz = static_cast<int>(std::floor(this->z + fz * d));
+		const Cell &c = this->level.cell(cx, cz);
+		if (c.type == CellType::Wall) break;
+		if (c.type != CellType::Door) continue;
+		if (this->level.doorOpenness(cx, cz) > 0.5f) this->level.toggleDoor(cx, cz);
+		this->level.lock(cx, cz, std::max(1, spellChance(effect, this->game.getCharacter().level) / 10));
+		this->game.playSound("LOCK.VOC");
+		this->showMessage(text.get("Spells.DoorLocked"), 3.0);
+		return true;
+	}
+
+	this->showMessage(text.get("Spells.NoDoor"), 2.5);
+	return false;
+}
+
+bool arena::GameWorldScreen::passWallAhead()
+{
+	// Passwall: abre a parede logo à frente (nunca a borda do mapa, portas, saídas ou escadas).
+	const Localization &text = this->game.getText();
+	const int cx = static_cast<int>(std::floor(this->x + std::cos(this->yaw) * 1.0f)), cz = static_cast<int>(std::floor(this->z + std::sin(this->yaw) * 1.0f));
+	const bool border = cx <= 0 || cz <= 0 || cx >= this->level.getWidth() - 1 || cz >= this->level.getDepth() - 1;
+	const Cell &c = this->level.cell(cx, cz);
+	if (border || c.type != CellType::Wall || c.isExit || c.isLevelDown || c.menu >= 0)
+	{
+		this->showMessage(text.get("Spells.WallResists"), 2.5);
+		return false;
+	}
+
+	this->level.setWall(cx, cz, false, -1);
+	this->game.playSound("GRIND.VOC");
+	this->showMessage(text.get("Spells.WallOpened"), 3.0);
+	return true;
+}
+
+bool arena::GameWorldScreen::raiseWallAhead(double seconds)
+{
+	// Earth Wall: ergue uma parede na célula vazia à frente (sem criaturas nela), com a textura
+	// da parede mais próxima, e a desfaz depois.
+	const Localization &text = this->game.getText();
+	const int cx = static_cast<int>(std::floor(this->x + std::cos(this->yaw) * 1.3f)), cz = static_cast<int>(std::floor(this->z + std::sin(this->yaw) * 1.3f));
+	const bool here = cx == static_cast<int>(std::floor(this->x)) && cz == static_cast<int>(std::floor(this->z));
+	if (here || !this->level.inBounds(cx, cz) || this->level.cell(cx, cz).type != CellType::Empty || this->level.cell(cx, cz).chasm || this->creatures.blocks(cx + 0.5f, cz + 0.5f, 0.5f))
+	{
+		this->showMessage(text.get("Spells.NoRoom"), 2.5);
+		return false;
+	}
+
+	// A textura de parede mais comum por perto, como reserva.
+	std::map<int, int> counts;
+	for (int dx = -5; dx <= 5; dx++)
+		for (int dz = -5; dz <= 5; dz++)
+			if (this->level.inBounds(cx + dx, cz + dz) && this->level.cell(cx + dx, cz + dz).type == CellType::Wall) counts[this->level.cell(cx + dx, cz + dz).wallTexture]++;
+	int texture = -1, best = 0;
+	for (const auto &[candidate, count] : counts) if (count > best) { best = count; texture = candidate; }
+	// Melhor ainda: a parede colada ao jogador ou ao lugar da nova parede, que é a que se está vendo.
+	const int px = static_cast<int>(std::floor(this->x)), pz = static_cast<int>(std::floor(this->z));
+	const int nx[4] = { 1, -1, 0, 0 }, nz[4] = { 0, 0, 1, -1 };
+	for (const auto &[ox, oz] : { std::pair<int, int>{ px, pz }, std::pair<int, int>{ cx, cz } })
+		for (int d = 0; d < 4; d++)
+		{
+			const Cell &n = this->level.cell(ox + nx[d], oz + nz[d]);
+			if (n.type == CellType::Wall && !(ox + nx[d] == cx && oz + nz[d] == cz) && n.menu < 0 && !n.isExit && !n.isLevelDown) { texture = n.wallTexture; goto chosen; }
+		}
+chosen:
+	if (texture < 0) { this->showMessage(text.get("Spells.NoRoom"), 2.5); return false; }
+
+	this->level.setWall(cx, cz, true, texture);
+	this->tempWalls.push_back({ cx, cz, seconds });
+	this->game.playSound("GRIND.VOC");
+	this->showMessage(text.get("Spells.WallRaised"), 3.0);
+	return true;
 }

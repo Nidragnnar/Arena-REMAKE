@@ -330,6 +330,32 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 		else if (key == "Quest.Step") loaded.questStep = std::clamp(number, 0, 4);
 		else if (key == "Quest.Giver") loaded.questGiver = number;
 		else if (key == "Quest.Version") questVersion = number;
+		else if (key.rfind("CustomSpells.Spell", 0) == 0)
+		{
+			// índice|nome|alvo|elemento|efeito|sub|p0,p1,p2,p3,p4,p5|ouro
+			std::vector<std::string> parts;
+			for (size_t at = 0;;)
+			{
+				const size_t bar = value.find('|', at);
+				parts.push_back(value.substr(at, bar == std::string::npos ? std::string::npos : bar - at));
+				if (bar == std::string::npos) break;
+				at = bar + 1;
+			}
+			if (parts.size() == 8)
+			{
+				Spell spell;
+				spell.index = std::atoi(parts[0].c_str());
+				spell.originalName = parts[1];
+				spell.target = static_cast<SpellTarget>(std::atoi(parts[2].c_str()));
+				spell.element = static_cast<SpellElement>(std::atoi(parts[3].c_str()));
+				spell.effects[0].type = std::atoi(parts[4].c_str());
+				spell.effects[0].sub = std::atoi(parts[5].c_str());
+				std::sscanf(parts[6].c_str(), "%d,%d,%d,%d,%d,%d", &spell.effects[0].params[0], &spell.effects[0].params[1], &spell.effects[0].params[2],
+					&spell.effects[0].params[3], &spell.effects[0].params[4], &spell.effects[0].params[5]);
+				spell.goldCost = std::atoi(parts[7].c_str());
+				if (spell.index >= CustomSpellBase && spell.effects[0].valid()) loaded.customSpells.push_back(spell);
+			}
+		}
 		else if (key.rfind("Journal.Entry", 0) == 0)
 		{
 			// minutos|chave do texto completo|texto
@@ -392,6 +418,7 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 	}
 
 	this->character = loaded;
+	setCustomSpells(this->character.customSpells);
 	this->pendingWorld = std::move(world);
 	return true;
 }
@@ -452,6 +479,14 @@ bool arena::Game::saveCharacter(const std::filesystem::path &path, const std::st
 	for (size_t i = 0; i < c.spells.size(); i++) file << (i ? "," : "") << c.spells[i];
 	file << "\nReady=" << c.readySpell << "\n";
 	file << "\n[Quest]\n# missão principal: pedaços do Cajado do Caos e passo da busca do próximo\nStaffPieces=" << c.staffPieces << "\nStep=" << c.questStep << "\nGiver=" << c.questGiver << "\nVersion=2\n";
+	file << "\n[CustomSpells]\n# feitiços criados: índice|nome|alvo|elemento|efeito|sub|parâmetros|ouro\n";
+	for (size_t i = 0; i < c.customSpells.size(); i++)
+	{
+		const Spell &s = c.customSpells[i];
+		const auto &p = s.effects[0].params;
+		file << "Spell" << i << "=" << s.index << "|" << s.originalName << "|" << static_cast<int>(s.target) << "|" << static_cast<int>(s.element) << "|" << s.effects[0].type << "|" << s.effects[0].sub
+			<< "|" << p[0] << "," << p[1] << "," << p[2] << "," << p[3] << "," << p[4] << "," << p[5] << "|" << s.goldCost << "\n";
+	}
 	file << "\n[Journal]\n# diário: minutos de jogo|texto completo para reler|resumo\n";
 	for (size_t i = 0; i < c.journal.size(); i++)
 		file << "Entry" << i << "=" << static_cast<long long>(c.journal[i].minutes) << "|" << c.journal[i].detail << "|" << c.journal[i].text << "\n";

@@ -82,6 +82,7 @@ namespace arena
 		int questStep = 0;   // passo da busca do próximo pedaço
 		int questGiver = -1; // cidade (id global) cujo governante espera o item da pista
 		std::vector<JournalEntry> journal; // diário, do mais antigo ao mais recente
+		std::vector<Spell> customSpells;   // feitiços criados na Guilda dos Magos (índice >= CustomSpellBase)
 	};
 
 	class Game;

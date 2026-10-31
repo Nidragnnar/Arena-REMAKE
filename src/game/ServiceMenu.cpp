@@ -1,10 +1,12 @@
 // Atendimento nos prédios da cidade (loja, taverna, templo e guilda dos magos).
 
 #include <algorithm>
+#include <chrono>
 #include <random>
 
 #include "../render/Ui.h"
 #include "GameMenus.h"
+#include "SpellbookUi.h"
 #include "ServiceMenu.h"
 
 namespace
@@ -13,6 +15,29 @@ namespace
 	namespace col = kit::color;
 
 	enum Action { None, BuyItem, SellItem, Drink, Room, Heal, BuySpell, BuyPotion };
+
+	// Modelos da criação de feitiços: efeito, sub (-1 = o elemento escolhido), se é de ataque
+	// (precisa de alvo) e o peso no custo. Os parâmetros saem da potência (ver makerSpell).
+	struct MakerTemplate { const char *key; SpellEffectType type; int sub; bool offensive; int weight; };
+	constexpr MakerTemplate MakerTemplates[] =
+	{
+		{ "Maker.Damage", SpellEffectType::Damage, 0, true, 6 },
+		{ "Maker.Poison", SpellEffectType::ContinuousDamage, 0, true, 5 },
+		{ "Maker.Paralyze", SpellEffectType::Cause, 2, true, 8 },
+		{ "Maker.Heal", SpellEffectType::Heal, 1, false, 5 },
+		{ "Maker.Shield", SpellEffectType::Create, 0, false, 4 },
+		{ "Maker.Light", SpellEffectType::Light, 0, false, 1 },
+		{ "Maker.Invisibility", SpellEffectType::Invisibility, 0, false, 8 },
+		{ "Maker.Resist", SpellEffectType::ElementalResistance, -1, false, 4 },
+		{ "Maker.Strength", SpellEffectType::Fortify, 0, false, 4 },
+		{ "Maker.Regenerate", SpellEffectType::Regenerate, 0, false, 6 },
+		{ "Maker.Open", SpellEffectType::Open, 0, false, 3 },
+		{ "Maker.Levitate", SpellEffectType::Levitate, 0, false, 5 },
+	};
+	constexpr int MakerTemplateCount = static_cast<int>(sizeof(MakerTemplates) / sizeof(MakerTemplates[0]));
+	constexpr SpellTarget MakerTargets[] = { SpellTarget::Touch, SpellTarget::Ranged, SpellTarget::AreaRanged };
+	constexpr int MakerTargetCost[] = { 2, 3, 6 }; // ×½: toque 1, à distância 1,5, área 3
+	enum MakerButton { MakerPrevEffect = 1, MakerNextEffect, MakerElement, MakerTarget, MakerLess, MakerMore };
 
 	// Quartos da taverna: preço por noite (individual, duplo, suíte, suíte real).
 	constexpr int RoomPrices[4] = { 5, 10, 20, 40 };
@@ -201,6 +226,8 @@ arena::OverlayResult arena::ServiceMenu::confirm(Game &game, const Row &row)
 		result.inventoryChanged = true;
 		done(ui::format(text.get("Shop.Learned"), { row.label }));
 		break;
+	case BuyPotion + 1: // criar feitiço (makerOpen)
+		break;
 	case BuyPotion:
 	{
 		Item potion;
@@ -230,9 +257,21 @@ arena::OverlayResult arena::ServiceMenu::handleInput(const InputEvent &event, Ga
 	if (event.isKey(InputEvent::Key::Escape)) { result.close = true; return result; }
 	if (event.isKey(InputEvent::Key::Up) && count > 0) this->selected = std::max(0, this->selected - 1);
 	else if (event.isKey(InputEvent::Key::Down) && count > 0) this->selected = std::min(count - 1, this->selected + 1);
+	else if (this->makerOpen() && event.type == InputEvent::Type::TextInput)
+	{
+		for (char ch : event.text) if (static_cast<unsigned char>(ch) >= 32 && ch != '|' && this->makerName.size() < 24) this->makerName.push_back(ch);
+		return result;
+	}
+	else if (this->makerOpen() && event.isKey(InputEvent::Key::Backspace))
+	{
+		while (!this->makerName.empty() && (static_cast<unsigned char>(this->makerName.back()) & 0xC0) == 0x80) this->makerName.pop_back();
+		if (!this->makerName.empty()) this->makerName.pop_back();
+		return result;
+	}
+	else if (this->makerOpen() && event.isKey(InputEvent::Key::Enter)) return this->createSpell(game);
 	else if ((event.isKey(InputEvent::Key::Left) || event.isKey(InputEvent::Key::Right)) && this->kind != Kind::Temple)
 	{
-		this->tab = 1 - this->tab; // as outras janelas têm duas abas
+		this->tab = (this->tab + (event.isKey(InputEvent::Key::Left) ? this->tabCount() - 1 : 1)) % this->tabCount();
 		this->selected = -1;
 		this->scroll = 0;
 		this->rebuild(game);
@@ -253,6 +292,29 @@ arena::OverlayResult arena::ServiceMenu::handleInput(const InputEvent &event, Ga
 			this->scroll = 0;
 			this->notice.clear();
 			this->rebuild(game);
+			return result;
+		}
+
+		if (this->makerOpen())
+		{
+			if (kit::hit(this->actionRect, this->mouseX, this->mouseY)) return this->createSpell(game);
+			for (const auto &[rect, button] : this->makerButtons)
+			{
+				if (!kit::hit(rect, this->mouseX, this->mouseY)) continue;
+				switch (button)
+				{
+				case MakerPrevEffect: this->makerEffect = (this->makerEffect + MakerTemplateCount - 1) % MakerTemplateCount; break;
+				case MakerNextEffect: this->makerEffect = (this->makerEffect + 1) % MakerTemplateCount; break;
+				case MakerElement: this->makerElement = (this->makerElement + 1) % 5; break;
+				case MakerTarget: this->makerTarget = (this->makerTarget + 1) % 3; break;
+				case MakerLess: this->makerPotency = std::max(1, this->makerPotency - 1); break;
+				case MakerMore: this->makerPotency = std::min(10, this->makerPotency + 1); break;
+				default: break;
+				}
+				this->notice.clear();
+				game.playSound("CLICKS.VOC", 0.4f);
+				return result;
+			}
 			return result;
 		}
 
@@ -305,7 +367,7 @@ void arena::ServiceMenu::render(kit::Painter &painter, const Game &game)
 	case Kind::Equipment: tabs = { text.get("Shop.TabBuy"), text.get("Shop.TabSell") }; break;
 	case Kind::Tavern: tabs = { text.get("Shop.TabDrinks"), text.get("Shop.TabRooms") }; break;
 	case Kind::Temple: tabs = { text.get("Shop.TabTemple") }; break;
-	case Kind::MagesGuild: tabs = { text.get("Shop.TabSpells"), text.get("Shop.TabPotions") }; break;
+	case Kind::MagesGuild: tabs = { text.get("Shop.TabSpells"), text.get("Shop.TabPotions"), text.get("Shop.TabMaker") }; break;
 	}
 
 	this->tabRects.clear();
@@ -320,6 +382,19 @@ void arena::ServiceMenu::render(kit::Painter &painter, const Game &game)
 	// Lista no pergaminho: nome, detalhe e preço.
 	const Rect page{ this->window.x + pad, tabY + 24 * u, w - 2 * pad, h - (tabY + 24 * u - this->window.y) - 56 * u };
 	painter.parchmentPanel(page);
+	if (this->makerOpen())
+	{
+		this->renderMaker(painter, game, page);
+		const int byMaker = this->window.y + h - pad - 20 * u;
+		if (!this->notice.empty()) painter.text(fonts.arena, this->notice, this->window.x + w / 2, byMaker - 16 * u, this->noticeGood ? col::GoldBright : col::Danger, TextAlign::Center);
+		else painter.text(fonts.arena, text.get("Maker.Hint"), this->window.x + w / 2, byMaker - 16 * u, col::TextDim, TextAlign::Center);
+		const Spell spell = this->makerSpell(game);
+		this->actionRect = Rect{ this->window.x + w / 2 - 125 * u, byMaker, 120 * u, 20 * u };
+		painter.button(this->actionRect, ui::format(text.get("Maker.Create"), { std::to_string(this->price(spell.goldCost * 2)) }), kit::hit(this->actionRect, this->mouseX, this->mouseY), false);
+		this->closeRect = Rect{ this->window.x + w / 2 + 5 * u, byMaker, 120 * u, 20 * u };
+		painter.button(this->closeRect, text.get("Menu.Close"), kit::hit(this->closeRect, this->mouseX, this->mouseY), false);
+		return;
+	}
 	this->rowH = 22 * u;
 	this->listRect = Rect{ page.x + 6 * u, page.y + 6 * u, page.w - 12 * u, page.h - 12 * u };
 	this->visibleRows = std::max(1, this->listRect.h / this->rowH);
@@ -362,4 +437,127 @@ void arena::ServiceMenu::render(kit::Painter &painter, const Game &game)
 	painter.button(this->actionRect, text.get(actionKey), kit::hit(this->actionRect, this->mouseX, this->mouseY), false, this->selected >= 0);
 	this->closeRect = Rect{ this->window.x + w / 2 + 5 * u, by, 120 * u, 20 * u };
 	painter.button(this->closeRect, text.get("Menu.Close"), kit::hit(this->closeRect, this->mouseX, this->mouseY), false);
+}
+
+arena::Spell arena::ServiceMenu::makerSpell(const Game &game) const
+{
+	// Parâmetros pela potência P (1..10), no formato das tabelas do original (ver Spells.h):
+	// pontos "%0 a %1 + %2 a %3 a cada %4 níveis", chance "%0% + %1% a cada %4", rodadas "%5 × nível/%2".
+	const MakerTemplate &t = MakerTemplates[this->makerEffect];
+	const int P = this->makerPotency;
+	Spell spell;
+	spell.index = CustomSpellBase; // definido ao criar
+	spell.target = t.offensive ? MakerTargets[this->makerTarget] : SpellTarget::Caster;
+	spell.element = (t.offensive || t.sub < 0) ? static_cast<SpellElement>(this->makerElement) : SpellElement::Magic;
+	SpellEffect &e = spell.effects[0];
+	e.type = static_cast<int>(t.type);
+	e.sub = t.sub < 0 ? this->makerElement : t.sub;
+	switch (t.type)
+	{
+	case SpellEffectType::Damage: e.params = { 2 * P, 4 * P, 1, P, 2, 0 }; break;
+	case SpellEffectType::ContinuousDamage: e.params = { P, 2 * P, 4, 4, 4, 2 }; break;
+	case SpellEffectType::Cause: e.params = { 30 + 5 * P, 2, 4, 0, 2, 1 + P / 3 }; break;
+	case SpellEffectType::Heal: e.params = { 3 * P, 5 * P, 1, 2, 2, 0 }; break;
+	case SpellEffectType::Create: e.params = { 5 * P, P, 0, 0, 2, 0 }; break;
+	case SpellEffectType::Light: e.params = { 0, 0, 10, 0, 0, 20 + 10 * P }; break;
+	case SpellEffectType::Invisibility: e.params = { 3 * P, 1, 0, 0, 2, 0 }; break;
+	case SpellEffectType::ElementalResistance: e.params = { 20 + 6 * P, 2, 5, 0, 2, 5 + 2 * P }; break;
+	case SpellEffectType::Fortify: e.params = { 2 + P, 0, 0, 0, 0, 1 + P / 3 }; break;
+	case SpellEffectType::Regenerate: e.params = { 1 + P / 3, 1, 0, 0, 1 + P / 2, 0 }; break;
+	case SpellEffectType::Open: e.params = { 20 + 8 * P, 2, 0, 0, 2, 0 }; break;
+	case SpellEffectType::Levitate: e.params = { 0, 0, 10, 0, 0, 5 + 3 * P }; break;
+	default: break;
+	}
+
+	// Custo: peso do efeito × potência × alvo (castingCost = ouro ÷ 10).
+	spell.goldCost = std::max(10, t.weight * P * 4 * (t.offensive ? MakerTargetCost[this->makerTarget] : 2) / 2);
+	const Localization &text = game.getText();
+	spell.originalName = this->makerName.empty() ? text.get(t.key) : this->makerName;
+	return spell;
+}
+
+arena::OverlayResult arena::ServiceMenu::createSpell(Game &game)
+{
+	OverlayResult result;
+	const Localization &text = game.getText();
+	CharacterDraft &c = game.getCharacter();
+	Spell spell = this->makerSpell(game);
+	const int cost = this->price(spell.goldCost * 2);
+	this->noticeGood = false;
+	if (!game.getData().getClass(std::max(0, c.classIndex)).castsMagic) { this->notice = text.get("Shop.CannotCast"); return result; }
+	if (c.gold < cost) { this->notice = ui::format(text.get("Shop.NoGold"), { std::to_string(cost) }); return result; }
+	if (c.spells.size() >= 32) { this->notice = text.get("Maker.BookFull"); return result; }
+
+	int next = CustomSpellBase;
+	for (const Spell &existing : c.customSpells) next = std::max(next, existing.index + 1);
+	spell.index = next;
+	c.customSpells.push_back(spell);
+	setCustomSpells(c.customSpells);
+	c.spells.push_back(spell.index);
+	c.gold -= cost;
+	this->makerName.clear();
+	this->notice = ui::format(text.get("Maker.Created"), { spell.originalName });
+	this->noticeGood = true;
+	result.inventoryChanged = true;
+	game.playSound("CLICKS.VOC", 0.6f);
+	return result;
+}
+
+void arena::ServiceMenu::renderMaker(kit::Painter &painter, const Game &game, const Rect &page)
+{
+	const int u = painter.unit();
+	const Fonts &fonts = game.getFonts();
+	const Localization &text = game.getText();
+	const MakerTemplate &t = MakerTemplates[this->makerEffect];
+	const Spell spell = this->makerSpell(game);
+	this->makerButtons.clear();
+	const int left = page.x + 12 * u, labelW = 80 * u, valueX = left + labelW, fieldH = 22 * u;
+	int y = page.y + 10 * u;
+	auto field = [&](const std::string &label, const std::string &value, int button, int altButton = 0)
+	{
+		painter.text(fonts.arena, label, left, y + 4 * u, col::InkSoft, TextAlign::Left, false);
+		const Rect r{ valueX, y, 170 * u, 17 * u };
+		painter.button(r, value, kit::hit(r, this->mouseX, this->mouseY), false);
+		this->makerButtons.push_back({ r, button });
+		if (altButton)
+		{
+			const Rect back{ valueX + 176 * u, y, 22 * u, 17 * u };
+			painter.button(back, "<", kit::hit(back, this->mouseX, this->mouseY), false);
+			this->makerButtons.push_back({ back, altButton });
+		}
+		y += fieldH;
+	};
+
+	field(text.get("Maker.Effect"), text.get(t.key), MakerNextEffect, MakerPrevEffect);
+	if (t.offensive || t.sub < 0) field(text.get("Maker.Element"), text.get("Maker.Element" + std::to_string(this->makerElement)), MakerElement);
+	if (t.offensive) field(text.get("Maker.Target"), text.get("Maker.Target" + std::to_string(this->makerTarget)), MakerTarget);
+
+	// Potência: - valor +
+	painter.text(fonts.arena, text.get("Maker.Potency"), left, y + 4 * u, col::InkSoft, TextAlign::Left, false);
+	const Rect less{ valueX, y, 22 * u, 17 * u }, more{ valueX + 148 * u, y, 22 * u, 17 * u };
+	painter.button(less, "-", kit::hit(less, this->mouseX, this->mouseY), false);
+	painter.button(more, "+", kit::hit(more, this->mouseX, this->mouseY), false);
+	painter.text(fonts.arena, std::to_string(this->makerPotency) + " / 10", valueX + 85 * u, y + 4 * u, col::Ink, TextAlign::Center, false);
+	this->makerButtons.push_back({ less, MakerLess });
+	this->makerButtons.push_back({ more, MakerMore });
+	y += fieldH;
+
+	// Nome (digitado).
+	painter.text(fonts.arena, text.get("Maker.Name"), left, y + 4 * u, col::InkSoft, TextAlign::Left, false);
+	const Rect nameBox{ valueX, y, 198 * u, 17 * u };
+	painter.fill(nameBox, hud::rgb(255, 250, 235, 90));
+	const auto now = std::chrono::steady_clock::now().time_since_epoch();
+	const bool blink = (std::chrono::duration_cast<std::chrono::milliseconds>(now).count() / 500) % 2 == 0;
+	painter.text(fonts.arena, (this->makerName.empty() ? text.get(t.key) : this->makerName) + (blink ? "_" : ""), nameBox.x + 5 * u, y + 4 * u,
+		this->makerName.empty() ? col::InkSoft : col::Ink, TextAlign::Left, false);
+	y += fieldH + 4 * u;
+
+	// Resumo: o que o feitiço faz no nível atual e quanto custa.
+	painter.divider(left, y, page.w - 24 * u, col::InkSoft);
+	y += 8 * u;
+	for (const std::string &line : spellEffectLines(game, spell, game.getCharacter().level))
+	{
+		y += painter.paragraph(fonts.arena, line, Rect{ left, y, page.w - 24 * u, 30 * u }, col::Ink) + 2 * u;
+	}
+	painter.text(fonts.arena, ui::format(text.get("Maker.Cost"), { std::to_string(spell.castingCost()) }), left, y + 2 * u, col::InkSoft, TextAlign::Left, false);
 }

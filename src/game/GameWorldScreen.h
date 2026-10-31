@@ -97,6 +97,11 @@ namespace arena
 		void applySpellToCreature(const Spell &spell, int creature);
 		void spellImpact(const Spell &spell, float px, float py, float pz, int directHit);
 		bool openDoorAhead(const SpellEffect &effect);
+		bool lockDoorAhead(const SpellEffect &effect);
+		bool passWallAhead();
+		bool raiseWallAhead(double seconds);
+		struct TempWall { int x, z; double remaining; };
+		std::vector<TempWall> tempWalls; // Earth Wall: some depois de algumas rodadas
 		void rewardKill(int creature, int maxHp);
 		void updateMagic(double dt);
 		void addMagicLights(std::vector<PointLight> &lights) const;
@@ -177,6 +182,7 @@ namespace arena
 		void spawnBeside(bool levelUp);
 		int dungeonLevel = 0;
 		double wildSpawnTimer = 2.0;
+		double autosaveTimer = 60.0;
 		void updateWildCreatures(double dt);
 		bool nightMusic = false;      // música da noite tocando (exteriores)
 		float skyDaylight = -1.0f;    // luz do dia usada no degradê atual do céu

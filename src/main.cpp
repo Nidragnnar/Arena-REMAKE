@@ -603,6 +603,8 @@ int main(int argc, char **argv)
 	openPad();
 	std::map<char, bool> stickKeys; // W/S/A/D seguradas pelo analógico esquerdo
 	bool rightTrigger = false, leftTrigger = false;
+	float padCursorX = 0.0f, padCursorY = 0.0f; // cursor movido pelo analógico nos menus (fração de pixel)
+	double padWheelTimer = 0.0;
 	auto sendKey = [&game](InputEvent::Key key, char character, bool down)
 	{
 		InputEvent event;
@@ -727,7 +729,21 @@ int main(int argc, char **argv)
 				const bool down = sdlEvent.type == SDL_CONTROLLERBUTTONDOWN;
 				switch (sdlEvent.cbutton.button)
 				{
-				case SDL_CONTROLLER_BUTTON_A: sendKey(InputEvent::Key::Enter, 0, down); break;
+				case SDL_CONTROLLER_BUTTON_A:
+					if (!game.wantsRelativeMouse())
+					{
+						// Nos menus o A clica onde está o cursor (que o analógico move).
+						if (!down) break;
+						int mx = 0, my = 0;
+						SDL_GetMouseState(&mx, &my);
+						InputEvent click;
+						click.type = InputEvent::Type::MouseDown;
+						toCanvas(mx, my, click.x, click.y);
+						toView(mx, my, click);
+						game.handleInput(click);
+					}
+					else sendKey(InputEvent::Key::Enter, 0, down);
+					break;
 				case SDL_CONTROLLER_BUTTON_B: case SDL_CONTROLLER_BUTTON_START: sendKey(InputEvent::Key::Escape, 0, down); break;
 				case SDL_CONTROLLER_BUTTON_X: sendKey(InputEvent::Key::Character, 'E', down); break;
 				case SDL_CONTROLLER_BUTTON_Y: sendKey(InputEvent::Key::Character, 'J', down); break;
@@ -755,9 +771,10 @@ int main(int argc, char **argv)
 		if (pad)
 		{
 			auto axis = [pad](SDL_GameControllerAxis a) { return SDL_GameControllerGetAxis(pad, a) / 32767.0f; };
-			// Analógico esquerdo: segura W/S/A/D enquanto passa da zona morta.
+			// Analógico esquerdo: segura W/S/A/D enquanto passa da zona morta (só explorando).
 			const float lx = axis(SDL_CONTROLLER_AXIS_LEFTX), ly = axis(SDL_CONTROLLER_AXIS_LEFTY);
-			const std::pair<char, bool> stickWanted[] = { { 'W', ly < -0.35f }, { 'S', ly > 0.35f }, { 'A', lx < -0.35f }, { 'D', lx > 0.35f } };
+			const bool exploring = game.wantsRelativeMouse();
+			const std::pair<char, bool> stickWanted[] = { { 'W', exploring && ly < -0.35f }, { 'S', exploring && ly > 0.35f }, { 'A', exploring && lx < -0.35f }, { 'D', exploring && lx > 0.35f } };
 			for (const auto &[key, on] : stickWanted)
 				if (stickKeys[key] != on) { stickKeys[key] = on; sendKey(InputEvent::Key::Character, key, on); }
 
@@ -773,10 +790,41 @@ int main(int argc, char **argv)
 				game.handleInput(look);
 			}
 
+			// Menus: o analógico esquerdo move o cursor do mouse e o direito rola as listas.
+			if (!exploring)
+			{
+				const float speed = std::max(winW, winH) * 0.9f * static_cast<float>(dt);
+				const float cx = std::fabs(lx) > 0.15f ? lx * std::fabs(lx) * speed : 0.0f, cy = std::fabs(ly) > 0.15f ? ly * std::fabs(ly) * speed : 0.0f;
+				if (cx != 0.0f || cy != 0.0f)
+				{
+					int mx = 0, my = 0;
+					SDL_GetMouseState(&mx, &my);
+					padCursorX = (std::fabs(padCursorX - mx) > 2.0f ? mx : padCursorX) + cx;
+					padCursorY = (std::fabs(padCursorY - my) > 2.0f ? my : padCursorY) + cy;
+					padCursorX = std::clamp(padCursorX, 0.0f, static_cast<float>(winW - 1));
+					padCursorY = std::clamp(padCursorY, 0.0f, static_cast<float>(winH - 1));
+					SDL_WarpMouseInWindow(window, static_cast<int>(padCursorX), static_cast<int>(padCursorY));
+				}
+
+				const float ry2 = axis(SDL_CONTROLLER_AXIS_RIGHTY);
+				padWheelTimer -= dt;
+				if (std::fabs(ry2) > 0.5f && padWheelTimer <= 0.0)
+				{
+					padWheelTimer = 0.12;
+					int mx = 0, my = 0;
+					SDL_GetMouseState(&mx, &my);
+					InputEvent wheel;
+					wheel.type = InputEvent::Type::MouseWheel;
+					wheel.wheel = ry2 < 0.0f ? 1 : -1;
+					toView(mx, my, wheel);
+					game.handleInput(wheel);
+				}
+			}
+
 			// Gatilhos: direito ataca (como o clique), esquerdo conjura (Q).
 			const bool rt = axis(SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 0.5f, lt = axis(SDL_CONTROLLER_AXIS_TRIGGERLEFT) > 0.5f;
-			if (rt && !rightTrigger) { InputEvent attack; attack.type = InputEvent::Type::MouseDown; game.handleInput(attack); }
-			if (lt != leftTrigger) sendKey(InputEvent::Key::Character, 'Q', lt);
+			if (rt && !rightTrigger && exploring) { InputEvent attack; attack.type = InputEvent::Type::MouseDown; game.handleInput(attack); }
+			if (lt != leftTrigger && (exploring || !lt)) sendKey(InputEvent::Key::Character, 'Q', lt);
 			rightTrigger = rt;
 			leftTrigger = lt;
 		}

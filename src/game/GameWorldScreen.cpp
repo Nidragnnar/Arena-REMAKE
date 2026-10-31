@@ -1523,12 +1523,7 @@ void arena::GameWorldScreen::handleInput(const InputEvent &event)
 	}
 	else if (event.isClick() || event.isHotkey('F'))
 	{
-		// Clique ataca; sem inimigo à frente, um clique em porta/chave próxima também a usa.
-		if (this->creatures.findTarget(this->x, this->z, this->yaw, 1.6f, 0.72f) < 0 && event.isClick())
-		{
-			this->interact();
-		}
-
+		// Clique (e F) só ataca; usar portas, conversar e saquear fica com o E.
 		this->startSwing();
 	}
 	else if (event.isHotkey('E') || event.isKey(InputEvent::Key::Enter))
@@ -2245,9 +2240,18 @@ void arena::GameWorldScreen::drawHud(std::vector<uint32_t> &pixels, int width, i
 		const int mapX = box.x + frameT, mapY = box.y + frameT;
 		const int pcx = static_cast<int>(std::floor(this->x));
 		const int pcz = static_cast<int>(std::floor(this->z));
-		for (int row = -Radius; row <= Radius; row++)
+		// O mapa desliza pela fração da posição (o jogador fica sempre no centro), sem pular de célula em célula.
+		const int offsetX = static_cast<int>(std::lround((this->z - pcz - 0.5f) * cellPx));
+		const int offsetY = static_cast<int>(std::lround((0.5f - (this->x - pcx)) * cellPx));
+		auto clippedCell = [&](int px, int py, uint32_t tint)
 		{
-			for (int c = -Radius; c <= Radius; c++)
+			const int x0 = std::max(px, mapX), y0 = std::max(py, mapY);
+			const int x1 = std::min(px + cellPx, mapX + size), y1 = std::min(py + cellPx, mapY + size);
+			if (x1 > x0 && y1 > y0) fillRect(frame, x0, y0, x1 - x0, y1 - y0, tint);
+		};
+		for (int row = -Radius - 1; row <= Radius + 1; row++)
+		{
+			for (int c = -Radius - 1; c <= Radius + 1; c++)
 			{
 				const int cx = pcx + row, cz = pcz - c;
 				uint32_t tint = rgb(26, 20, 14);
@@ -2260,13 +2264,13 @@ void arena::GameWorldScreen::drawHud(std::vector<uint32_t> &pixels, int width, i
 					else if (cell.type == CellType::Raised) tint = rgb(120, 104, 84);
 					else if (cell.chasm) tint = rgb(46, 76, 140);
 				}
-				fillRect(frame, mapX + (c + Radius) * cellPx, mapY + (row + Radius) * cellPx, cellPx, cellPx, tint);
+				clippedCell(mapX + (c + Radius) * cellPx + offsetX, mapY + (row + Radius) * cellPx + offsetY, tint);
 			}
 		}
 
 		const float fx = std::cos(this->yaw), fz = std::sin(this->yaw);
-		const float sx = mapX + (Radius + (this->z - pcz) * -1.0f + 1.0f) * cellPx;
-		const float sy = mapY + (Radius + (this->x - pcx)) * cellPx;
+		const float sx = mapX + (Radius + 0.5f) * cellPx;
+		const float sy = mapY + (Radius + 0.5f) * cellPx;
 		for (int i = 0; i < 2 * cellPx; i++) fillRect(frame, static_cast<int>(sx - fz * i), static_cast<int>(sy + fx * i), u, u, col::GoldBright);
 		fillRect(frame, static_cast<int>(sx) - u, static_cast<int>(sy) - u, 3 * u, 3 * u, col::GoldBright);
 		painter.text(fonts.arena, text.get("World.North"), mapX + size / 2, mapY + u, col::GoldBright, TextAlign::Center);

@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cctype>
+#include <cstdio>
 #include <cstdlib>
 #include <sstream>
 
@@ -56,6 +57,7 @@ std::optional<arena::InfFile> arena::loadInf(ByteBuffer data, std::string &outEr
 	InfFile inf;
 	enum class Section { None, Floors, Walls, Flats, Sound, Text, Other } section = Section::None;
 	int currentText = -1;
+	int riddlePart = 0; // enigma: 0 = pergunta, 1 = acerto, 2 = erro
 
 	// Marcadores (*BOXCAP, *CEILING...) acumulados até a próxima linha de textura.
 	std::vector<std::vector<std::string>> pendingTags;
@@ -90,7 +92,27 @@ std::optional<arena::InfFile> arena::loadInf(ByteBuffer data, std::string &outEr
 				continue;
 			}
 
-			if (entry.text.empty() && content[0] == '^') entry.riddle = true;
+			if (entry.text.empty() && !entry.riddle && content[0] == '^')
+			{
+				entry.riddle = true;
+				std::sscanf(content.c_str() + 1, "%d %d", &entry.riddleLock, &entry.riddlePenalty);
+				riddlePart = 0;
+				continue;
+			}
+
+			if (entry.riddle)
+			{
+				// Partes do enigma: pergunta ("-" separa parágrafos), respostas, acerto e erro.
+				const std::string tag = upper(content);
+				if (content[0] == ':') { std::string answer = content.substr(1); for (char &ch : answer) ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch))); entry.answers.push_back(trimWhitespace(answer)); continue; }
+				if (tag == "`CORRECT" || tag == "'CORRECT") { riddlePart = 1; continue; }
+				if (tag == "`WRONG" || tag == "'WRONG") { riddlePart = 2; continue; }
+				std::string &target = riddlePart == 0 ? entry.text : riddlePart == 1 ? entry.correct : entry.wrong;
+				if (content == "-") { if (!target.empty()) target += "\n\n"; continue; }
+				if (!target.empty() && target.back() != '\n') target += ' ';
+				target += content;
+				continue;
+			}
 			if (entry.text.empty() && content[0] == '~')
 			{
 				entry.once = true;

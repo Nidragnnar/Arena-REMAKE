@@ -516,6 +516,15 @@ na aba de itens mágicos da guilda, pega o item escolhido sem pagar. A chance ve
 executável (Int + Agi, como no arrombamento) e do nível; ladrões levam vantagem, e peças caras são vigiadas. Pego, o
 morador ou o vendedor chama a guarda e a cidade lembra do crime por alguns dias.
 
+### Enigmas
+
+Os 25 enigmas das masmorras (gatilhos "^A B" dos .INF) aparecem traduzidos ao pisar na placa, com um campo para
+digitar a resposta. Valem as respostas do original em inglês e as em português, sem diferença de maiúsculas, acentos
+ou artigo ("o Amor" = "amor" = "love"). O acerto abre a trava A — 255/254 são as portas seladas ao lado do enigma, que
+não cedem a arrombamento, ao feitiço Abrir nem à Chave do Esqueleto; outros números abrem as travas com esse valor no
+nível. O erro abre a trava B quando ela existe (as celas de monstros do Labirinto, de Fang Lair e de Murkwood); 0 = nada.
+Errou ou deixou para depois: basta pisar na placa de novo.
+
 ### Feriados
 
 Os 16 feriados do original (TEMPLATE.DAT #0047..#0062) são anunciados ao chegar numa cidade no dia, com o texto

@@ -440,6 +440,11 @@ void arena::GameWorldScreen::checkTriggers(int cellX, int cellZ)
 		}
 
 		const InfText *entry = this->level.getText(trigger.textIndex);
+		if (entry && entry->riddle)
+		{
+			if (this->riddlePending(trigger, *entry)) this->askRiddle(static_cast<int>(i));
+			continue;
+		}
 		if (entry == nullptr || this->firedTriggers.contains(i)) continue;
 
 		// Cada gatilho de texto aparece uma vez (os "~" do original e os repetidos pelo mapa).
@@ -783,6 +788,12 @@ void arena::GameWorldScreen::screenButtonAction(char action)
 	if (action == 'v')
 	{
 		this->visionText.clear();
+		this->riddleTrigger = -1;
+		return;
+	}
+	if (action == 'r')
+	{
+		this->answerRiddle();
 		return;
 	}
 	if (action == 'y' || action == 'n')
@@ -1239,6 +1250,33 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 		return true;
 	}
 
+	if (name == "loadmif")
+	{
+		// loadmif:ARQUIVO.MIF abre o mapa direto (masmorras da missão principal etc.; teste).
+		this->enterDungeon("MIFL:" + arg, "@WILD:0:0@-1@-1@0@", arg);
+		return true;
+	}
+
+	if (name == "riddles" && this->loaded)
+	{
+		// riddles lista os enigmas do nível, as travas a até 4 células de cada um e todas as travas (teste).
+		for (const Trigger &trigger : this->level.getTriggers())
+		{
+			const InfText *entry = this->level.getText(trigger.textIndex);
+			if (!entry || !entry->riddle) continue;
+			std::printf("enigma %d em %d,%d: ^%d %d, respostas:", trigger.textIndex, trigger.x, trigger.z, entry->riddleLock, entry->riddlePenalty);
+			for (const std::string &answer : entry->answers) std::printf(" [%s]", answer.c_str());
+			std::printf("\n  travas perto:");
+			for (const auto &[cell, value] : this->level.getLocks())
+				if (std::abs(cell.first - trigger.x) <= 4 && std::abs(cell.second - trigger.z) <= 4) std::printf(" %d,%d=%d", cell.first, cell.second, value);
+			std::printf("\n");
+		}
+		std::printf("todas as travas:");
+		for (const auto &[cell, value] : this->level.getLocks()) std::printf(" %d,%d=%d", cell.first, cell.second, value);
+		std::printf("\n");
+		return true;
+	}
+
 	if (name == "stealchance")
 	{
 		// stealchance[:d] imprime a chance de furto (%) contra a dificuldade d (teste).
@@ -1683,12 +1721,18 @@ void arena::GameWorldScreen::interact()
 			{
 				const CharacterDraft &character = this->game.getCharacter();
 				const ClassDefinition &def = this->game.getData().getClass(std::max(0, character.classIndex));
-				if (this->keys.contains(lock) || artifact::powersOf(character).skeletonKey)
+				if (this->keys.contains(lock) || (artifact::powersOf(character).skeletonKey && lock < 254))
 				{
 					// Com a chave (ou a Chave do Esqueleto, que abre qualquer porta): destranca e já abre.
 					this->level.unlock(cx, cz);
 					this->game.playSound("LOCK.VOC");
 					unlockedNow = true;
+				}
+				else if (lock >= 254)
+				{
+					this->game.playSound("CLANK.VOC");
+					this->showMessage(text.get("World.DoorSealed"), 3.5);
+					return;
 				}
 				else if (def.isThief)
 				{
@@ -1795,6 +1839,23 @@ void arena::GameWorldScreen::handleInput(const InputEvent &event)
 	// Mouse sobre os botões de pausa/morte (interface em resolução nativa).
 	eventToPixels(event, this->uiFrameW, this->uiFrameH, this->uiMouseX, this->uiMouseY);
 	if (this->gateTimer > 0.0) return;
+	if (!this->visionText.empty() && this->overlay == Overlay::None && this->riddleTrigger >= 0)
+	{
+		if (event.type == InputEvent::Type::TextInput)
+		{
+			for (char ch : event.text) if (static_cast<unsigned char>(ch) >= 32 && this->riddleAnswer.size() < 40) this->riddleAnswer.push_back(ch);
+			return;
+		}
+		if (event.isKey(InputEvent::Key::Backspace))
+		{
+			while (!this->riddleAnswer.empty() && (static_cast<unsigned char>(this->riddleAnswer.back()) & 0xC0) == 0x80) this->riddleAnswer.pop_back();
+			if (!this->riddleAnswer.empty()) this->riddleAnswer.pop_back();
+			return;
+		}
+		if (event.isKey(InputEvent::Key::Enter)) { this->answerRiddle(); return; }
+		if (event.isKey(InputEvent::Key::Escape)) { this->screenButtonAction('v'); return; }
+		if (!event.isClick()) return;
+	}
 	if (!this->visionText.empty() && this->overlay == Overlay::None)
 	{
 		if (this->offerPending() && (event.isKey(InputEvent::Key::Enter) || event.isKey(InputEvent::Key::Escape))) { this->screenButtonAction(event.isKey(InputEvent::Key::Enter) ? 'y' : 'n'); return; }
@@ -3639,16 +3700,33 @@ void arena::GameWorldScreen::drawVision(kit::Painter &painter, int width, int he
 
 	// Altura pelo tamanho do texto (estimativa de ~78 letras por linha), até 300 unidades.
 	const int lines = static_cast<int>(this->visionText.size()) / 78 + 1 + static_cast<int>(std::count(this->visionText.begin(), this->visionText.end(), '\n'));
-	const int w = std::min(width - 16 * u, 460 * u), h = std::min({ height - 16 * u, 300 * u, (100 + lines * 11) * u });
+	const bool riddle = this->riddleTrigger >= 0;
+	const int w = std::min(width - 16 * u, 460 * u), h = std::min({ height - 16 * u, (riddle ? 340 : 300) * u, (100 + lines * 11 + (riddle ? 26 : 0)) * u });
 	const Rect box{ (width - w) / 2, (height - h) / 2, w, h };
 	painter.woodPanel(box, 245);
 	painter.text(fonts.a, this->visionTitle, box.x + w / 2, box.y + 10 * u, col::GoldBright, TextAlign::Center);
 	painter.divider(box.x + 14 * u, box.y + 32 * u, w - 28 * u, col::GoldDim);
 
-	const Rect page{ box.x + 14 * u, box.y + 40 * u, w - 28 * u, h - 40 * u - 34 * u };
+	const Rect page{ box.x + 14 * u, box.y + 40 * u, w - 28 * u, h - 40 * u - (riddle ? 60 : 34) * u };
 	painter.parchmentPanel(page);
 	painter.paragraph(fonts.arena, this->visionText, Rect{ page.x + 12 * u, page.y + 10 * u, page.w - 24 * u, page.h - 20 * u }, col::Ink);
 
+	if (riddle)
+	{
+		// Resposta digitada (cursor piscando), Responder (Enter) e Deixar (Esc).
+		const Rect field{ box.x + 14 * u, box.y + h - 52 * u, w - 28 * u, 20 * u };
+		painter.fill(field, hud::rgb(255, 250, 235, 90));
+		const auto now = std::chrono::steady_clock::now().time_since_epoch();
+		const bool blink = (std::chrono::duration_cast<std::chrono::milliseconds>(now).count() / 500) % 2 == 0;
+		painter.text(fonts.arena, (this->riddleAnswer.empty() ? this->game.getText().get("Riddle.Hint") : this->riddleAnswer) + (blink ? "_" : ""),
+			field.x + 6 * u, field.y + 5 * u, this->riddleAnswer.empty() ? col::InkSoft : col::Ink, TextAlign::Left, false);
+		const Rect yes{ box.x + w / 2 - 136 * u, box.y + h - 26 * u, 130 * u, 18 * u }, no{ box.x + w / 2 + 6 * u, box.y + h - 26 * u, 130 * u, 18 * u };
+		painter.button(yes, this->game.getText().get("Riddle.Answer"), kit::hit(yes, this->uiMouseX, this->uiMouseY), false);
+		painter.button(no, this->game.getText().get("Riddle.Leave"), kit::hit(no, this->uiMouseX, this->uiMouseY), false);
+		this->screenButtons.push_back({ yes, 'r' });
+		this->screenButtons.push_back({ no, 'v' });
+		return;
+	}
 	if (this->offerPending())
 	{
 		// Proposta de trabalho ou de informação: aceitar (Enter) ou recusar (Esc).
@@ -3707,6 +3785,122 @@ bool arena::GameWorldScreen::tryAttackCitizen()
 	this->showMessage(ui::format(text.get("World.CitizenKilled"), { this->locationName }), 4.0);
 	this->reportCrime();
 	return true;
+}
+
+namespace
+{
+	// Resposta de enigma comparável: minúsculas, sem acentos, pontuação nem artigo inicial ("o sol" = "sol" = "the sun"
+	// só pelas respostas aceitas de cada idioma).
+	std::string normalizeAnswer(const std::string &raw)
+	{
+		static const std::pair<const char *, char> Accents[] =
+		{
+			{ "á", 'a' }, { "à", 'a' }, { "â", 'a' }, { "ã", 'a' }, { "é", 'e' }, { "ê", 'e' }, { "í", 'i' }, { "ó", 'o' }, { "ô", 'o' }, { "õ", 'o' },
+			{ "ú", 'u' }, { "ü", 'u' }, { "ç", 'c' }, { "Á", 'a' }, { "À", 'a' }, { "Â", 'a' }, { "Ã", 'a' }, { "É", 'e' }, { "Ê", 'e' }, { "Í", 'i' },
+			{ "Ó", 'o' }, { "Ô", 'o' }, { "Õ", 'o' }, { "Ú", 'u' }, { "Ç", 'c' }
+		};
+		std::string plain;
+		for (size_t i = 0; i < raw.size(); )
+		{
+			bool replaced = false;
+			for (const auto &[from, to] : Accents)
+			{
+				const size_t n = std::char_traits<char>::length(from);
+				if (raw.compare(i, n, from) == 0) { plain.push_back(to); i += n; replaced = true; break; }
+			}
+			if (replaced) continue;
+			const unsigned char ch = static_cast<unsigned char>(raw[i++]);
+			if (std::isalnum(ch)) plain.push_back(static_cast<char>(std::tolower(ch)));
+			else if (ch == ' ' || ch == '-' || ch == '\t') plain.push_back(' ');
+		}
+		std::vector<std::string> words;
+		for (size_t at = 0; at < plain.size(); )
+		{
+			const size_t end = plain.find(' ', at);
+			const std::string word = plain.substr(at, end == std::string::npos ? std::string::npos : end - at);
+			if (!word.empty()) words.push_back(word);
+			if (end == std::string::npos) break;
+			at = end + 1;
+		}
+		static const char *Articles[] = { "o", "a", "os", "as", "um", "uma", "the", "an" };
+		if (words.size() > 1 && std::find_if(std::begin(Articles), std::end(Articles), [&](const char *a) { return words[0] == a; }) != std::end(Articles)) words.erase(words.begin());
+		std::string out;
+		for (const std::string &word : words) out += (out.empty() ? "" : " ") + word;
+		return out;
+	}
+}
+
+bool arena::GameWorldScreen::riddlePending(const Trigger &trigger, const InfText &entry) const
+{
+	// Ainda há a porta que o acerto abre (selada ao lado, ou a trava numerada em qualquer parte do nível).
+	const bool sealed = entry.riddleLock >= 254;
+	for (const auto &[cell, value] : this->level.getLocks())
+		if (value == entry.riddleLock && (!sealed || (std::abs(cell.first - trigger.x) <= 6 && std::abs(cell.second - trigger.z) <= 6))) return true;
+	return false;
+}
+
+void arena::GameWorldScreen::askRiddle(int trigger)
+{
+	const Trigger &t = this->level.getTriggers()[static_cast<size_t>(trigger)];
+	const InfText *entry = this->level.getText(t.textIndex);
+	if (!entry) return;
+	const Localization &text = this->game.getText();
+	const std::string key = "Triggers." + this->level.getInfName() + "." + std::to_string(t.textIndex);
+	this->openVision(text.get("Riddle.Title"), text.getOr(key, entry->text));
+	this->riddleTrigger = trigger;
+	this->riddleAnswer.clear();
+}
+
+void arena::GameWorldScreen::unlockRiddleDoors(const Trigger &trigger, int value)
+{
+	const bool sealed = value >= 254;
+	const auto locks = this->level.getLocks();
+	for (const auto &[cell, lock] : locks)
+	{
+		if (lock != value || (sealed && (std::abs(cell.first - trigger.x) > 6 || std::abs(cell.second - trigger.z) > 6))) continue;
+		this->level.unlock(cell.first, cell.second);
+		if (this->level.doorOpenness(cell.first, cell.second) < 0.5f) this->level.toggleDoor(cell.first, cell.second);
+		this->playAt("OPENDOOR.VOC", cell.first + 0.5f, cell.second + 0.5f);
+	}
+}
+
+void arena::GameWorldScreen::answerRiddle()
+{
+	if (this->riddleTrigger < 0) return;
+	const Trigger trigger = this->level.getTriggers()[static_cast<size_t>(this->riddleTrigger)];
+	const InfText *entry = this->level.getText(trigger.textIndex);
+	if (!entry) return;
+	const Localization &text = this->game.getText();
+	const std::string key = "Triggers." + this->level.getInfName() + "." + std::to_string(trigger.textIndex);
+
+	// Aceita as respostas do original (inglês) e as traduzidas (Triggers.<INF>.<n>.Answers, separadas por |).
+	const std::string given = normalizeAnswer(this->riddleAnswer);
+	if (given.empty()) return;
+	std::vector<std::string> accepted = entry->answers;
+	const std::string translated = text.getOr(key + ".Answers", "");
+	for (size_t at = 0; !translated.empty(); )
+	{
+		const size_t bar = translated.find('|', at);
+		accepted.push_back(translated.substr(at, bar == std::string::npos ? std::string::npos : bar - at));
+		if (bar == std::string::npos) break;
+		at = bar + 1;
+	}
+	const bool right = std::any_of(accepted.begin(), accepted.end(), [&](const std::string &a) { return normalizeAnswer(a) == given; });
+
+	this->riddleTrigger = -1;
+	if (right)
+	{
+		this->game.playSound("LOCK.VOC");
+		this->unlockRiddleDoors(trigger, entry->riddleLock);
+		this->openVision(text.get("Riddle.Title"), text.getOr(key + ".Correct", entry->correct));
+	}
+	else
+	{
+		this->game.playSound("CLANK.VOC");
+		if (entry->riddlePenalty > 0) this->unlockRiddleDoors(trigger, entry->riddlePenalty);
+		this->openVision(text.get("Riddle.Title"), text.getOr(key + ".Wrong", entry->wrong));
+	}
+	this->persist();
 }
 
 void arena::GameWorldScreen::reportCrime()

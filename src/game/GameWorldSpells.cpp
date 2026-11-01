@@ -369,6 +369,13 @@ bool arena::GameWorldScreen::openDoorAhead(const SpellEffect &effect)
 		if (c.type == CellType::Wall) break;
 		if (c.type != CellType::Door) continue;
 
+		if (this->level.lockLevel(cx, cz) >= 254)
+		{
+			// Porta selada por enigma: só a resposta certa abre.
+			this->game.playSound("CLANK.VOC");
+			this->showMessage(text.get("World.DoorSealed"), 3.5);
+			return true;
+		}
 		if (this->level.lockLevel(cx, cz) > 0 && static_cast<int>(this->game.getRandom()() % 100u) >= spellChance(effect, this->game.getCharacter().level))
 		{
 			this->game.playSound("CLICKS.VOC");

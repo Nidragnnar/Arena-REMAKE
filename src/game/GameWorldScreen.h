@@ -258,6 +258,14 @@ namespace arena
 
 		// Missão principal (MainQuest.h): sonhos de Ria e achados, num painel que pausa o jogo.
 		std::string visionTitle, visionText; // aberto quando visionText não está vazio
+		// Enigma dos .INF ("^A B"): pergunta na janela de texto e resposta digitada. O acerto abre a trava A
+		// (254/255 = a porta selada ao lado), o erro abre a trava B (celas de monstros; 0 = nada).
+		int riddleTrigger = -1;
+		std::string riddleAnswer;
+		bool riddlePending(const Trigger &trigger, const InfText &entry) const;
+		void askRiddle(int trigger);
+		void answerRiddle();
+		void unlockRiddleDoors(const Trigger &trigger, int value);
 		Cutscene cutscene; // cena do original antes do painel (Ria em VISION.FLC)
 		void openVision(const std::string &title, const std::string &body);
 		void palaceArrival();

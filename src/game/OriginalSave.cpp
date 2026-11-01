@@ -155,6 +155,9 @@ namespace
 				else continue;
 			}
 			else continue;
+			// Estado: a vida gravada da peça (atual / máxima) vira o desgaste na escala do remake.
+			const int health = le16(p + 6), maxHealth = le16(p + 8);
+			if (wears(item) && maxHealth > 0 && health < maxHealth) item.wear = maxCondition(item) * (maxHealth - health) / maxHealth;
 			items.push_back(item);
 		}
 		return items;

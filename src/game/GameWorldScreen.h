@@ -136,6 +136,8 @@ namespace arena
 		float jumpHeight = 0.0f, jumpVelocity = 0.0f;
 		bool airborne = false;
 		void jump();
+		// Desgaste: a arma a cada golpe que acerta; a armadura da parte atingida (e às vezes o escudo) a cada golpe levado.
+		void wearEquipment(bool weaponHit, int part);
 		double time = 0.0;
 		double bob = 0.0;
 		std::set<char> heldKeys;

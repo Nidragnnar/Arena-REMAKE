@@ -287,7 +287,7 @@ void arena::CreatureSystem::update(double dt, const Level &level, const PlayerCo
 					const int armor = player.partArmor[static_cast<size_t>(part)] + player.shieldArmor;
 					const int chance = meleeHitChance256(def.level, -1, 0, player.level, player.classIndex, player.defenseBonus, armor);
 					if (randomInt(rng, 0, 255) < chance)
-						events.push_back({ CombatEvent::Type::CreatureHitPlayer, static_cast<int>(i), randomInt(rng, def.minDamage, def.maxDamage) });
+						events.push_back({ CombatEvent::Type::CreatureHitPlayer, static_cast<int>(i), randomInt(rng, def.minDamage, def.maxDamage), part });
 					else
 						events.push_back({ CombatEvent::Type::CreatureMissedPlayer, static_cast<int>(i), 0 });
 				}

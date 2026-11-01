@@ -500,6 +500,15 @@ armadura ("Espada longa do Relâmpago", "Couraça de placas de Força"), até a 
 atributo dão +3 a +6 nele enquanto a peça está equipada (o tamanho exato do bônus no original não é conhecido); os de
 feitiço põem o feitiço no livro, de graça e com 30 s de recarga, como os artefatos. O preço soma o do encantamento.
 
+### Desgaste e conserto
+
+Armas se gastam a cada golpe acertado; armaduras, a cada golpe recebido na parte do corpo que cobrem (o escudo, em
+metade dos golpes). Material melhor aguenta mais: Ferro 40 golpes até Ébano 180; malha 80 e couro 50. Artefatos não
+se gastam. Quebrada, a arma dá só 1-2 de dano e a armadura não protege; o nome ganha "(quebrada)" e o estado aparece
+no detalhe do item. O ferreiro (loja de equipamentos) tem a aba **Consertar**: o preço segue a peça em ferro e o
+desgaste. Peças gastas valem menos na venda. Na importação de saves do original, a vida gravada de cada peça vira o
+desgaste.
+
 ## Roteiro
 
 1. ~~Formatos base, título e menu principal em PT-BR~~ ✅

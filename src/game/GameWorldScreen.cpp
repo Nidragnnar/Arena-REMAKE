@@ -357,6 +357,30 @@ void arena::GameWorldScreen::drawAutomap(kit::Painter &painter, int width, int h
 	painter.button(this->automapCloseButton, text.get("Menu.Close"), kit::hit(this->automapCloseButton, this->uiMouseX, this->uiMouseY), false);
 }
 
+void arena::GameWorldScreen::wearEquipment(bool weaponHit, int part)
+{
+	CharacterDraft &hero = this->game.getCharacter();
+	const Localization &text = this->game.getText();
+	auto wear = [&](Item &item)
+	{
+		if (!wears(item) || isBroken(item)) return;
+		item.wear++;
+		if (!isBroken(item)) return;
+		Item whole = item;
+		whole.wear = 0;
+		this->game.playSound("CLANK.VOC");
+		this->showMessage(ui::format(text.get("Items.BrokeNow"), { itemName(this->game, whole) }), 4.0);
+		if (item.kind == ItemKind::Weapon) this->setupWeapon();
+	};
+	for (Item &item : hero.inventory)
+	{
+		if (!item.equipped) continue;
+		if (weaponHit && item.kind == ItemKind::Weapon) wear(item);
+		else if (!weaponHit && item.kind == ItemKind::Armor && !item.isShield() && bodyPartOf(item) == part) wear(item);
+		else if (!weaponHit && item.isShield() && this->game.getRandom()() % 2u == 0) wear(item);
+	}
+}
+
 void arena::GameWorldScreen::jump()
 {
 	// Força dá impulso; Khajiits e Acrobatas pulam mais longe, como no original. Na água (fosso) não dá para pular.
@@ -1205,6 +1229,27 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 		return true;
 	}
 
+	if (name == "wear")
+	{
+		// wear:N desgasta as armas e armaduras equipadas em N golpes e imprime o estado (teste).
+		// Chegando ao limite, o último golpe passa pela rotina normal (som e aviso de quebra).
+		const int amount = std::atoi(arg.c_str());
+		bool breakWeapon = false;
+		for (Item &item : this->game.getCharacter().inventory)
+		{
+			if (!item.equipped || !wears(item)) continue;
+			item.wear = std::clamp(amount, 0, maxCondition(item) - 1);
+			breakWeapon = breakWeapon || (item.kind == ItemKind::Weapon && amount >= maxCondition(item));
+		}
+		if (breakWeapon) this->wearEquipment(true, -1);
+		for (const Item &item : this->game.getCharacter().inventory)
+		{
+			if (!item.equipped || !wears(item)) continue;
+			std::printf("%s: desgaste %d/%d (%d%%)%s\n", itemName(this->game, item).c_str(), item.wear, maxCondition(item), conditionPercent(item), isBroken(item) ? " quebrada" : "");
+		}
+		return true;
+	}
+
 	if (name == "spawnhuman" && this->loaded)
 	{
 		// spawnhuman:classe[,f] cria um inimigo humano dessa classe à frente (f = mulher), já atento (teste).
@@ -1451,6 +1496,7 @@ void arena::GameWorldScreen::resolveSwing()
 	const Creature &victim = this->creatures.getCreatures()[static_cast<size_t>(target)];
 	const int maxHp = victim.maxHp;
 	this->playAt("EHIT.VOC", victim.x, victim.z);
+	this->wearEquipment(true, -1);
 	// Maça de Molag Bal: o dano causado volta como magia.
 	const int stolen = std::min(amount, victim.hp) * artifact::powersOf(character).manaSteal / 100;
 	this->spellPoints = std::min(character.maxSpellPoints, this->spellPoints + stolen);
@@ -1482,6 +1528,7 @@ void arena::GameWorldScreen::handleCombatEvents(const std::vector<CombatEvent> &
 		case CombatEvent::Type::CreatureHitPlayer:
 		{
 			const int amount = event.amount;
+			this->wearEquipment(false, event.part);
 			if (this->shieldPoints > 0)
 			{
 				const int absorbed = std::min(this->shieldPoints, amount);
@@ -3739,6 +3786,7 @@ void arena::GameWorldScreen::updateArrows(double dt)
 				{
 					const int maxHp = victim.maxHp;
 					this->playAt("ARROWHT.VOC", victim.x, victim.z);
+					this->wearEquipment(true, -1);
 					if (this->creatures.damage(hit, a.damage)) this->rewardKill(hit, maxHp);
 					else this->showMessage(ui::format(text.get("World.PlayerHit"), { this->creatureRef(hit, false), std::to_string(a.damage) }), 2.0);
 				}

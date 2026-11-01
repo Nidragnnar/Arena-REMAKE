@@ -38,6 +38,7 @@ namespace arena
 		// 3 = bônus de atributo (índice = atributo, charges = bônus); 4 = bônus de armadura (charges = bônus).
 		int magicGroup = -1, magicIndex = 0, charges = 0;
 		int enchant = -1; // encantamento de arma ou armadura (índice na tabela do tipo), -1 = nenhum
+		int wear = 0;     // desgaste (golpes dados ou levados); em maxCondition a peça quebra
 		bool isMagicItem() const { return this->kind == ItemKind::Trinket && this->artifact < 0 && this->magicGroup >= 0; }
 
 		bool isShield() const { return this->kind == ItemKind::Armor && this->type >= 7; }
@@ -99,6 +100,13 @@ namespace arena
 	// do grupo com qualidade até maxQuality (nível de quem acha/compra).
 	Item randomMagicItem(const ItemTables &tables, int maxQuality, std::mt19937 &rng);
 	int magicItemSpell(const Item &item, const ItemTables &tables); // feitiço do SPELLSG (-1 se não for de feitiço)
+
+	// Desgaste: armas e armaduras resistem mais pelo material (Ferro 40 .. Ébano 180 golpes; malha 80, couro 50).
+	// Artefatos não se desgastam. Quebrada, a arma dá 1-2 de dano e a armadura não protege.
+	int maxCondition(const Item &item);
+	bool isBroken(const Item &item);
+	bool wears(const Item &item);
+	int conditionPercent(const Item &item);
 
 	// Encantamentos de armas e armaduras: um feitiço (vai para o livro enquanto equipado) ou um bônus de atributo.
 	const ItemTables::Enchantment *enchantmentOf(const Item &item, const ItemTables &tables);

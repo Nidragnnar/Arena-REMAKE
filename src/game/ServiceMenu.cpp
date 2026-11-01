@@ -14,7 +14,7 @@ namespace
 	using namespace arena;
 	namespace col = kit::color;
 
-	enum Action { None, BuyItem, SellItem, Drink, Room, Heal, BuySpell, BuyPotion, CureDisease, BuyMagic, Talk = 20 };
+	enum Action { None, BuyItem, SellItem, Drink, Room, Heal, BuySpell, BuyPotion, CureDisease, BuyMagic, Repair, Talk = 20 };
 
 	// Modelos da criação de feitiços: efeito, sub (-1 = o elemento escolhido), se é de ataque
 	// (precisa de alvo) e o peso no custo. Os parâmetros saem da potência (ver makerSpell).
@@ -124,13 +124,29 @@ void arena::ServiceMenu::rebuild(const Game &game)
 			for (size_t i = 0; i < this->stock.size(); i++)
 				this->rows.push_back({ itemName(game, this->stock[i]), itemDetails(game, this->stock[i]), this->price(itemPrice(this->stock[i], tables)), BuyItem, static_cast<int>(i), true });
 		}
+		else if (this->tab == 2)
+		{
+			// Conserto: as peças gastas do inventário. O preço segue a peça em ferro (sem encantamento) e cada golpe
+			// de desgaste; material melhor aguenta mais golpes, então custa mais quando muito gasto.
+			for (size_t i = 0; i < c.inventory.size(); i++)
+			{
+				const Item &item = c.inventory[i];
+				if (!wears(item) || item.wear <= 0) continue;
+				Item plain = item;
+				plain.material = 0;
+				plain.enchant = -1;
+				const int cost = std::max(1, this->price(itemPrice(plain, tables)) * std::min(item.wear, maxCondition(item)) / 80);
+				this->rows.push_back({ itemName(game, item), ui::format(text.get("Items.Condition"), { std::to_string(conditionPercent(item)) }), cost, Repair, static_cast<int>(i), true });
+			}
+		}
 		else
 		{
 			// Vende pela metade do preço; equipados não entram.
 			for (size_t i = 0; i < c.inventory.size(); i++)
 			{
 				const Item &item = c.inventory[i];
-				Row row{ itemName(game, item), item.equipped ? text.get("Shop.Equipped") : itemDetails(game, item), std::max(1, this->price(itemPrice(item, tables)) / 2), SellItem, static_cast<int>(i), !item.equipped };
+				// Peças gastas valem menos (pelo estado).
+				Row row{ itemName(game, item), item.equipped ? text.get("Shop.Equipped") : itemDetails(game, item), std::max(1, this->price(itemPrice(item, tables)) / 2 * conditionPercent(item) / 100), SellItem, static_cast<int>(i), !item.equipped };
 				this->rows.push_back(row);
 			}
 		}
@@ -249,6 +265,12 @@ arena::OverlayResult arena::ServiceMenu::confirm(Game &game, const Row &row)
 		c.spells.push_back(row.index);
 		result.inventoryChanged = true;
 		done(ui::format(text.get("Shop.Learned"), { row.label }));
+		break;
+	case Repair:
+		c.gold -= row.price;
+		c.inventory[static_cast<size_t>(row.index)].wear = 0;
+		result.inventoryChanged = true;
+		done(ui::format(text.get("Shop.Repaired"), { row.label }));
 		break;
 	case BuyMagic:
 	{
@@ -405,7 +427,7 @@ void arena::ServiceMenu::render(kit::Painter &painter, const Game &game)
 	std::vector<std::string> tabs;
 	switch (this->kind)
 	{
-	case Kind::Equipment: tabs = { text.get("Shop.TabBuy"), text.get("Shop.TabSell") }; break;
+	case Kind::Equipment: tabs = { text.get("Shop.TabBuy"), text.get("Shop.TabSell"), text.get("Shop.TabRepair") }; break;
 	case Kind::Tavern: tabs = { text.get("Shop.TabDrinks"), text.get("Shop.TabRooms"), text.get("Shop.TabTalk") }; break;
 	case Kind::Temple: tabs = { text.get("Shop.TabTemple") }; break;
 	case Kind::MagesGuild: tabs = { text.get("Shop.TabSpells"), text.get("Shop.TabPotions"), text.get("Shop.TabMaker"), text.get("Shop.TabMagic") }; break;
@@ -473,7 +495,7 @@ void arena::ServiceMenu::render(kit::Painter &painter, const Game &game)
 	else
 		painter.text(fonts.arena, text.get("Shop.Hint"), this->window.x + w / 2, by - 16 * u, col::TextDim, TextAlign::Center);
 
-	const char *actionKey = this->kind == Kind::Equipment && this->tab == 1 ? "Shop.ActionSell" : this->kind == Kind::Tavern ? (this->tab == 0 ? "Shop.ActionDrink" : this->tab == 1 ? "Shop.ActionRent" : "Shop.ActionAsk")
+	const char *actionKey = this->kind == Kind::Equipment && this->tab == 2 ? "Shop.ActionRepair" : this->kind == Kind::Equipment && this->tab == 1 ? "Shop.ActionSell" : this->kind == Kind::Tavern ? (this->tab == 0 ? "Shop.ActionDrink" : this->tab == 1 ? "Shop.ActionRent" : "Shop.ActionAsk")
 		: this->kind == Kind::Temple ? "Shop.ActionHeal" : "Shop.ActionBuy";
 	this->actionRect = Rect{ this->window.x + w / 2 - 125 * u, by, 120 * u, 20 * u };
 	painter.button(this->actionRect, text.get(actionKey), kit::hit(this->actionRect, this->mouseX, this->mouseY), false, this->selected >= 0);

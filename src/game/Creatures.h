@@ -50,6 +50,7 @@ namespace arena
 		Type type = Type::CreatureHitPlayer;
 		int creature = -1;
 		int amount = 0;
+		int part = -1; // golpe no jogador: parte do corpo atingida (desgasta a armadura dela)
 	};
 
 	// Alvo do jogador para os testes de acerto.

@@ -32,7 +32,7 @@ namespace
 		{
 			if (!out.empty()) out += ';';
 			out += std::to_string(static_cast<int>(item.kind)) + "." + std::to_string(item.type) + "." + std::to_string(static_cast<int>(item.armorClass))
-				+ "." + std::to_string(item.material) + "." + std::to_string(item.magicGroup) + "." + std::to_string(item.magicIndex) + "." + std::to_string(item.charges) + "." + std::to_string(item.enchant);
+				+ "." + std::to_string(item.material) + "." + std::to_string(item.magicGroup) + "." + std::to_string(item.magicIndex) + "." + std::to_string(item.charges) + "." + std::to_string(item.enchant) + "." + std::to_string(item.wear);
 		}
 		return out;
 	}
@@ -42,14 +42,15 @@ namespace
 		std::vector<Item> items;
 		for (const std::string &entry : split(text, ';'))
 		{
-			int kind = 0, type = 0, armorClass = 0, material = 0, magicGroup = -1, magicIndex = 0, charges = 0, enchant = -1;
-			if (std::sscanf(entry.c_str(), "%d.%d.%d.%d.%d.%d.%d.%d", &kind, &type, &armorClass, &material, &magicGroup, &magicIndex, &charges, &enchant) < 4) continue;
+			int kind = 0, type = 0, armorClass = 0, material = 0, magicGroup = -1, magicIndex = 0, charges = 0, enchant = -1, wear = 0;
+			if (std::sscanf(entry.c_str(), "%d.%d.%d.%d.%d.%d.%d.%d.%d", &kind, &type, &armorClass, &material, &magicGroup, &magicIndex, &charges, &enchant, &wear) < 4) continue;
 			Item item;
 			item.kind = static_cast<ItemKind>(std::clamp(kind, 0, 3));
 			item.magicGroup = magicGroup;
 			item.magicIndex = magicIndex;
 			item.charges = charges;
 			item.enchant = enchant;
+			item.wear = std::max(0, wear);
 			item.type = type;
 			item.armorClass = static_cast<ArmorClass>(std::clamp(armorClass, 0, 2));
 			item.material = std::clamp(material, 0, MaterialCount - 1);

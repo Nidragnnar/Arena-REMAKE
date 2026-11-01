@@ -231,20 +231,43 @@ int arena::itemPrice(const Item &item, const ItemTables &tables)
 	}
 }
 
+bool arena::wears(const Item &item)
+{
+	return item.artifact < 0 && (item.kind == ItemKind::Weapon || item.kind == ItemKind::Armor);
+}
+
+int arena::maxCondition(const Item &item)
+{
+	if (item.kind == ItemKind::Armor && !item.isShield() && item.armorClass != ArmorClass::Plate) return item.armorClass == ArmorClass::Chain ? 80 : 50;
+	return 40 + 20 * std::clamp(item.material, 0, MaterialCount - 1);
+}
+
+bool arena::isBroken(const Item &item)
+{
+	return wears(item) && item.wear >= maxCondition(item);
+}
+
+int arena::conditionPercent(const Item &item)
+{
+	return wears(item) ? std::clamp(100 - item.wear * 100 / std::max(1, maxCondition(item)), 0, 100) : 100;
+}
+
 int arena::weaponMinDamage(const Item &item, const ItemTables &tables)
 {
+	if (isBroken(item)) return 1;
 	// O material soma 1 de dano a cada 5 pontos de bônus (Ferro tem -1).
 	return std::max(1, tables.weaponMinDamage[static_cast<size_t>(item.type)] + tables.materialBonus[static_cast<size_t>(item.material)] / 5);
 }
 
 int arena::weaponMaxDamage(const Item &item, const ItemTables &tables)
 {
+	if (isBroken(item)) return 2;
 	return std::max(weaponMinDamage(item, tables), tables.weaponMaxDamage[static_cast<size_t>(item.type)] + tables.materialBonus[static_cast<size_t>(item.material)] / 5);
 }
 
 int arena::armorRating(const Item &item, const ItemTables &tables)
 {
-	if (item.kind != ItemKind::Armor)
+	if (item.kind != ItemKind::Armor || isBroken(item))
 	{
 		return 0;
 	}

@@ -44,6 +44,12 @@ namespace
 
 std::string arena::itemName(const Game &game, const Item &item)
 {
+	if (isBroken(item))
+	{
+		Item whole = item;
+		whole.wear = 0;
+		return itemName(game, whole) + " " + game.getText().get("Items.Broken");
+	}
 	const Localization &text = game.getText();
 	const ItemTables &tables = game.getData().getItems();
 	if (item.artifact >= 0) return text.get("Artifacts.Name" + std::to_string(item.artifact));
@@ -82,7 +88,8 @@ std::string arena::itemDetails(const Game &game, const Item &item)
 	const Localization &text = game.getText();
 	const ItemTables &tables = game.getData().getItems();
 	const std::string weight = kilograms(itemWeight(item, tables));
-	const std::string power = item.artifact >= 0 ? "  " + text.get("Artifacts.Power" + std::to_string(item.artifact)) : std::string();
+	const std::string power = (item.artifact >= 0 ? "  " + text.get("Artifacts.Power" + std::to_string(item.artifact)) : std::string())
+		+ (wears(item) && item.wear > 0 ? "  " + ui::format(text.get("Items.Condition"), { std::to_string(conditionPercent(item)) }) : std::string());
 	switch (item.kind)
 	{
 	case ItemKind::Weapon:

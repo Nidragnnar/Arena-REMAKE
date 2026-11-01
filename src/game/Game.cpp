@@ -411,8 +411,8 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 		else if (key.rfind("Inventory.Item", 0) == 0)
 		{
 			// Item = tipo, id, classe de armadura, material, equipado[, artefato]
-			int kind = 0, type = 0, armorClass = 0, material = 0, equipped = 0, artifactId = -1, magicGroup = -1, magicIndex = 0, charges = 0, enchant = -1;
-			if (std::sscanf(value.c_str(), "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", &kind, &type, &armorClass, &material, &equipped, &artifactId, &magicGroup, &magicIndex, &charges, &enchant) >= 5)
+			int kind = 0, type = 0, armorClass = 0, material = 0, equipped = 0, artifactId = -1, magicGroup = -1, magicIndex = 0, charges = 0, enchant = -1, wear = 0;
+			if (std::sscanf(value.c_str(), "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", &kind, &type, &armorClass, &material, &equipped, &artifactId, &magicGroup, &magicIndex, &charges, &enchant, &wear) >= 5)
 			{
 				Item item;
 				item.kind = static_cast<ItemKind>(std::clamp(kind, 0, 3));
@@ -421,6 +421,7 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 				item.magicIndex = magicIndex;
 				item.charges = charges;
 				item.enchant = enchant;
+				item.wear = std::max(0, wear);
 				item.type = type;
 				item.armorClass = static_cast<ArmorClass>(std::clamp(armorClass, 0, 2));
 				item.material = std::clamp(material, 0, MaterialCount - 1);
@@ -508,12 +509,12 @@ bool arena::Game::saveCharacter(const std::filesystem::path &path, const std::st
 		file << "Attribute" << i << "=" << c.attributes[static_cast<size_t>(i)] << "\n";
 	}
 
-	file << "\n[Inventory]\n# tipo (0 arma, 1 armadura, 2 poção, 3 artefato), id, classe (0 placas, 1 malha, 2 couro), material, equipado, artefato, item mágico (grupo, índice, cargas/bônus), encantamento\n";
+	file << "\n[Inventory]\n# tipo (0 arma, 1 armadura, 2 poção, 3 artefato), id, classe (0 placas, 1 malha, 2 couro), material, equipado, artefato, item mágico (grupo, índice, cargas/bônus), encantamento, desgaste\n";
 	for (size_t i = 0; i < c.inventory.size(); i++)
 	{
 		const Item &item = c.inventory[i];
 		file << "Item" << i << "=" << static_cast<int>(item.kind) << "," << item.type << "," << static_cast<int>(item.armorClass)
-			<< "," << item.material << "," << (item.equipped ? 1 : 0) << "," << item.artifact << "," << item.magicGroup << "," << item.magicIndex << "," << item.charges << "," << item.enchant << "\n";
+			<< "," << item.material << "," << (item.equipped ? 1 : 0) << "," << item.artifact << "," << item.magicGroup << "," << item.magicIndex << "," << item.charges << "," << item.enchant << "," << item.wear << "\n";
 	}
 
 	file << "\n[Spellbook]\n# feitiços conhecidos (índices do SPELLSG.65) e o preparado para a tecla Q\nKnown=";

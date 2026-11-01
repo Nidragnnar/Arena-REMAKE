@@ -187,8 +187,8 @@ Comandos: `k:X`, `enter`, `esc`, `up`, `down`, `left`, `right`, `bs`, `click:x,y
 - O original vende feitiços na guilda dos magos; o remake dá um livro inicial às classes que conjuram:
   Dardo de Fogo, Cura Leve e Luz, mais um ou dois da classe (Escudo para o Espadachim Arcano, Raio de Gelo e
   Abrir para o Mago, Cura e Curar Veneno para o Curandeiro...).
-- Custo em magia: custo do arquivo ÷ 10 (no original é custo ÷ nível do personagem; ÷ 10 equivale a um
-  personagem de nível 10, até existirem níveis). 1 rodada = 5 s reais, como no original.
+- Custo em magia: custo do arquivo ÷ nível do conjurador, como no original (o mesmo feitiço fica mais barato a cada
+  nível; os efeitos que crescem com o nível compensam). 1 rodada = 5 s reais, como no original.
 - Conjurar mostra as mãos (`SPELL.IMG`) e a animação do elemento (`FIRE/ICE/SHOCK/MAGIC/SPARKLE.CFA`).
   Alvos: conjurador, toque, projétil (esfera luminosa com luz própria), área ao redor e área à distância.
 - Efeitos implementados: dano, dano contínuo, veneno, paralisia (a criatura congela), roubo de vida,
@@ -565,7 +565,10 @@ voo por perto e a paralisia. Armadilha prende o alvo numa jaula mágica (cerca d
 
 ### Clima na viagem
 
-O tempo na cidade de partida entra no cálculo dos dias de viagem pela tabela do executável (chuva e neve atrasam).
+Chuva ou neve na cidade de partida entram no cálculo dos dias de viagem pela tabela do executável (por terreno);
+nas viagens longas atrasam (ex.: Reich Gradkeep a North Point, 26 dias com tempo limpo, 35 com chuva). O tempo
+nublado conta como limpo: a coluna dele na tabela acelera a viagem em alguns terrenos, sinal de uma codificação do
+original ainda não entendida. Só o tempo da partida conta, não o do caminho.
 
 ### Feriados
 

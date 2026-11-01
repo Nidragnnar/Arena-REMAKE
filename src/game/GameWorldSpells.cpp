@@ -157,7 +157,7 @@ void arena::GameWorldScreen::castReadySpell()
 		return;
 	}
 	if (power) this->powerRecharge[spell->index] = artifact::PowerRecharge;
-	const int cost = power ? 0 : spell->castingCost();
+	const int cost = power ? 0 : spell->castingCost(this->game.getCharacter().level);
 	if (this->spellPoints < cost)
 	{
 		this->showMessage(ui::format(text.get("Spells.NotEnough"), { spellName(this->game, *spell), std::to_string(cost) }), 2.5);

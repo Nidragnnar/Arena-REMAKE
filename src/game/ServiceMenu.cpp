@@ -193,7 +193,7 @@ void arena::ServiceMenu::rebuild(const Game &game)
 				if (spell.goldCost > 0 && !spell.artifactPower() && std::find(c.spells.begin(), c.spells.end(), spell.index) == c.spells.end()) list.push_back(&spell);
 			std::stable_sort(list.begin(), list.end(), [](const Spell *a, const Spell *b) { return a->goldCost < b->goldCost; });
 			for (const Spell *spell : list)
-				this->rows.push_back({ spellName(game, *spell), ui::format(text.get("Shop.SpellDetail"), { std::to_string(spell->castingCost()) }), half(this->price(spell->goldCost * 2), this->festival == Effect::SpellsHalf), BuySpell, spell->index, true });
+				this->rows.push_back({ spellName(game, *spell), ui::format(text.get("Shop.SpellDetail"), { std::to_string(spell->castingCost(game.getCharacter().level)) }), half(this->price(spell->goldCost * 2), this->festival == Effect::SpellsHalf), BuySpell, spell->index, true });
 		}
 		else if (this->tab == 3)
 		{
@@ -660,5 +660,5 @@ void arena::ServiceMenu::renderMaker(kit::Painter &painter, const Game &game, co
 	{
 		y += painter.paragraph(fonts.arena, line, Rect{ left, y, page.w - 24 * u, 30 * u }, col::Ink) + 2 * u;
 	}
-	painter.text(fonts.arena, ui::format(text.get("Maker.Cost"), { std::to_string(spell.castingCost()) }), left, y + 2 * u, col::InkSoft, TextAlign::Left, false);
+	painter.text(fonts.arena, ui::format(text.get("Maker.Cost"), { std::to_string(spell.castingCost(game.getCharacter().level)) }), left, y + 2 * u, col::InkSoft, TextAlign::Left, false);
 }

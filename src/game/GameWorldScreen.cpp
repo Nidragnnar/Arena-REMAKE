@@ -18,6 +18,7 @@
 
 namespace
 {
+	bool logMessages = false; // comando de teste logmsg
 	constexpr float Pi = 3.14159265f;
 	constexpr float PlayerRadius = 0.2f;
 	constexpr float EyeHeight = 0.48f;
@@ -347,7 +348,7 @@ void arena::GameWorldScreen::drawAutomap(kit::Painter &painter, int width, int h
 			else if (cell.isLevelDown) tint = hud::rgb(230, 190, 60);
 			else if (cell.type == CellType::Door) tint = hud::rgb(200, 120, 40);
 			else if (cell.type == CellType::Raised) tint = hud::rgb(170, 150, 120);
-			else if (cell.chasm) tint = cell.chasmKind == ChasmKind::Lava ? hud::rgb(200, 70, 30) : hud::rgb(60, 96, 170);
+			else if (cell.chasm) tint = cell.chasmKind == ChasmKind::Lava ? hud::rgb(200, 70, 30) : cell.chasmKind == ChasmKind::Wet ? hud::rgb(60, 96, 170) : hud::rgb(30, 26, 22); // fosso seco: escuro
 			hud::fillRect(frame, ox + c * cellPx, oy + r * cellPx, cellPx, cellPx, tint);
 		}
 
@@ -969,6 +970,13 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 		return false;
 	}
 
+	if (name == "logmsg")
+	{
+		// logmsg imprime no terminal cada mensagem mostrada na tela (teste).
+		logMessages = true;
+		return true;
+	}
+
 	if (name == "cells" && this->loaded)
 	{
 		// cells:raio imprime o tipo, chão e andares das células em volta (depuração).
@@ -981,7 +989,7 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 			{
 				const Cell &c = this->level.cell(cx, cz);
 				char item[48];
-				std::snprintf(item, sizeof(item), "%d/%d/%d%s%s ", static_cast<int>(c.type), c.floorTexture, c.upperStories, c.chasm ? "~" : "", (cx == px && cz == pz) ? "@" : "");
+				std::snprintf(item, sizeof(item), "%d/%d/%d%s%s ", static_cast<int>(c.type), c.floorTexture, c.upperStories, !c.chasm ? "" : c.chasmKind == ChasmKind::Wet ? "~w" : c.chasmKind == ChasmKind::Lava ? "~l" : "~d", (cx == px && cz == pz) ? "@" : "");
 				line += item;
 			}
 			std::printf("%3d: %s\n", cx, line.c_str());
@@ -1312,8 +1320,12 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 		std::sscanf(arg.c_str(), "%d,%d", &p, &l);
 		const CityLocation *from = this->currentCity(), *to = this->game.getData().getCity(p, l);
 		if (!from || !to) return false;
-		std::printf("de %s (%d,%d) a %s (%d,%d): %d dias\n", from->name.c_str(), from->globalX, from->globalY, to->name.c_str(), to->globalX, to->globalY,
-			this->game.getData().travelDays(*from, *to, clock::month(this->game.getCharacter().gameMinutes)));
+		const int month = clock::month(this->game.getCharacter().gameMinutes);
+		std::printf("de %s (%d,%d) a %s (%d,%d): %d dias (limpo), %d (nublado), %d (chuva), %d (neve), %d (patrulheiro); tempo hoje %d\n",
+			from->name.c_str(), from->globalX, from->globalY, to->name.c_str(), to->globalX, to->globalY,
+			this->game.getData().travelDays(*from, *to, month, 0), this->game.getData().travelDays(*from, *to, month, 1),
+			this->game.getData().travelDays(*from, *to, month, 2), this->game.getData().travelDays(*from, *to, month, 3),
+			this->game.getData().travelDays(*from, *to, month, 0, true), weatherOf(*from, this->game.getCharacter().gameMinutes));
 		return true;
 	}
 
@@ -1540,7 +1552,8 @@ std::string arena::GameWorldScreen::creatureLabel(int creature) const
 {
 	// Nome no HUD: o da criatura ou, para humanos, a classe ("Cavaleira", "Mago").
 	const CreatureDefinition &def = this->creatures.definitionOf(creature);
-	if (def.humanClass >= 0) return this->game.localized(std::string("Classes.Name") + std::to_string(def.humanClass) + (def.male ? "" : "_F"), this->game.className(def.humanClass));
+	// O gênero é o do inimigo (localized escolheria pelo do jogador).
+	if (def.humanClass >= 0) return this->game.getText().getOr(std::string("Classes.Name") + std::to_string(def.humanClass) + (def.male ? "" : "_F"), this->game.className(def.humanClass));
 	const int definition = this->creatures.getCreatures()[static_cast<size_t>(creature)].definition;
 	return this->game.getText().getOr("Creatures.Name" + std::to_string(this->textIndexOf(definition)), def.originalName);
 }
@@ -1636,6 +1649,7 @@ void arena::GameWorldScreen::resolveSwing()
 	if (this->creatures.damage(target, amount))
 	{
 		this->rewardKill(target, maxHp);
+		if (critical) this->showMessage(text.get("World.CriticalPrefix") + " " + this->message, 3.0);
 	}
 	else
 	{
@@ -1708,6 +1722,7 @@ void arena::GameWorldScreen::showMessage(const std::string &text, double seconds
 {
 	this->message = text;
 	this->messageTimer = seconds;
+	if (logMessages) std::printf("mensagem: %s\n", text.c_str());
 }
 
 bool arena::GameWorldScreen::collides(float px, float pz) const
@@ -2929,7 +2944,7 @@ void arena::GameWorldScreen::drawHud(std::vector<uint32_t> &pixels, int width, i
 					if (cell.type == CellType::Wall) tint = cell.isExit ? rgb(230, 190, 60) : rgb(40, 32, 24);
 					else if (cell.type == CellType::Door) tint = this->level.doorOpenness(cx, cz) > 0.5f ? rgb(140, 96, 50) : rgb(200, 120, 40);
 					else if (cell.type == CellType::Raised) tint = rgb(120, 104, 84);
-					else if (cell.chasm) tint = rgb(46, 76, 140);
+					else if (cell.chasm) tint = cell.chasmKind == ChasmKind::Lava ? rgb(150, 55, 25) : cell.chasmKind == ChasmKind::Wet ? rgb(46, 76, 140) : rgb(24, 20, 16);
 				}
 				clippedCell(mapX + (c + Radius) * cellPx + offsetX, mapY + (row + Radius) * cellPx + offsetY, tint);
 			}
@@ -2983,7 +2998,7 @@ void arena::GameWorldScreen::drawHud(std::vector<uint32_t> &pixels, int width, i
 	std::string spellLine = text.get("Hud.NoSpell");
 	if (const Spell *ready = this->game.getData().getSpells().find(character.readySpell))
 	{
-		spellLine = spellName(this->game, *ready) + " (" + std::to_string(artifact::isGranted(this->game.getCharacter(), ready->index) ? 0 : ready->castingCost()) + ")";
+		spellLine = spellName(this->game, *ready) + " (" + std::to_string(artifact::isGranted(this->game.getCharacter(), ready->index) ? 0 : ready->castingCost(this->game.getCharacter().level)) + ")";
 	}
 	painter.text(fonts.arena, text.get("Hud.Spell"), right.x + 9 * u, ry, col::TextDim);
 	painter.text(fonts.arena, fitted(text.get("Hud.Spell"), spellLine), right.x + right.w - 9 * u, ry, rgb(170, 190, 255), TextAlign::Right);
@@ -4154,7 +4169,11 @@ void arena::GameWorldScreen::updateArrows(double dt)
 					const int maxHp = victim.maxHp;
 					this->playAt("ARROWHT.VOC", victim.x, victim.z);
 					this->wearEquipment(true, -1);
-					if (this->creatures.damage(hit, a.damage)) this->rewardKill(hit, maxHp);
+					if (this->creatures.damage(hit, a.damage))
+					{
+						this->rewardKill(hit, maxHp);
+						if (a.critical) this->showMessage(text.get("World.CriticalPrefix") + " " + this->message, 3.0);
+					}
 					else this->showMessage(ui::format(text.get(a.critical ? "World.PlayerCritical" : "World.PlayerHit"), { this->creatureRef(hit, false), std::to_string(a.damage) }), 2.0);
 				}
 				done = true;

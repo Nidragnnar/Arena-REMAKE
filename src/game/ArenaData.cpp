@@ -602,6 +602,9 @@ void arena::ArenaData::nameRandomDungeons(const std::vector<std::string> &patter
 
 int arena::ArenaData::travelDays(const CityLocation &from, const CityLocation &to, int month, int weatherIndex, bool ranger) const
 {
+	// Só chuva (2) e neve (3) mudam a viagem: a coluna de tempo nublado da tabela tem valores acima de 100 (viagem
+	// mais rápida) em alguns terrenos, sinal de uma codificação do original ainda não entendida; fica como tempo limpo.
+	if (weatherIndex != 2 && weatherIndex != 3) weatherIndex = 0;
 	// Soma o tempo de cada ponto da linha (Bresenham) pela velocidade do terreno naquele mês.
 	int x0 = from.globalX, y0 = from.globalY;
 	const int x1 = to.globalX, y1 = to.globalY;

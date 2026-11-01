@@ -99,6 +99,7 @@ void arena::ServiceMenu::open(const Game &game, Kind openKind, const std::string
 	this->scroll = 0;
 	this->notice.clear();
 	this->frameW = this->frameH = 1;
+	this->festival = holiday::effectToday(game.getCharacter().gameMinutes);
 	if (openKind == Kind::Equipment) this->stock = makeStock(game.getData().getItems(), stockSeed, game.getCharacter().level);
 	if (openKind == Kind::MagesGuild)
 	{
@@ -116,13 +117,17 @@ void arena::ServiceMenu::rebuild(const Game &game)
 	const ItemTables &tables = game.getData().getItems();
 	const CharacterDraft &c = game.getCharacter();
 	this->rows.clear();
+	// Feriados: metade do preço ou de graça, conforme o dia (Holidays.h).
+	auto half = [](int value, bool when) { return when ? std::max(1, value / 2) : value; };
+	using holiday::Effect;
 	switch (this->kind)
 	{
 	case Kind::Equipment:
 		if (this->tab == 0)
 		{
 			for (size_t i = 0; i < this->stock.size(); i++)
-				this->rows.push_back({ itemName(game, this->stock[i]), itemDetails(game, this->stock[i]), this->price(itemPrice(this->stock[i], tables)), BuyItem, static_cast<int>(i), true });
+				this->rows.push_back({ itemName(game, this->stock[i]), itemDetails(game, this->stock[i]),
+					half(this->price(itemPrice(this->stock[i], tables)), this->festival == Effect::ShopsHalf || (this->festival == Effect::WeaponsHalf && this->stock[i].kind == ItemKind::Weapon)), BuyItem, static_cast<int>(i), true });
 		}
 		else if (this->tab == 2)
 		{
@@ -155,12 +160,12 @@ void arena::ServiceMenu::rebuild(const Game &game)
 		if (this->tab == 0)
 		{
 			for (int i = 0; i < 15; i++)
-				this->rows.push_back({ text.getOr("Shop.Drink" + std::to_string(i), tables.drinkNames[static_cast<size_t>(i)]), std::string(), this->price(tables.drinkPrice[static_cast<size_t>(i)]), Drink, i, true });
+				this->rows.push_back({ text.getOr("Shop.Drink" + std::to_string(i), tables.drinkNames[static_cast<size_t>(i)]), std::string(), this->festival == Effect::FreeDrinks ? 0 : this->price(tables.drinkPrice[static_cast<size_t>(i)]), Drink, i, true });
 		}
 		else if (this->tab == 1)
 		{
 			for (int i = 0; i < 4; i++)
-				this->rows.push_back({ text.get("Shop.Room" + std::to_string(i)), text.get("Shop.RoomDetail"), this->price(RoomPrices[i]), Room, i, true });
+				this->rows.push_back({ text.get("Shop.Room" + std::to_string(i)), text.get("Shop.RoomDetail"), this->festival == Effect::FreeRoom ? 0 : this->price(RoomPrices[i]), Room, i, true });
 		}
 		else
 		{
@@ -173,10 +178,10 @@ void arena::ServiceMenu::rebuild(const Game &game)
 	{
 		const int missing = std::max(0, c.maxHealth - this->health);
 		this->rows.push_back({ text.get("Shop.Heal"), ui::format(text.get("Shop.HealDetail"), { std::to_string(this->health), std::to_string(c.maxHealth) }),
-			this->price(std::max(10, missing * 2)), Heal, 0, missing > 0 });
+			this->festival == Effect::FreeHealing ? 0 : half(this->price(std::max(10, missing * 2)), this->festival == Effect::TempleHalf), Heal, 0, missing > 0 });
 		// Doença pega de uma criatura: o sacerdote cura por 100 de ouro (mais nas doenças demoradas).
 		if (c.disease >= 0)
-			this->rows.push_back({ text.get("Shop.CureDisease"), text.get("Shop.CureDiseaseDetail"), this->price(game.getData().longDisease(c.disease) ? 300 : 100), CureDisease, 0, true });
+			this->rows.push_back({ text.get("Shop.CureDisease"), text.get("Shop.CureDiseaseDetail"), this->festival == Effect::FreeCures ? 0 : half(this->price(game.getData().longDisease(c.disease) ? 300 : 100), this->festival == Effect::TempleHalf), CureDisease, 0, true });
 		break;
 	}
 	case Kind::MagesGuild:
@@ -188,12 +193,12 @@ void arena::ServiceMenu::rebuild(const Game &game)
 				if (spell.goldCost > 0 && !spell.artifactPower() && std::find(c.spells.begin(), c.spells.end(), spell.index) == c.spells.end()) list.push_back(&spell);
 			std::stable_sort(list.begin(), list.end(), [](const Spell *a, const Spell *b) { return a->goldCost < b->goldCost; });
 			for (const Spell *spell : list)
-				this->rows.push_back({ spellName(game, *spell), ui::format(text.get("Shop.SpellDetail"), { std::to_string(spell->castingCost()) }), this->price(spell->goldCost * 2), BuySpell, spell->index, true });
+				this->rows.push_back({ spellName(game, *spell), ui::format(text.get("Shop.SpellDetail"), { std::to_string(spell->castingCost()) }), half(this->price(spell->goldCost * 2), this->festival == Effect::SpellsHalf), BuySpell, spell->index, true });
 		}
 		else if (this->tab == 3)
 		{
 			for (size_t i = 0; i < this->stock.size(); i++)
-				this->rows.push_back({ itemName(game, this->stock[i]), itemDetails(game, this->stock[i]), this->price(itemPrice(this->stock[i], tables)), BuyMagic, static_cast<int>(i), true });
+				this->rows.push_back({ itemName(game, this->stock[i]), itemDetails(game, this->stock[i]), half(this->price(itemPrice(this->stock[i], tables)), this->festival == Effect::MagicHalf), BuyMagic, static_cast<int>(i), true });
 		}
 		else
 		{
@@ -204,6 +209,37 @@ void arena::ServiceMenu::rebuild(const Game &game)
 	}
 
 	if (this->selected >= static_cast<int>(this->rows.size())) this->selected = -1;
+}
+
+arena::OverlayResult arena::ServiceMenu::steal(Game &game, const Row &row)
+{
+	// Pegar sem pagar: quanto mais cara a peça, mais o vendedor vigia. Pego, ele chama a guarda.
+	OverlayResult result;
+	const Localization &text = game.getText();
+	CharacterDraft &c = game.getCharacter();
+	const Item item = this->stock[static_cast<size_t>(row.index)];
+	if (carriedWeight(game) + itemWeight(item, game.getData().getItems()) > maxCarryWeight(game))
+	{
+		this->notice = text.get("Loot.TooHeavy");
+		this->noticeGood = false;
+		return result;
+	}
+	if (static_cast<int>(game.getRandom()() % 100u) >= stealChance(game, std::min(60, row.price / 20)))
+	{
+		result.close = true;
+		result.crime = true;
+		result.message = text.get("Shop.Caught");
+		return result;
+	}
+	c.inventory.push_back(item);
+	this->stock.erase(this->stock.begin() + row.index);
+	this->selected = -1;
+	result.inventoryChanged = true;
+	this->notice = ui::format(text.get("Shop.Stolen"), { row.label });
+	this->noticeGood = true;
+	game.playSound("CLICKS.VOC", 0.4f);
+	this->rebuild(game);
+	return result;
 }
 
 arena::OverlayResult arena::ServiceMenu::confirm(Game &game, const Row &row)
@@ -340,6 +376,7 @@ arena::OverlayResult arena::ServiceMenu::handleInput(const InputEvent &event, Ga
 		this->rebuild(game);
 	}
 	else if (event.isKey(InputEvent::Key::Enter) && this->selected >= 0 && this->selected < count) return this->confirm(game, this->rows[static_cast<size_t>(this->selected)]);
+	else if (event.isHotkey('P') && this->canSteal() && this->selected >= 0 && this->selected < count) return this->steal(game, this->rows[static_cast<size_t>(this->selected)]);
 	else if (event.type == InputEvent::Type::MouseWheel)
 	{
 		this->scroll = std::clamp(this->scroll - (event.dy > 0 ? 1 : -1) * 3, 0, std::max(0, count - this->visibleRows));
@@ -476,7 +513,7 @@ void arena::ServiceMenu::render(kit::Painter &painter, const Game &game)
 		if (!row.detail.empty()) painter.text(fonts.arena, row.detail, r.x + 6 * u, r.y + 11 * u, col::InkSoft, TextAlign::Left, false);
 		const bool affordable = row.action == SellItem || c.gold >= row.price;
 		if (row.action != Talk)
-			painter.text(fonts.arena, ui::format(text.get("Shop.Price"), { std::to_string(row.price) }), r.x + r.w - 6 * u, r.y + 6 * u,
+			painter.text(fonts.arena, row.price == 0 && row.action != SellItem ? text.get("Shop.Free") : ui::format(text.get("Shop.Price"), { std::to_string(row.price) }), r.x + r.w - 6 * u, r.y + 6 * u,
 				affordable ? hud::rgb(110, 70, 10) : col::Danger, TextAlign::Right, false);
 	}
 
@@ -493,7 +530,7 @@ void arena::ServiceMenu::render(kit::Painter &painter, const Game &game)
 	if (!this->notice.empty())
 		painter.text(fonts.arena, this->notice, this->window.x + w / 2, by - 16 * u, this->noticeGood ? col::GoldBright : col::Danger, TextAlign::Center);
 	else
-		painter.text(fonts.arena, text.get("Shop.Hint"), this->window.x + w / 2, by - 16 * u, col::TextDim, TextAlign::Center);
+		painter.text(fonts.arena, text.get(this->canSteal() ? "Shop.HintSteal" : "Shop.Hint"), this->window.x + w / 2, by - 16 * u, col::TextDim, TextAlign::Center);
 
 	const char *actionKey = this->kind == Kind::Equipment && this->tab == 2 ? "Shop.ActionRepair" : this->kind == Kind::Equipment && this->tab == 1 ? "Shop.ActionSell" : this->kind == Kind::Tavern ? (this->tab == 0 ? "Shop.ActionDrink" : this->tab == 1 ? "Shop.ActionRent" : "Shop.ActionAsk")
 		: this->kind == Kind::Temple ? "Shop.ActionHeal" : "Shop.ActionBuy";

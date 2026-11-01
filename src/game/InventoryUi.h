@@ -49,6 +49,7 @@ namespace arena
 		bool rested = false; // dormiu: vida e magia cheias
 		int request = 0;     // conversa no balcão da taverna: 1 = trabalho, 2 = artefatos
 		int castSpell = -1;  // item mágico usado: feitiço a lançar sem gastar magia
+		bool crime = false;  // pego furtando no balcão: chama a guarda
 		std::string message;
 	};
 

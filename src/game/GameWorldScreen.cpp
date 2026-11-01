@@ -8,6 +8,7 @@
 #include "GameWorldScreen.h"
 #include "CityGen.h"
 #include "GameClock.h"
+#include "Holidays.h"
 #include "WildGen.h"
 #include "DungeonGen.h"
 #include "MainQuest.h"
@@ -262,6 +263,15 @@ arena::GameWorldScreen::GameWorldScreen(Game &game, const std::string &mifName) 
 		const std::string note = game.takePendingNote();
 		this->showMessage(!note.empty() ? note : ui::format(game.getText().get(this->level.isExterior() ? "City.Arrived" : "City.Entered"), { this->locationName }), 4.0);
 		this->helpTimer = 0.0;
+
+		// Feriado: anunciado uma vez por dia, ao chegar numa cidade (como no original).
+		CharacterDraft &hero = game.getCharacter();
+		const int festival = holiday::today(hero.gameMinutes);
+		if (festival >= 0 && this->level.isExterior() && !this->isWild() && this->visionText.empty() && hero.holidaySeenDay != clock::dayIndex(hero.gameMinutes))
+		{
+			hero.holidaySeenDay = clock::dayIndex(hero.gameMinutes);
+			this->openVision(game.getText().get("Holidays.Name" + std::to_string(festival)), ui::format(game.getText().get("Holidays.Text" + std::to_string(festival)), { this->locationName }));
+		}
 
 		// Palácio: o governante paga (ou cobra) o trabalho atual, ou propõe um novo.
 		const CityLocation *city = this->isPalace() && this->visionText.empty() ? this->currentCity() : nullptr;
@@ -1229,6 +1239,13 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 		return true;
 	}
 
+	if (name == "stealchance")
+	{
+		// stealchance[:d] imprime a chance de furto (%) contra a dificuldade d (teste).
+		std::printf("chance de furto: %d%%\n", stealChance(this->game, std::atoi(arg.c_str())));
+		return true;
+	}
+
 	if (name == "wear")
 	{
 		// wear:N desgasta as armas e armaduras equipadas em N golpes e imprime o estado (teste).
@@ -1899,6 +1916,7 @@ void arena::GameWorldScreen::handleInput(const InputEvent &event)
 			this->applyOverlayResult(result);
 			if (!result.inventoryChanged && (result.rested || result.healthDelta != 0)) this->persist();
 			if (result.rested) this->tryDream();
+			if (result.crime) { this->showMessage(result.message, 4.0); this->reportCrime(); }
 			if (result.request == 1) this->offerJob(false);
 			else if (result.request == 2) this->offerArtifact();
 			return;
@@ -2007,6 +2025,10 @@ void arena::GameWorldScreen::handleInput(const InputEvent &event)
 	else if (event.isHotkey('J'))
 	{
 		this->openJournal();
+	}
+	else if (event.isHotkey('P'))
+	{
+		this->tryPickpocket();
 	}
 	else if (event.isHotkey('H'))
 	{
@@ -3029,6 +3051,12 @@ bool arena::GameWorldScreen::enterBuilding(int cellX, int cellZ, const Cell &cel
 		this->showMessage(text.get("City.ClosedAtNight"), 3.0);
 		return false;
 	}
+	// Descanso do Sol: as lojas de equipamento não abrem.
+	if (!wild && cell.menu == 0 && holiday::effectToday(this->game.getCharacter().gameMinutes) == holiday::Effect::ShopsClosed)
+	{
+		this->showMessage(text.get("Holidays.ShopsClosed"), 3.0);
+		return false;
+	}
 
 	// Coordenadas originais: x = coluna (Z do mundo), y = linha (X do mundo).
 	const uint16_t offset = static_cast<uint16_t>((cellX << 8) + (cellZ << 1));
@@ -3677,12 +3705,46 @@ bool arena::GameWorldScreen::tryAttackCitizen()
 	this->citizens.remove(index);
 	const Localization &text = this->game.getText();
 	this->showMessage(ui::format(text.get("World.CitizenKilled"), { this->locationName }), 4.0);
+	this->reportCrime();
+	return true;
+}
+
+void arena::GameWorldScreen::reportCrime()
+{
 	this->callGuards();
 	// A guarda lembra do crime por alguns dias: voltar à cidade nesse tempo traz os guardas de novo.
 	CharacterDraft &hero = this->game.getCharacter();
 	if (const CityLocation *city = this->currentCity()) hero.wanted[city->globalId] = hero.gameMinutes + WantedDays * clock::MinutesPerDay;
 	this->persist();
-	return true;
+}
+
+void arena::GameWorldScreen::tryPickpocket()
+{
+	// Morador ao alcance: chance pelo furto da classe; dá algumas moedas. Pego, ele grita e a guarda vem.
+	const int index = this->citizens.empty() ? -1 : this->citizens.findFacing(this->x, this->z, this->yaw, 2.2f);
+	const Localization &text = this->game.getText();
+	if (index < 0) { this->showMessage(text.get("World.PickpocketNobody"), 2.0); return; }
+	if (std::find(this->pickpocketed.begin(), this->pickpocketed.end(), index) != this->pickpocketed.end())
+	{
+		this->showMessage(text.get("World.PickpocketEmpty"), 2.5);
+		return;
+	}
+	this->pickpocketed.push_back(index);
+	CharacterDraft &hero = this->game.getCharacter();
+	std::mt19937 &rng = this->game.getRandom();
+	if (static_cast<int>(rng() % 100u) < stealChance(this->game, 0))
+	{
+		const int gold = 1 + static_cast<int>(rng() % static_cast<unsigned>(10 + hero.level * 5));
+		hero.gold += gold;
+		this->game.playSound("CLICKS.VOC", 0.4f);
+		this->showMessage(ui::format(text.get("World.Pickpocketed"), { std::to_string(gold) }), 3.0);
+		return;
+	}
+	this->citizens.faceTowards(index, this->x, this->z);
+	const auto [cx, cz] = this->citizens.position(index);
+	this->playAt(this->citizens.isMale(index) ? "MHIT.VOC" : "FHIT.VOC", cx, cz);
+	this->showMessage(text.get("World.PickpocketCaught"), 4.0);
+	this->reportCrime();
 }
 
 void arena::GameWorldScreen::callGuards()

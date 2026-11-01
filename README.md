@@ -509,6 +509,22 @@ no detalhe do item. O ferreiro (loja de equipamentos) tem a aba **Consertar**: o
 desgaste. Peças gastas valem menos na venda. Na importação de saves do original, a vida gravada de cada peça vira o
 desgaste.
 
+### Furto
+
+**P** bate a carteira do morador à frente (algumas moedas; cada um só uma vez) e, no balcão da loja de equipamentos ou
+na aba de itens mágicos da guilda, pega o item escolhido sem pagar. A chance vem do divisor de furto da classe no
+executável (Int + Agi, como no arrombamento) e do nível; ladrões levam vantagem, e peças caras são vigiadas. Pego, o
+morador ou o vendedor chama a guarda e a cidade lembra do crime por alguns dias.
+
+### Feriados
+
+Os 16 feriados do original (TEMPLATE.DAT #0047..#0062) são anunciados ao chegar numa cidade no dia, com o texto
+traduzido, e mudam o comércio: bebida grátis na Vida Nova e no Fim da Colheita, quarto grátis no Dia do Coração, cura
+grátis na Prece do Vento Sul, doenças curadas de graça nos Plantios, templos pela metade no Meio do Ano e na Prece do
+Vento Norte, lojas de equipamento pela metade no Festival dos Mercadores (só as armas no dos Guerreiros) e fechadas no
+Descanso do Sol, itens mágicos pela metade em Contos e Velas, feitiços pela metade no Festival das Bruxas e, no Dia do
+Bufão, todos de olho nos batedores de carteira (furto mais difícil).
+
 ## Roteiro
 
 1. ~~Formatos base, título e menu principal em PT-BR~~ ✅

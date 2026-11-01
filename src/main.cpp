@@ -84,7 +84,7 @@ namespace
 	{
 		{ "Forward", 'W' }, { "Back", 'S' }, { "StrafeLeft", 'A' }, { "StrafeRight", 'D' }, { "Attack", 'F' }, { "Use", 'E' },
 		{ "Cast", 'Q' }, { "Rest", 'R' }, { "Character", 'C' }, { "Inventory", 'I' }, { "Spellbook", 'B' }, { "Map", 'M' },
-		{ "Travel", 'T' }, { "Journal", 'J' }, { "Help", 'H' }
+		{ "Travel", 'T' }, { "Journal", 'J' }, { "Help", 'H' }, { "Steal", 'P' }
 	};
 
 	Settings loadSettings(const std::filesystem::path &path)

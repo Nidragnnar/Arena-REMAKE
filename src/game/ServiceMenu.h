@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "../render3d/UiKit.h"
+#include "Holidays.h"
 #include "InventoryUi.h"
 
 namespace arena
@@ -42,6 +43,10 @@ namespace arena
 		std::string makerName;
 		std::vector<std::pair<Rect, int>> makerButtons;
 		OverlayResult confirm(Game &game, const Row &row);
+		// Furto no balcão (P): só no que está à venda na loja e na guilda (itens mágicos).
+		bool canSteal() const { return (this->kind == Kind::Equipment && this->tab == 0) || (this->kind == Kind::MagesGuild && this->tab == 3); }
+		OverlayResult steal(Game &game, const Row &row);
+		holiday::Effect festival = holiday::Effect::None; // feriado de hoje: descontos e serviços grátis
 		int price(int base) const { return std::max(1, base * this->priceFactor / 100); }
 
 		Kind kind = Kind::Equipment;

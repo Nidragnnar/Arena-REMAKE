@@ -257,6 +257,10 @@ Direction6=Oeste
 Direction7=Noroeste
 Help=WASD mover - Mouse olhar - Clique/F atacar (arraste o mouse para mudar o golpe) - E usar/saquear - C ficha e itens - Q conjurar - B feitiços - J diário - R descansar - Shift correr - M mapa - Esc pausa
 CitizenKilled=Assassinato! Os guardas de %s vêm atrás de ti.
+Pickpocketed=Bateste a carteira: %s de ouro.
+PickpocketCaught="Ladrão!" O morador percebe a tua mão no bolso dele e grita pela guarda.
+PickpocketNobody=Não há ninguém ao alcance para furtar.
+PickpocketEmpty=Já limpaste os bolsos deste.
 North=N
 DoorOpens=A porta se abre.
 DoorCloses=A porta se fecha.
@@ -733,6 +737,7 @@ K13=Esc|pausa
 K14=F11|tela cheia
 K15=J|diário de missões
 K16=Espaço|pular
+K17=P|furtar (morador à frente ou item escolhido na loja)
 
 [Pause]
 Continue=Continuar
@@ -832,6 +837,10 @@ ActionBuy=Comprar
 ActionSell=Vender
 ActionDrink=Pedir
 ActionRent=Alugar
+HintSteal=Clica para escolher e de novo para comprar     P: furtar o item escolhido
+Free=grátis
+Stolen=Pegaste %s sem que o vendedor visse.
+Caught="Ladrão!" O vendedor te pegou com a mão na mercadoria e chama a guarda.
 TabRepair=Consertar
 ActionRepair=Consertar
 Repaired=O ferreiro conserta %s: como nova.
@@ -970,6 +979,7 @@ Female7=Os guardas andam nervosos com tantos forasteiros.
 
 [City]
 Arrived=Chegaste a %s.
+
 Entered=%s
 Equipment=Loja de Equipamentos de %s
 Tavern=Taverna de %s
@@ -1365,3 +1375,38 @@ Title=Mapa: %s
 Hint=Roda do mouse: aproximar   M ou Esc: fechar
 MinimapOn=Minimapa: ligado
 MinimapOff=Minimapa: desligado
+
+[Holidays]
+ShopsClosed=As lojas de equipamento estão fechadas hoje, no Descanso do Sol.
+Name0=Vida Nova
+Name1=Prece do Vento Sul
+Name2=Dia do Coração
+Name3=Primeiro Plantio
+Name4=Dia do Bufão
+Name5=Segundo Plantio
+Name6=Celebração do Meio do Ano
+Name7=Festival dos Mercadores
+Name8=Descanso do Sol
+Name9=Fim da Colheita
+Name10=Contos e Velas
+Name11=Festival das Bruxas
+Name12=Aniversário do Imperador
+Name13=Festival dos Guerreiros
+Name14=Prece do Vento Norte
+Name15=Vida Velha
+Text0=Hoje o povo de %s celebra o Festival da Vida Nova, a chegada de um novo ano. No seu Discurso da Vida Nova, o Imperador anunciou mais um aumento de impostos, e há muito resmungo por isso. Ainda assim, a tradição continua: hoje a cerveja é de graça em todas as tavernas.
+Text1=O dia 15 de Estrela da Manhã é levado muito a sério em %s, onde o chamam Prece do Vento Sul: todas as religiões de Tamriel pedem uma boa estação de plantio. Gente com todo tipo de mal corre aos templos, pois hoje os sacerdotes curam de graça.
+Text2=Hoje é 16 de Alvorada do Sol, o Dia do Coração, celebrado em toda Tamriel. Em cada casa canta-se a Lenda dos Amantes, Polydor e Eloisa, para os mais novos. Em honra deles, as estalagens de %s oferecem quarto de graça aos viajantes.
+Text3=Todo 7 de Primeira Semente, o povo de %s celebra o Primeiro Plantio, semeando simbolicamente a colheita do outono. É um festival de recomeços: vizinhos fazem as pazes, maus hábitos são largados e os doentes, curados. Os clérigos do templo mantêm uma clínica gratuita o dia todo contra venenos, doenças e paralisia.
+Text4=Cuidado: hoje é o Dia do Bufão em %s, e há peças sendo pregadas de um canto a outro da cidade. Até o conselheiro mais sisudo tenta uma brincadeira. A Guilda dos Ladrões recebe atenção especial, pois todos estão de olho nos batedores de carteira.
+Text5=O Segundo Plantio está em plena festa. As tradições são as do Primeiro Plantio, melhorias na semeadura que sugerem melhorias na alma. A clínica gratuita do templo abre pela segunda e última vez no ano, curando doenças e males. Como hoje se preza a paz, ferimentos de batalha só são tratados pelo preço cheio.
+Text6=Hoje é 16 de Meio do Ano, dia da Celebração do Meio do Ano. Talvez para aliviar a notícia anual de mais impostos, os templos de %s cobram metade da doação de sempre. Muitos, confiantes, entram nas masmorras sem preparo, e a festa costuma acabar em tragédia.
+Text7=Os caçadores de pechinchas estão nas ruas, e não é para menos: hoje, 10 de Auge do Sol, é o Festival dos Mercadores. Todas as lojas de equipamento de %s cortaram os preços pela metade. Só a Guilda dos Magos continua tão cara como sempre.
+Text8=Se pretendias comprar equipamento, terás de esperar até amanhã: todas as lojas estão fechadas em respeito ao Descanso do Sol. Templos, tavernas e a Guilda dos Magos de %s continuam abertos, mas a Guilda dos Mercadores multa pesado qualquer loja que abra hoje.
+Text9=Nenhuma festa anima tanto %s quanto a de hoje, o Fim da Colheita. O trabalho do ano acabou; é hora de aproveitar os frutos da colheita, e até os visitantes são convidados. As tavernas servem bebida de graça o dia todo, um luxo antes do aperto do inverno.
+Text10=Nenhum feriado divide tanto o povo de %s quanto o 3 de Lareira. Os mais velhos não falam o dia todo, com medo de que os espíritos dos mortos lhes entrem no corpo; a maioria celebra Contos e Velas, mas todos evitam as ruas escuras, pois esta noite os mortos andam. Só a Guilda dos Magos prospera: em honra da necromancia, todos os itens mágicos estão pela metade do preço.
+Text11=Hoje é 13 de Geada, o Festival das Bruxas, quando as forças da feitiçaria e da religião se enfrentam. A Guilda dos Magos fica com quase todo o movimento: os feitiços custam metade do preço. Demonologistas e conjuradores se reúnem no ermo fora de %s, e os sábios evitam andar por lá esta noite.
+Text12=O 30 de Geada, Aniversário do Imperador, já foi o feriado mais popular do ano, com grandes carnavais itinerantes e a Caçada ao Goblin da nobreza. Hoje essas tradições estão esquecidas; faz décadas que não há um carnaval em %s, e dizem que o Imperador já nem recebe audiências.
+Text13=Hoje é 20 de Crepúsculo do Sol, o Festival dos Guerreiros em %s. Guerreiros, espadachins e aventureiros lotam as lojas de equipamento, onde todas as armas estão pela metade do preço. Pena que o preço baixo também tente garotos sem treino, e as ruas se enchem de brigas de amadores.
+Text14=Hoje é 15 de Estrela do Entardecer, a Prece do Vento Norte, um agradecimento aos deuses pela colheita e por um inverno brando. Este ano nem a colheita foi boa nem o inverno brando em %s, mas, como gosta de dizer o governante, "podia ser muito pior". Os templos cobram metade por todos os serviços.
+Text15=No último dia do ano o Império celebra a Vida Velha. Muitos vão aos templos refletir sobre o passado; dizem que, como último ato do ano, os sacerdotes ressuscitam de graça os entes queridos. Os fiéis sabem que não é bem assim, mas chegam a %s em procissão macabra com seus mortos mesmo assim.

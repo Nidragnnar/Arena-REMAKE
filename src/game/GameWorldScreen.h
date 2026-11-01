@@ -191,6 +191,10 @@ namespace arena
 		// Crimes na cidade: golpear um morador o mata e chama os guardas.
 		bool tryAttackCitizen();
 		void callGuards();
+		void reportCrime(); // chama a guarda e a cidade lembra do crime por alguns dias
+		// Furto (P): bater a carteira do morador à frente; cada um só uma vez.
+		void tryPickpocket();
+		std::vector<int> pickpocketed;
 		bool guardsOnArrival = false; // procurado nesta cidade: os guardas aparecem logo ao chegar
 		static constexpr double WantedDays = 3.0; // dias até a guarda esquecer um crime
 		int guardDefinition = -1;

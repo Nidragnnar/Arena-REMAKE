@@ -92,6 +92,7 @@ namespace arena
 		int disease = -1;                  // doença pega de uma criatura (índice de DiseaseNames), -1 = saudável
 		double diseaseEnd = 0.0;           // minutos do jogo em que a doença passa sozinha
 		std::map<int, double> wanted;      // crimes: cidade (id global) -> minutos do jogo até a guarda esquecer
+		int holidaySeenDay = -1;           // último dia de feriado já anunciado (Holidays.h)
 		std::vector<int> grantedSpells;    // feitiços que estão no livro só por causa de itens equipados (artefatos, encantamentos)
 	};
 

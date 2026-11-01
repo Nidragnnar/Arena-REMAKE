@@ -328,6 +328,7 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 		else if (key == "Character.MaxStamina") loaded.maxStamina = number;
 		else if (key == "Character.MaxSpellPoints") loaded.maxSpellPoints = number;
 		else if (key == "Character.Gold") loaded.gold = number;
+		else if (key == "Character.HolidaySeen") loaded.holidaySeenDay = number;
 		else if (key == "Character.Disease") loaded.disease = number;
 		else if (key == "Character.DiseaseEnd") loaded.diseaseEnd = std::atof(value.c_str());
 		else if (key.rfind("Crimes.City", 0) == 0) loaded.wanted[std::atoi(key.c_str() + 11)] = std::atof(value.c_str());
@@ -503,7 +504,7 @@ bool arena::Game::saveCharacter(const std::filesystem::path &path, const std::st
 		<< "Name=" << c.name << "\nMale=" << (c.male ? 1 : 0) << "\nClass=" << c.classIndex << "\nRace=" << c.raceIndex
 		<< "\nPortrait=" << c.portraitIndex << "\nMaxHealth=" << c.maxHealth << "\nMaxStamina=" << c.maxStamina
 		<< "\nMaxSpellPoints=" << c.maxSpellPoints << "\nGold=" << c.gold << "\nLevel=" << c.level << "\nLevelPoints=" << c.levelPoints << "\nTime=" << static_cast<long long>(c.gameMinutes) << "\nExperience=" << c.experience
-		<< "\nHealth=" << c.health << "\nSpellPoints=" << c.spellPoints << "\nDisease=" << c.disease << "\nDiseaseEnd=" << static_cast<long long>(c.diseaseEnd) << "\n";
+		<< "\nHealth=" << c.health << "\nSpellPoints=" << c.spellPoints << "\nDisease=" << c.disease << "\nDiseaseEnd=" << static_cast<long long>(c.diseaseEnd) << "\nHolidaySeen=" << c.holidaySeenDay << "\n";
 	for (int i = 0; i < AttributeCount; i++)
 	{
 		file << "Attribute" << i << "=" << c.attributes[static_cast<size_t>(i)] << "\n";

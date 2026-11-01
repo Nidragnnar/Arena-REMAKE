@@ -4,9 +4,30 @@
 
 namespace
 {
-	constexpr size_t RecordSize = 85;
+	constexpr size_t RecordSize = arena::SpellRecordSize;
 	constexpr size_t NameOffset = 52;
 	constexpr size_t NameLength = 33;
+}
+
+arena::Spell arena::parseSpellRecord(const uint8_t *b, int index)
+{
+	auto u16 = [b](size_t at) { return static_cast<int>(b[at] | (b[at + 1] << 8)); };
+	Spell spell;
+	spell.index = index;
+	for (size_t k = 0; k < NameLength && b[NameOffset + k] != 0; k++) spell.originalName.push_back(static_cast<char>(b[NameOffset + k]));
+	spell.target = static_cast<SpellTarget>(b[36]);
+	spell.element = static_cast<SpellElement>(std::min<int>(b[38], 5));
+	spell.flags = u16(39);
+	for (size_t e = 0; e < 3; e++)
+	{
+		SpellEffect &effect = spell.effects[e];
+		effect.type = (b[41 + e] == 255) ? -1 : b[41 + e];
+		effect.sub = b[44 + e];
+		effect.attribute = b[47 + e];
+		for (size_t row = 0; row < 6; row++) effect.params[row] = u16((row * 3 + e) * 2);
+	}
+	spell.goldCost = u16(50);
+	return spell;
 }
 
 bool arena::SpellLibrary::load(const AssetManager &assets)
@@ -19,31 +40,10 @@ bool arena::SpellLibrary::load(const AssetManager &assets)
 
 	this->spells.clear();
 	const ByteBuffer &b = *data;
-	auto u16 = [&b](size_t at) { return static_cast<int>(b[at] | (b[at + 1] << 8)); };
 	for (size_t i = 0; (i + 1) * RecordSize <= b.size(); i++)
 	{
-		const size_t o = i * RecordSize;
-		std::string name;
-		for (size_t k = 0; k < NameLength && b[o + NameOffset + k] != 0; k++) name.push_back(static_cast<char>(b[o + NameOffset + k]));
-		if (name.empty()) continue;
-
-		Spell spell;
-		spell.index = static_cast<int>(i);
-		spell.originalName = name;
-		spell.target = static_cast<SpellTarget>(b[o + 36]);
-		spell.element = static_cast<SpellElement>(std::min<int>(b[o + 38], 5));
-		spell.flags = u16(o + 39);
-		for (size_t e = 0; e < 3; e++)
-		{
-			SpellEffect &effect = spell.effects[e];
-			effect.type = (b[o + 41 + e] == 255) ? -1 : b[o + 41 + e];
-			effect.sub = b[o + 44 + e];
-			effect.attribute = b[o + 47 + e];
-			for (size_t row = 0; row < 6; row++) effect.params[row] = u16(o + (row * 3 + e) * 2);
-		}
-
-		spell.goldCost = u16(o + 50);
-		this->spells.push_back(spell);
+		Spell spell = parseSpellRecord(b.data() + i * RecordSize, static_cast<int>(i));
+		if (!spell.originalName.empty()) this->spells.push_back(std::move(spell));
 	}
 
 	return !this->spells.empty();

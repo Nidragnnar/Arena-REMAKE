@@ -77,6 +77,7 @@ namespace arena
 		int levelPoints = 0;  // pontos de bônus de nível ainda não distribuídos
 		int health = -1; // -1 = vida cheia
 		int spellPoints = -1; // -1 = magia cheia
+		int stamina = -1; // -1 = vigor cheio
 		std::vector<int> spells; // feitiços conhecidos (índices do SPELLSG.65), até 32 como no original
 		int readySpell = -1;     // feitiço preparado para a tecla Q
 		bool spellbookKnown = false; // a ficha já tinha a seção [Spellbook]

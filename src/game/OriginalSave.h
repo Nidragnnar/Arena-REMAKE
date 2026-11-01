@@ -17,7 +17,8 @@ namespace arena
 
 		// Importa nome, raça, classe, sexo, rosto, nível, experiência, atributos, vida, magia, ouro,
 		// feitiços, a data, o inventário, os pedaços do Cajado e os artefatos; começa diante do portão da
-		// cidade onde o personagem estava (ou da natal). Os feitiços criados (SPELLS.0x) ainda não vêm.
+		// cidade onde o personagem estava (ou da natal). Os feitiços do SPELLS.0x
+		// (livro do jogador) também vêm: os da guilda pelo índice, os criados como feitiços próprios.
 		// outMap = mapa de partida ("WILD:província:local").
 		bool import(Game &game, const std::filesystem::path &arenaDir, int slot, std::string &outMap, std::string &outError);
 	}

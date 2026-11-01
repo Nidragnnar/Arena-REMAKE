@@ -301,6 +301,8 @@ namespace arena
 		struct PlayerEffect { SpellEffectType type; double remaining; int magnitude; int sub; double tick; };
 		struct CreatureDot { int creature; double remaining; double tick; int damage; };
 		int spellPoints = 0;
+		float stamina = 0.0f;      // vigor: correr e nadar cansam
+		double drownTimer = 0.0;  // nadando sem vigor: perde vida aos poucos
 		int shieldPoints = 0;
 		bool casting = false;
 		bool castReleased = false;
@@ -311,7 +313,7 @@ namespace arena
 		std::array<Texture, 6> orbTextures;            // projétil por elemento
 		std::vector<Projectile> projectiles;
 		// Flechas do arco: voam em linha reta e acertam a primeira criatura (ou parede) no caminho.
-		struct Arrow { float x, y, z, dx, dy, dz; float travelled = 0.0f; int damage = 1; int hitBonus = 0; };
+		struct Arrow { float x, y, z, dx, dy, dz; float travelled = 0.0f; int damage = 1; int hitBonus = 0; bool critical = false; };
 		std::vector<Arrow> arrows;
 		std::vector<Texture> arrowTextures; // ARROW02.CFA (a flecha vista de longe)
 		void shootArrow();

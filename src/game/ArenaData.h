@@ -155,7 +155,8 @@ namespace arena
 
 		// Dias de viagem entre dois locais pelo terreno do mapa-múndi e o mês (como no original,
 		// em tempo bom; acima de 20 dias varia um pouco).
-		int travelDays(const CityLocation &from, const CityLocation &to, int month) const;
+		// weather = tempo na partida (0 limpo, 1 nublado, 2 chuva, 3 neve: tabela do executável); Patrulheiros viajam mais rápido.
+		int travelDays(const CityLocation &from, const CityLocation &to, int month, int weather = 0, bool ranger = false) const;
 		const std::vector<CityLocation> &getCities() const { return this->cities; }
 		// Canto da província no mapa-múndi (semente das masmorras do ermo).
 		std::pair<int, int> provinceOrigin(int province) const { return province >= 0 && province < 9 ? this->provinceOrigins[static_cast<size_t>(province)] : std::pair<int, int>{ 0, 0 }; }
@@ -220,4 +221,7 @@ namespace arena
 		if (defenderClass == 9 || defenderClass == 12) chance = (chance * 8 / 256) * (defenderLevel + 1);
 		return std::max(chance, scale(attackerLevel) + 51);
 	}
+
+	// Tempo do dia numa cidade (0 limpo, 1 nublado, 2 chuva, 3 neve).
+	int weatherOf(const CityLocation &city, double gameMinutes);
 }

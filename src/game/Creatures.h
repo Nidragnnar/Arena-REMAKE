@@ -80,6 +80,7 @@ namespace arena
 		// Aplica dano; retorna true se a criatura morreu.
 		bool damage(int index, int amount);
 		void silence(int index, double seconds) { this->creatures[static_cast<size_t>(index)].silenced = std::max(this->creatures[static_cast<size_t>(index)].silenced, seconds); }
+		void clearSpells(int index) { this->creatures[static_cast<size_t>(index)].paralyzed = 0; this->creatures[static_cast<size_t>(index)].silenced = 0; }
 		void paralyze(int index, double seconds) { this->creatures[static_cast<size_t>(index)].paralyzed = std::max(this->creatures[static_cast<size_t>(index)].paralyzed, seconds); }
 		// Estado salvo: vida e posição (morta = corpo no chão).
 		// Ermo: cria uma criatura agora (reaproveita vagas sumidas) e some com as distantes.

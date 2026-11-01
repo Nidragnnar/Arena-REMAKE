@@ -299,7 +299,9 @@ Na janela de carregar (pausa ou menu principal), o botão "Arena original" lista
 (`NAMES.DAT` e `SAVEENGN.0x` na pasta do Arena). O começo do SAVEENGN é desembaralhado como no OpenTESArena e
 dele vêm nome, raça, classe, sexo, rosto, nível, experiência, atributos (escala interna 0..255), vida, magia, ouro,
 feitiços conhecidos, a data, as armas e armaduras do inventário (equipadas ou não; o tipo da arma sai do dano gravado)
-e os pedaços do Cajado (MQDATA; o passo da busca do próximo é aproximado). O personagem começa diante do portão da
+e os pedaços do Cajado (MQDATA; o passo da busca do próximo é aproximado). O livro do jogador (`SPELLS.0x`, 32
+registros no formato do SPELLSG) também vem: os iguais a um feitiço da guilda viram esse feitiço e os criados pelo
+jogador entram como feitiços próprios (só o primeiro efeito de cada, como os criados no remake). O personagem começa diante do portão da
 cidade onde estava (achada pelo nome no save) ou da natal. Também vêm as poções (tipo
 pelo SlotID, quantidade no campo do peso) e os artefatos já achados (bits da AQDATA, na ordem dos nomes do executável),
 com a busca de artefato em andamento. Os itens mágicos comuns também vêm (feitiço, atributo
@@ -532,6 +534,39 @@ a menos de 10 passos. No ermo (15% de dia, 35% à noite) e nas masmorras (25%) o
 um ou dois monstros, às vezes um salteador humano, surgem a 4..8 passos já atentos, e só se recupera a parte do
 tempo já descansada. Nas cidades, interiores e tavernas o descanso é sempre tranquilo.
 
+### Vigor
+
+Correr (Shift) gasta vigor e nadar também (Argonianos quase não se cansam na água); andando ou parado ele volta, e
+cada golpe cansa um pouco. Sem vigor não dá para correr, e quem nada exausto começa a se afogar e perde vida até sair
+da água. Descansar enche o vigor; o feitiço de cura de vigor também.
+
+### Raças e classes
+
+As habilidades descritas no manual do original (as proporções que o manual não dá são estimadas):
+
+- **Golpe crítico (3x o dano)**: chance por nível para Assassino (a maior), Ladrão, Monge (só corpo a corpo), Arqueiro
+  (só com arco), Lâmina Noturna, Acrobata, Bardo, Arrombador e Velhaco (a menor).
+- **Bônus de raça no dano**: Guardas Vermelhos (nível / 3, corpo a corpo), Elfos da Floresta (nível / 3, arco) e
+  Elfos Negros (nível / 4, qualquer arma); com arco o bônus também ajuda a acertar. Patrulheiros causam dano extra igual
+  ao nível.
+- **Contra feitiços**: um teste de resistência (Vontade e Sorte) corta o dano à metade; Monges, Nórdicos contra frio e
+  Bretões contra magia não sofrem nada ao resistir (e esses dois sofrem metade mesmo sem resistir). Bárbaros são imunes
+  a veneno. Feiticeiros absorvem o feitiço como magia (o poder dividido pelo nível) enquanto não estiverem cheios.
+- **Outros**: Argonianos nadam rápido; Khajiits e Acrobatas andam no fundo dos fossos sem perder velocidade;
+  Cavaleiros consertam sozinhos as armas e armaduras ao descansar; Curandeiros e Bárbaros recuperam mais vida num
+  descanso interrompido; Patrulheiros viajam 25% mais rápido. Já existiam: pulo dos Khajiits e Acrobatas, Altos Elfos e
+  Cavaleiros imunes a paralisia, Acrobatas e Monges difíceis de acertar.
+
+### Desintegrar, Dissipar e Armadilha
+
+Desintegrar tem a chance do feitiço (menos 5% por nível da criatura acima do conjurador) de desfazer o alvo de uma vez.
+Dissipar no alvo desfaz a paralisia, o silêncio e os venenos lançados nele; no conjurador, desfaz os feitiços inimigos em
+voo por perto e a paralisia. Armadilha prende o alvo numa jaula mágica (cerca de meio segundo por ponto da jaula).
+
+### Clima na viagem
+
+O tempo na cidade de partida entra no cálculo dos dias de viagem pela tabela do executável (chuva e neve atrasam).
+
 ### Feriados
 
 Os 16 feriados do original (TEMPLATE.DAT #0047..#0062) são anunciados ao chegar numa cidade no dia, com o texto
@@ -550,7 +585,7 @@ Bufão, todos de olho nos batedores de carteira (furto mais difícil).
 5. ~~Cidades, masmorras, moradores, diálogos, lojas, guildas, dia e noite, crimes e guardas, furto, feriados, enigmas, desgaste e conserto, emboscadas no descanso~~ ✅
 6. ~~Viagem pelo mapa de Tamriel, missão principal, trabalhos, artefatos e importação de saves originais~~ ✅
 7. Extras modernos: ~~remapeamento de controles~~ ✅, ~~gamepad~~ ✅, ~~autosave~~ ✅, ~~interface escalável~~ ✅
-8. Pendente: cansaço (fôlego), golpes críticos, habilidades de raça e de classe, efeitos de Desintegrar, Dissipar e Armadilha, clima atrasando a viagem e importação dos feitiços criados no save original
+8. ~~Vigor, golpes críticos, habilidades de raça e de classe, Desintegrar, Dissipar e Armadilha, clima na viagem e feitiços criados no save original~~ ✅
 
 ## Créditos
 

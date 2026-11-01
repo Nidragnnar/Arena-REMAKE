@@ -219,12 +219,38 @@ bool arena::original::import(Game &game, const std::filesystem::path &arenaDir, 
 	const uint32_t experience = le32(npc + ExpAt);
 	c.experience = std::max(experience < 100000000u ? static_cast<int>(experience) : 0, experienceForLevel(def, c.level));
 
-	// Feitiços conhecidos do livro padrão (os criados pelo jogador ficam no SPELLS.0x, ainda não lido).
+	// Feitiços conhecidos do livro padrão.
 	for (int i = 0; def.castsMagic && i < std::min<int>(npc[SpellCountAt], 32); i++)
 	{
 		const int spell = npc[SpellsAt + i];
 		if (data.getSpells().find(spell) && std::find(c.spells.begin(), c.spells.end(), spell) == c.spells.end()) c.spells.push_back(spell);
 	}
+
+	// Livro do jogador (SPELLS.0x, 32 registros no formato do SPELLSG): os iguais a um feitiço da guilda (nome e
+	// efeitos) viram esse feitiço; os outros foram criados pelo jogador e entram como feitiços próprios.
+	c.customSpells.clear();
+	const std::vector<uint8_t> book = def.castsMagic ? readFile(find(arenaDir, "SPELLS.0" + std::to_string(slot - 1))) : std::vector<uint8_t>();
+	for (size_t i = 0; (i + 1) * SpellRecordSize <= book.size() && c.spells.size() < 32; i++)
+	{
+		Spell spell = parseSpellRecord(book.data() + i * SpellRecordSize, -1);
+		if (spell.originalName.empty() || !spell.effects[0].valid()) continue;
+		int known = -1;
+		for (const Spell &guild : data.getSpells().getSpells())
+		{
+			bool same = guild.originalName == spell.originalName && guild.target == spell.target;
+			for (size_t e = 0; same && e < 3; e++)
+				same = guild.effects[e].type == spell.effects[e].type && guild.effects[e].sub == spell.effects[e].sub && guild.effects[e].params == spell.effects[e].params;
+			if (same) { known = guild.index; break; }
+		}
+		if (known < 0)
+		{
+			spell.index = CustomSpellBase + static_cast<int>(c.customSpells.size());
+			known = spell.index;
+			c.customSpells.push_back(spell);
+		}
+		if (std::find(c.spells.begin(), c.spells.end(), known) == c.spells.end()) c.spells.push_back(known);
+	}
+	setCustomSpells(c.customSpells);
 	c.spellbookKnown = true;
 	c.readySpell = c.spells.empty() ? -1 : c.spells.front();
 	// Inventário do original (armas e armaduras); sem nada reconhecível, o equipamento inicial da classe.

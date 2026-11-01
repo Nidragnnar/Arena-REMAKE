@@ -231,6 +231,7 @@ bool arena::GameWorldScreen::saveToSlot(int slot)
 	character.health = this->health;
 	character.experience = this->experience;
 	character.spellPoints = this->spellPoints;
+	character.stamina = static_cast<int>(this->stamina);
 	const std::string location = this->currentLocation();
 	const bool ok = this->game.saveCharacter(this->game.getSlotPath(slot), this->serializeWorld(), location);
 	this->showMessage(this->game.getText().get(ok ? "Saves.Saved" : "Saves.Failed"), 2.5);

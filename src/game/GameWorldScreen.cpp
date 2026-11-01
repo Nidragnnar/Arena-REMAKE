@@ -4,6 +4,7 @@
 
 #include "../render/Ui.h"
 #include "../render3d/Hud.h"
+#include "Abilities.h"
 #include "Artifacts.h"
 #include "GameWorldScreen.h"
 #include "CityGen.h"
@@ -130,6 +131,7 @@ arena::GameWorldScreen::GameWorldScreen(Game &game, const std::string &mifName) 
 	this->health = (saved.health > 0) ? std::min(saved.health, saved.maxHealth) : std::max(1, saved.maxHealth);
 	this->experience = saved.experience;
 	this->spellPoints = (saved.spellPoints >= 0) ? std::min(saved.spellPoints, saved.maxSpellPoints) : saved.maxSpellPoints;
+	this->stamina = static_cast<float>((saved.stamina >= 0) ? std::min(saved.stamina, saved.maxStamina) : saved.maxStamina);
 	this->loadSpellArt();
 	if (this->isDungeon() && this->level.getCreatureSpawns().empty())
 	{
@@ -486,9 +488,12 @@ void arena::GameWorldScreen::rest()
 	{
 		const int minutes = std::uniform_int_distribution<int>(10, 110)(rng);
 		character.gameMinutes += minutes;
-		this->health = std::min(character.maxHealth, this->health + (character.maxHealth - this->health) * minutes / 120);
+		// Curandeiros curam mais rápido e Bárbaros ganham vida extra pela Resistência.
+		const int healRate = character.classIndex == 4 ? 150 : character.classIndex == 15 ? 100 + character.attributes[5] / 2 : 100;
+		this->health = std::min(character.maxHealth, this->health + (character.maxHealth - this->health) * minutes * healRate / 12000);
 		if (character.classIndex != 3)
 			this->spellPoints = std::min(character.maxSpellPoints, this->spellPoints + (character.maxSpellPoints - this->spellPoints) * minutes / 120);
+		this->stamina = std::min(static_cast<float>(character.maxStamina), this->stamina + character.maxStamina * minutes / 120.0f);
 		if (this->restAmbush() > 0)
 		{
 			this->persist();
@@ -500,8 +505,13 @@ void arena::GameWorldScreen::rest()
 
 	character.gameMinutes += 120.0; // duas horas de descanso
 	this->health = std::max(1, character.maxHealth);
+	// Cavaleiros consertam sozinhos as armas e armaduras que carregam.
+	if (character.classIndex == 17)
+		for (Item &item : character.inventory)
+			if (item.wear > 0 && !isBroken(item)) item.wear = std::max(0, item.wear - std::max(1, maxCondition(item) / 4));
 	// Feiticeiros (classe 3) não recuperam magia descansando, como no original.
 	if (character.classIndex != 3) this->spellPoints = character.maxSpellPoints;
+	this->stamina = static_cast<float>(character.maxStamina);
 	this->persist();
 	this->showMessage(text.get("World.Rested"), 3.0);
 	this->tryDream();
@@ -623,6 +633,7 @@ void arena::GameWorldScreen::persist()
 	CharacterDraft &character = this->game.getCharacter();
 	character.health = this->health;
 	character.spellPoints = this->spellPoints;
+	character.stamina = static_cast<int>(this->stamina);
 	character.experience = this->experience;
 	const std::string location = this->currentLocation();
 	this->game.saveCharacter(this->game.getSavePath(), this->serializeWorld(), location);
@@ -839,6 +850,7 @@ arena::MenuState arena::GameWorldScreen::menuState() const
 	MenuState state;
 	state.health = this->health;
 	state.spellPoints = this->spellPoints;
+	state.stamina = static_cast<int>(this->stamina);
 	state.experience = this->experience;
 	state.effects = this->describeEffects();
 	for (int i = 0; i < AttributeCount; i++) state.attributeBonus[static_cast<size_t>(i)] = this->fortifyBonus(i);
@@ -1577,6 +1589,7 @@ void arena::GameWorldScreen::startSwing()
 
 	this->swinging = true;
 	this->swingResolved = false;
+	this->stamina = std::max(0.0f, this->stamina - 1.0f); // cada golpe cansa um pouco
 	this->swingTime = 0.0;
 	this->game.playSound(this->weapon.bow ? "ARROWFR.VOC" : "SWISH.VOC", 0.7f);
 }
@@ -1609,7 +1622,10 @@ void arena::GameWorldScreen::resolveSwing()
 	}
 
 	const int roll = this->weapon.minDamage + static_cast<int>(rng() % static_cast<uint32_t>(this->weapon.maxDamage - this->weapon.minDamage + 1));
-	const int amount = std::max(1, roll + damageBonusFor(character.attributes[0] + this->fortifyBonus(0)));
+	int amount = std::max(1, roll + damageBonusFor(character.attributes[0] + this->fortifyBonus(0))
+		+ ability::raceWeaponBonus(character.raceIndex, character.level, false) + ability::classDamageBonus(character.classIndex, character.level));
+	const bool critical = static_cast<int>(rng() % 1000u) < ability::criticalPerMille(character.classIndex, character.level, false);
+	if (critical) amount *= 3;
 	const Creature &victim = this->creatures.getCreatures()[static_cast<size_t>(target)];
 	const int maxHp = victim.maxHp;
 	this->playAt("EHIT.VOC", victim.x, victim.z);
@@ -1623,7 +1639,7 @@ void arena::GameWorldScreen::resolveSwing()
 	}
 	else
 	{
-		this->showMessage(ui::format(text.get("World.PlayerHit"), { this->creatureRef(target, false), std::to_string(amount) }), 2.0);
+		this->showMessage(ui::format(text.get(critical ? "World.PlayerCritical" : "World.PlayerHit"), { this->creatureRef(target, false), std::to_string(amount) }), 2.0);
 	}
 }
 
@@ -2266,7 +2282,10 @@ void arena::GameWorldScreen::update(double dt)
 	const float length = std::sqrt(forwardInput * forwardInput + strafeInput * strafeInput);
 	if (length > 0.0f)
 	{
-		const float speed = (this->holdShift ? RunSpeed : WalkSpeed) * fdt / length;
+		float speed = (this->holdShift && this->stamina > 0.0f ? RunSpeed : WalkSpeed) * fdt / length;
+		const Cell &here = this->level.cell(static_cast<int>(std::floor(this->x)), static_cast<int>(std::floor(this->z)));
+		if (here.chasm && !this->airborne && !this->hasPlayerEffect(SpellEffectType::Levitate))
+			speed *= ability::pitSpeed(this->game.getCharacter().raceIndex, this->game.getCharacter().classIndex, here.chasmKind == ChasmKind::Wet);
 		const float fx = std::cos(this->yaw), fz = std::sin(this->yaw);
 		// Direita = forward x up = (-fz, fx) no plano XZ.
 		const float rx = -fz, rz = fx;
@@ -2283,6 +2302,40 @@ void arena::GameWorldScreen::update(double dt)
 			const bool inWater = this->level.cell(static_cast<int>(std::floor(this->x)), static_cast<int>(std::floor(this->z))).chasm && !this->hasPlayerEffect(SpellEffectType::Levitate) && !this->airborne;
 			this->game.playSound(inWater ? "SWIMMING.VOC" : (this->leftFoot ? "DIRTL.VOC" : "DIRTR.VOC"), inWater ? 0.5f : 0.35f);
 		}
+	}
+
+	// Vigor (manual): correr e nadar cansam; andando ou parado recupera. Sem vigor não dá para correr, e quem nada
+	// exausto começa a se afogar. Argonianos quase não se cansam nadando.
+	{
+		const CharacterDraft &hero = this->game.getCharacter();
+		const Cell &now = this->level.cell(static_cast<int>(std::floor(this->x)), static_cast<int>(std::floor(this->z)));
+		const bool swimming = now.chasmKind == ChasmKind::Wet && !this->airborne && !this->hasPlayerEffect(SpellEffectType::Levitate);
+		const bool running = length > 0.0f && this->holdShift && this->stamina > 0.0f;
+		float rate = length > 0.0f ? 0.6f : 1.2f;
+		if (running) rate = -2.0f;
+		if (swimming) rate = (hero.raceIndex == 7 ? -0.3f : -1.5f) + (running ? -1.0f : 0.0f);
+		const bool hadStamina = this->stamina > 0.0f;
+		this->stamina = std::clamp(this->stamina + rate * fdt, 0.0f, static_cast<float>(hero.maxStamina));
+		if (hadStamina && this->stamina <= 0.0f) this->showMessage(this->game.getText().get(swimming ? "World.Drowning" : "World.Exhausted"), 3.0);
+		if (swimming && this->stamina <= 0.0f)
+		{
+			this->drownTimer += dt;
+			if (this->drownTimer >= 2.0)
+			{
+				this->drownTimer = 0.0;
+				this->health = std::max(0, this->health - std::max(1, hero.maxHealth / 20));
+				this->hurtTimer = 0.4;
+				this->game.playSound(this->health > 0 ? "UHIT.VOC" : (hero.male ? "MDIE.VOC" : "FDIE.VOC"));
+				if (this->health <= 0)
+				{
+					this->swinging = false;
+					this->heldKeys.clear();
+					this->showMessage(this->game.getText().get("World.DeathMessage"), 1e9);
+					return;
+				}
+			}
+		}
+		else this->drownTimer = 0.0;
 	}
 
 	// Entrou numa nova célula: gatilhos de texto/som.
@@ -2905,7 +2958,7 @@ void arena::GameWorldScreen::drawHud(std::vector<uint32_t> &pixels, int width, i
 		barY += 13 * u;
 	};
 	bar(text.get("Sheet.Health"), this->health, character.maxHealth, col::Health);
-	bar(text.get("Sheet.Fatigue"), character.maxStamina, character.maxStamina, col::Stamina);
+	bar(text.get("Sheet.Fatigue"), static_cast<int>(this->stamina), character.maxStamina, col::Stamina);
 	bar(text.get("Sheet.SpellPoints"), this->spellPoints, character.maxSpellPoints, col::Magic);
 
 	const Rect right{ width - margin - panelW, height - margin - panelH, panelW, panelH };
@@ -3387,14 +3440,7 @@ arena::GameWorldScreen::Weather arena::GameWorldScreen::weather() const
 
 arena::GameWorldScreen::Weather arena::GameWorldScreen::weatherFor(const CityLocation *city, double gameMinutes)
 {
-	if (!city) return Clear;
-	ArenaRandom random(city->seed() ^ (static_cast<uint32_t>(clock::dayIndex(gameMinutes)) * 2246822519u));
-	random.next();
-	const int roll = random.next() % 100;
-	if (city->climate == CityLocation::Climate::Desert) return roll < 85 ? Clear : Overcast;
-	if (roll < 60) return Clear;
-	if (roll < 80) return Overcast;
-	return city->climate == CityLocation::Climate::Mountain ? Snow : Rain;
+	return city ? static_cast<Weather>(weatherOf(*city, gameMinutes)) : Clear;
 }
 
 void arena::GameWorldScreen::drawWeather(std::vector<uint32_t> &pixels, int width, int height)
@@ -4055,8 +4101,11 @@ void arena::GameWorldScreen::shootArrow()
 	arrow.z = this->z + arrow.dz * 0.3f;
 	arrow.y = EyeHeight + this->eyeOffset - 0.1f;
 	const int roll = this->weapon.minDamage + static_cast<int>(rng() % static_cast<uint32_t>(this->weapon.maxDamage - this->weapon.minDamage + 1));
-	arrow.damage = std::max(1, roll + damageBonusFor(character.attributes[0] + this->fortifyBonus(0)));
-	arrow.hitBonus = hitBonusFor(character.attributes[3] + this->fortifyBonus(3)) + this->weaponMaterialBonus / 5;
+	const int raceBonus = ability::raceWeaponBonus(character.raceIndex, character.level, true);
+	arrow.damage = std::max(1, roll + damageBonusFor(character.attributes[0] + this->fortifyBonus(0)) + raceBonus + ability::classDamageBonus(character.classIndex, character.level));
+	arrow.critical = static_cast<int>(rng() % 1000u) < ability::criticalPerMille(character.classIndex, character.level, true);
+	if (arrow.critical) arrow.damage *= 3;
+	arrow.hitBonus = hitBonusFor(character.attributes[3] + this->fortifyBonus(3)) + this->weaponMaterialBonus / 5 + raceBonus;
 	this->arrows.push_back(arrow);
 
 	if (this->arrowTextures.empty())
@@ -4106,7 +4155,7 @@ void arena::GameWorldScreen::updateArrows(double dt)
 					this->playAt("ARROWHT.VOC", victim.x, victim.z);
 					this->wearEquipment(true, -1);
 					if (this->creatures.damage(hit, a.damage)) this->rewardKill(hit, maxHp);
-					else this->showMessage(ui::format(text.get("World.PlayerHit"), { this->creatureRef(hit, false), std::to_string(a.damage) }), 2.0);
+					else this->showMessage(ui::format(text.get(a.critical ? "World.PlayerCritical" : "World.PlayerHit"), { this->creatureRef(hit, false), std::to_string(a.damage) }), 2.0);
 				}
 				done = true;
 				break;

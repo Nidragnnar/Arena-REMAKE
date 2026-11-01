@@ -56,6 +56,10 @@ namespace arena
 	constexpr int CustomSpellBase = 1000;
 	void setCustomSpells(std::vector<Spell> spells);
 
+	// Um registro de 85 bytes do SPELLSG.65 ou do SPELLS.0x (livro do jogador nos saves); nome vazio = registro livre.
+	constexpr size_t SpellRecordSize = 85;
+	Spell parseSpellRecord(const uint8_t *record, int index);
+
 	class SpellLibrary
 	{
 	public:

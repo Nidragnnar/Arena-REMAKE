@@ -15,6 +15,7 @@ namespace arena
 	{
 		int health = 0;
 		int spellPoints = 0;
+		int stamina = 0;
 		int experience = 0;
 		std::vector<std::string> effects; // efeitos mágicos ativos, já descritos ("Luz - 40 s")
 		std::array<int, AttributeCount> attributeBonus{}; // feitiços de reforço, encantamentos e itens mágicos

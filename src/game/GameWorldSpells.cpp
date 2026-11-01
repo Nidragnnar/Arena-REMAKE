@@ -9,6 +9,7 @@
 #include "Artifacts.h"
 #include "GameClock.h"
 #include "GameWorldScreen.h"
+#include "Abilities.h"
 #include "MainQuest.h"
 
 namespace
@@ -350,6 +351,42 @@ void arena::GameWorldScreen::applySpellToCreature(const Spell &spell, int creatu
 			}
 			break;
 		}
+		case SpellEffectType::Disintegrate:
+		{
+			// Chance de desfazer o alvo de uma vez; cai 5% por nível que a criatura tiver acima do conjurador.
+			const Creature &victim = this->creatures.getCreatures()[static_cast<size_t>(creature)];
+			const int chance = spellChance(effect, Level) - 5 * std::max(0, this->creatures.definitionOf(creature).level - Level);
+			if (static_cast<int>(rng() % 100u) < std::clamp(chance, 0, 95))
+			{
+				const int maxHp = victim.maxHp;
+				this->bursts.push_back(Burst{ victim.x, EyeHeight * 0.6f, victim.z, 0.0, 4 });
+				this->showMessage(ui::format(text.get("Spells.Disintegrated"), { this->creatureRef(creature, true) }), 3.0);
+				if (this->creatures.damage(creature, victim.hp + 1)) this->rewardKill(creature, maxHp);
+			}
+			else this->showMessage(ui::format(text.get("Spells.CreatureResisted"), { this->creatureRef(creature, true) }), 2.0);
+			break;
+		}
+		case SpellEffectType::Dispel:
+		{
+			// Dissipar no alvo: desfaz a paralisia e o silêncio lançados nele (e os venenos e maldições em curso).
+			if (static_cast<int>(rng() % 100u) < spellChance(effect, Level))
+			{
+				this->creatures.clearSpells(creature);
+				this->creatureDots.erase(std::remove_if(this->creatureDots.begin(), this->creatureDots.end(),
+					[creature](const CreatureDot &d) { return d.creature == creature; }), this->creatureDots.end());
+				this->showMessage(ui::format(text.get("Spells.CreatureDispelled"), { this->creatureRef(creature, false) }), 2.5);
+			}
+			else this->showMessage(ui::format(text.get("Spells.CreatureResisted"), { this->creatureRef(creature, true) }), 2.0);
+			break;
+		}
+		case SpellEffectType::Trap:
+		{
+			// Jaula mágica em volta do alvo: fica preso até quebrá-la (cerca de meio segundo por ponto da jaula).
+			const int cage = effect.params[0] + effect.params[1] * (Level / std::max(1, effect.params[4]));
+			this->creatures.paralyze(creature, std::clamp(cage * 0.5, 3.0, 40.0));
+			this->showMessage(ui::format(text.get("Spells.CreatureTrapped"), { this->creatureRef(creature, false) }), 3.0);
+			break;
+		}
 		default:
 			this->showMessage(ui::format(text.get("Spells.NotAvailable"), { spellName(this->game, spell) }), 3.0);
 			break;
@@ -432,6 +469,7 @@ void arena::GameWorldScreen::applySpellToSelf(const Spell &spell)
 			}
 			else
 			{
+				this->stamina = std::min(static_cast<float>(c.maxStamina), this->stamina + amount);
 				this->showMessage(text.get("Spells.Stamina"), 2.5);
 			}
 			break;
@@ -517,6 +555,23 @@ void arena::GameWorldScreen::applySpellToSelf(const Spell &spell)
 			addEffect(static_cast<SpellEffectType>(effect.type), std::max(1, spellRounds(effect, Level)) * SecondsPerRound, spellChance(effect, Level), 0);
 			this->showMessage(text.get("Spells.MagicWardOn"), 3.0);
 			break;
+		case SpellEffectType::Dispel:
+		{
+			// Dissipar em volta do conjurador: desfaz os feitiços inimigos em voo e a paralisia de quem conjura.
+			const float radius = static_cast<float>(std::max(3, p[5]));
+			const bool success = static_cast<int>(rng() % 100u) < spellChance(effect, Level);
+			int dispelled = 0;
+			if (success)
+			{
+				const size_t before = this->enemyBolts.size();
+				this->enemyBolts.erase(std::remove_if(this->enemyBolts.begin(), this->enemyBolts.end(), [this, radius](const EnemyBolt &b)
+					{ return (b.x - this->x) * (b.x - this->x) + (b.z - this->z) * (b.z - this->z) <= radius * radius; }), this->enemyBolts.end());
+				dispelled = static_cast<int>(before - this->enemyBolts.size());
+				if (this->paralysisTimer > 0.0) { this->paralysisTimer = 0.0; dispelled++; }
+			}
+			this->showMessage(text.get(dispelled > 0 ? "Spells.Dispelled" : "Spells.NothingToDispel"), 2.5);
+			break;
+		}
 		default:
 			this->showMessage(ui::format(text.get("Spells.NotAvailable"), { name }), 3.0);
 			break;
@@ -979,8 +1034,37 @@ void arena::GameWorldScreen::boltHitsPlayer(const EnemyBolt &bolt)
 		}
 	}
 
-	// Dano: o Escudo mágico absorve primeiro.
+	// Raça e classe (manual): Bárbaros são imunes a veneno; Feiticeiros absorvem o feitiço como magia (até o máximo,
+	// o poder dividido pelo nível). Um teste de resistência (Vontade e Sorte) corta o dano à metade, ou a nada para
+	// Monges, Nórdicos contra frio e Bretões contra magia (estes dois sofrem metade mesmo sem resistir).
+	const CharacterDraft &hero = this->game.getCharacter();
+	if (ability::immuneToElement(hero.classIndex, bolt.element))
+	{
+		this->showMessage(text.get("Spells.Resisted"), 2.5);
+		return;
+	}
+	const int savePercent = ability::spellSavePercent(hero.attributes[2] + this->fortifyBonus(2), hero.attributes[7] + this->fortifyBonus(7));
+	if (hero.classIndex == 3 && this->spellPoints < hero.maxSpellPoints && static_cast<int>(rng() % 100u) < savePercent + 20)
+	{
+		const int gained = std::max(1, bolt.damage / std::max(1, hero.level));
+		this->spellPoints = std::min(hero.maxSpellPoints, this->spellPoints + gained);
+		this->showMessage(ui::format(text.get("Spells.Absorbed"), { std::to_string(gained) }), 3.0);
+		return;
+	}
+	const bool halves = ability::halvesElement(hero.raceIndex, bolt.element);
 	int amount = bolt.damage;
+	if (static_cast<int>(rng() % 100u) < savePercent)
+	{
+		if (halves || hero.classIndex == 12)
+		{
+			this->showMessage(text.get("Spells.Resisted"), 2.5);
+			return;
+		}
+		amount = std::max(1, amount / 2);
+	}
+	else if (halves) amount = std::max(1, amount / 2);
+
+	// Dano: o Escudo mágico absorve primeiro.
 	const int absorbed = std::min(this->shieldPoints, amount);
 	this->shieldPoints -= absorbed;
 	amount -= absorbed;

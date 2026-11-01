@@ -41,7 +41,9 @@ void arena::TravelMenu::selectProvince(const Game &game, int newProvince)
 	for (const CityLocation &city : game.getData().getCities())
 	{
 		if (city.province != newProvince || city.name.empty() || &city == this->current || !quest::dungeonKnown(game.getCharacter(), city)) continue;
-		const int days = this->current ? game.getData().travelDays(*this->current, city, this->month) : 1;
+		// Chuva e neve na partida atrasam a viagem (tabela do original); Patrulheiros vão mais rápido.
+		const int days = this->current ? game.getData().travelDays(*this->current, city, this->month,
+			weatherOf(*this->current, game.getCharacter().gameMinutes), game.getCharacter().classIndex == 14) : 1;
 		this->places.emplace_back(&city, days);
 	}
 

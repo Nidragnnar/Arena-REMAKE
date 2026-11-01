@@ -11,6 +11,8 @@
 
 #include "../core/KeyValueFile.h"
 #include "ArenaData.h"
+#include "ArenaRandom.h"
+#include "GameClock.h"
 
 namespace
 {
@@ -598,7 +600,7 @@ void arena::ArenaData::nameRandomDungeons(const std::vector<std::string> &patter
 	}
 }
 
-int arena::ArenaData::travelDays(const CityLocation &from, const CityLocation &to, int month) const
+int arena::ArenaData::travelDays(const CityLocation &from, const CityLocation &to, int month, int weatherIndex, bool ranger) const
 {
 	// Soma o tempo de cada ponto da linha (Bresenham) pela velocidade do terreno naquele mês.
 	int x0 = from.globalX, y0 = from.globalY;
@@ -612,7 +614,7 @@ int arena::ArenaData::travelDays(const CityLocation &from, const CityLocation &t
 		int terrainIndex = 0;
 		if (!this->terrain.empty() && x0 >= 0 && y0 >= 0 && x0 < 320 && y0 < 200) terrainIndex = std::clamp(this->terrain[static_cast<size_t>(y0 * 320 + x0)] - 248, 0, 6);
 		const int climate = std::max(1, static_cast<int>(this->climateSpeed[static_cast<size_t>(terrainIndex)][static_cast<size_t>(monthIndex)]));
-		const int weather = this->weatherSpeed[static_cast<size_t>(terrainIndex)][0];
+		const int weather = this->weatherSpeed[static_cast<size_t>(terrainIndex)][static_cast<size_t>(std::clamp(weatherIndex, 0, 7))];
 		const int speed = std::max(1, climate * (weather == 0 ? 100 : weather) / 100);
 		total += 2000 / speed;
 		if (x0 == x1 && y0 == y1) break;
@@ -623,7 +625,21 @@ int arena::ArenaData::travelDays(const CityLocation &from, const CityLocation &t
 
 	int days = std::clamp(total / 100, 1, 2000);
 	if (days > 20) days += static_cast<int>((from.seed() ^ to.seed()) % 10u) - 5;
+	// Patrulheiros encurtam a viagem pelo conhecimento das trilhas (manual; a proporção é estimada).
+	if (ranger) days = std::max(1, days * 3 / 4);
 	return days;
+}
+
+int arena::weatherOf(const CityLocation &city, double gameMinutes)
+{
+	// Sorteado por cidade e por dia: 0 limpo, 1 nublado, 2 chuva, 3 neve (na ordem das tabelas do original).
+	ArenaRandom random(city.seed() ^ (static_cast<uint32_t>(clock::dayIndex(gameMinutes)) * 2246822519u));
+	random.next();
+	const int roll = random.next() % 100;
+	if (city.climate == CityLocation::Climate::Desert) return roll < 85 ? 0 : 1;
+	if (roll < 60) return 0;
+	if (roll < 80) return 1;
+	return city.climate == CityLocation::Climate::Mountain ? 3 : 2;
 }
 
 const arena::CityLocation *arena::ArenaData::getCity(int province, int localId) const

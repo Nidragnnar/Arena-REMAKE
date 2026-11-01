@@ -202,8 +202,8 @@ void arena::CharacterMenu::render(kit::Painter &painter, const Game &game, const
 	const Rect barArea{ win.x + pad, by, leftW, 12 * u };
 	painter.bar(Rect{ barArea.x, by, barArea.w, 12 * u }, state.health, c.maxHealth, col::Health,
 		text.get("Sheet.Health") + " " + std::to_string(state.health) + "/" + std::to_string(c.maxHealth)); by += 16 * u;
-	painter.bar(Rect{ barArea.x, by, barArea.w, 12 * u }, c.maxStamina, c.maxStamina, col::Stamina,
-		text.get("Sheet.Fatigue") + " " + std::to_string(c.maxStamina) + "/" + std::to_string(c.maxStamina)); by += 16 * u;
+	painter.bar(Rect{ barArea.x, by, barArea.w, 12 * u }, state.stamina, c.maxStamina, col::Stamina,
+		text.get("Sheet.Fatigue") + " " + std::to_string(state.stamina) + "/" + std::to_string(c.maxStamina)); by += 16 * u;
 	painter.bar(Rect{ barArea.x, by, barArea.w, 12 * u }, state.spellPoints, c.maxSpellPoints, col::Magic,
 		text.get("Sheet.SpellPoints") + " " + std::to_string(state.spellPoints) + "/" + std::to_string(c.maxSpellPoints)); by += 18 * u;
 	painter.text(fonts.arena, text.get("Menu.Gold") + " " + std::to_string(c.gold), barArea.x, by, col::GoldBright);

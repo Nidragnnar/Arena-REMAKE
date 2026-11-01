@@ -338,6 +338,7 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 		else if (key == "Character.Time") loaded.gameMinutes = std::max(0.0, std::atof(value.c_str()));
 		else if (key == "Character.Health") loaded.health = number;
 		else if (key == "Character.SpellPoints") loaded.spellPoints = number;
+		else if (key == "Character.Stamina") loaded.stamina = number;
 		else if (key == "Spellbook.Ready") loaded.readySpell = number;
 		else if (key == "Quest.StaffPieces") loaded.staffPieces = std::clamp(number, 0, 8);
 		else if (key == "Quest.Step") loaded.questStep = std::clamp(number, 0, 4);
@@ -504,7 +505,7 @@ bool arena::Game::saveCharacter(const std::filesystem::path &path, const std::st
 		<< "Name=" << c.name << "\nMale=" << (c.male ? 1 : 0) << "\nClass=" << c.classIndex << "\nRace=" << c.raceIndex
 		<< "\nPortrait=" << c.portraitIndex << "\nMaxHealth=" << c.maxHealth << "\nMaxStamina=" << c.maxStamina
 		<< "\nMaxSpellPoints=" << c.maxSpellPoints << "\nGold=" << c.gold << "\nLevel=" << c.level << "\nLevelPoints=" << c.levelPoints << "\nTime=" << static_cast<long long>(c.gameMinutes) << "\nExperience=" << c.experience
-		<< "\nHealth=" << c.health << "\nSpellPoints=" << c.spellPoints << "\nDisease=" << c.disease << "\nDiseaseEnd=" << static_cast<long long>(c.diseaseEnd) << "\nHolidaySeen=" << c.holidaySeenDay << "\n";
+		<< "\nHealth=" << c.health << "\nSpellPoints=" << c.spellPoints << "\nStamina=" << c.stamina << "\nDisease=" << c.disease << "\nDiseaseEnd=" << static_cast<long long>(c.diseaseEnd) << "\nHolidaySeen=" << c.holidaySeenDay << "\n";
 	for (int i = 0; i < AttributeCount; i++)
 	{
 		file << "Attribute" << i << "=" << c.attributes[static_cast<size_t>(i)] << "\n";
@@ -591,6 +592,6 @@ bool arena::Game::importOriginalSave(int slot, std::string &outError)
 	if (!original::import(*this, this->arenaDirectory, slot, map, outError)) return false;
 	this->pendingWorld.clear();
 	this->importedMap = map;
-	setCustomSpells({});
+	setCustomSpells(this->character.customSpells); // feitiços criados no original (SPELLS.0x)
 	return true;
 }

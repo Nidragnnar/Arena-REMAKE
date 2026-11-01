@@ -277,6 +277,7 @@ LockPickFailed=Não conseguiste arrombar a fechadura.
 DoorSealed=A porta está selada por magia. Nem ferramenta nem feitiço a abrem; deve haver um enigma por perto.
 RestEnemies=Não podes descansar com inimigos por perto.
 Rested=Descansaste por um tempo e recuperaste tua vida.
+RestAmbush=Acordas sobressaltado: algo se aproxima no escuro!
 PlayerHit=Acertaste %s! (-%s)
 PlayerMiss=Erraste o golpe em %s.
 CreatureKilled=Mataste %s! +%s de experiência.

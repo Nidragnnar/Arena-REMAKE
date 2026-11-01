@@ -525,6 +525,13 @@ não cedem a arrombamento, ao feitiço Abrir nem à Chave do Esqueleto; outros n
 nível. O erro abre a trava B quando ela existe (as celas de monstros do Labirinto, de Fang Lair e de Murkwood); 0 = nada.
 Errou ou deixou para depois: basta pisar na placa de novo.
 
+### Descanso
+
+R descansa duas horas e recupera vida e magia (o Feiticeiro não recupera magia), se não houver inimigos atentos
+a menos de 10 passos. No ermo (15% de dia, 35% à noite) e nas masmorras (25%) o descanso pode ser interrompido:
+um ou dois monstros, às vezes um salteador humano, surgem a 4..8 passos já atentos, e só se recupera a parte do
+tempo já descansada. Nas cidades, interiores e tavernas o descanso é sempre tranquilo.
+
 ### Feriados
 
 Os 16 feriados do original (TEMPLATE.DAT #0047..#0062) são anunciados ao chegar numa cidade no dia, com o texto
@@ -538,11 +545,12 @@ Bufão, todos de olho nos batedores de carteira (furto mais difícil).
 
 1. ~~Formatos base, título e menu principal em PT-BR~~ ✅
 2. ~~Criação de personagem completa (perguntas de classe, lista de classes, nome, gênero, raça no mapa, atributos, rosto)~~ ✅
-3. Animações FLC (abertura, cenas) e áudio (VOC + música XMI/MIDI via FluidSynth)
-4. Mundo 3D — **em andamento**: ~~Prisão Imperial (START.MIF/INF) em widescreen com olhar livre, portas, água, plataformas, sprites e luzes~~ ✅; ~~criaturas (ratos e goblins) com animações CFA, IA e combate corpo a corpo~~ ✅; ~~sons, música, gatilhos de texto e travas~~ ✅; ~~inventário, equipamentos, saque e ficha em jogo~~ ✅; ~~gráficos modernos (água/lava animadas com reflexos, luz difusa, oclusão de ambiente, bloom, renderização em várias threads)~~ ✅; ~~texturas HD com detalhe e relevo~~ ✅; ~~renderização pela placa de vídeo (OpenGL)~~ ✅; ~~magias (livro, conjuração, projéteis e efeitos)~~ ✅; ~~níveis, salvar em 10 espaços e Portão de Transição~~ ✅; ~~sprites redesenhados em PNG~~ ✅; ~~primeira cidade gerada como no original~~ ✅; ~~interiores, comércio e serviços~~ ✅; ~~moradores, diálogos, dia e noite e tempo~~ ✅; ~~ermo e viagem por Tamriel~~ ✅; ~~masmorras do ermo e com nome~~ ✅; ~~criaturas no ermo~~ ✅; ~~criação de feitiços~~ ✅; ~~trabalhos dos governantes e taverneiros e artefatos~~ ✅
-5. Cidades, masmorras, NPCs, diálogos, lojas, guildas, magias, combate
-6. Viagem pelo mapa de Tamriel, missões principais e importação de saves originais
+3. ~~Animações FLC (abertura, cenas) e áudio (VOC + música XMI/MIDI via FluidSynth)~~ ✅
+4. ~~Mundo 3D: Prisão Imperial, criaturas, combate, inventário, gráficos modernos (OpenGL, texturas HD), magias, níveis, salvar e Portão de Transição~~ ✅
+5. ~~Cidades, masmorras, moradores, diálogos, lojas, guildas, dia e noite, crimes e guardas, furto, feriados, enigmas, desgaste e conserto, emboscadas no descanso~~ ✅
+6. ~~Viagem pelo mapa de Tamriel, missão principal, trabalhos, artefatos e importação de saves originais~~ ✅
 7. Extras modernos: ~~remapeamento de controles~~ ✅, ~~gamepad~~ ✅, ~~autosave~~ ✅, ~~interface escalável~~ ✅
+8. Pendente: cansaço (fôlego), golpes críticos, habilidades de raça e de classe, efeitos de Desintegrar, Dissipar e Armadilha, clima atrasando a viagem e importação dos feitiços criados no save original
 
 ## Créditos
 

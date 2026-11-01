@@ -84,6 +84,7 @@ namespace arena
 		static constexpr double GateDuration = 2.2;
 		void playAt(const std::string &sound, float worldX, float worldZ, float volume = 1.0f);
 		void rest();
+		int restAmbush(); // monstros que interrompem o descanso; devolve quantos surgiram
 		void movePlayer(float dx, float dz);
 		bool collides(float x, float z) const;
 		void interact();

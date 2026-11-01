@@ -477,13 +477,75 @@ void arena::GameWorldScreen::rest()
 		}
 	}
 
-	this->game.getCharacter().gameMinutes += 120.0; // duas horas de descanso
-	this->health = std::max(1, this->game.getCharacter().maxHealth);
+	// No ermo e nas masmorras o descanso pode ser interrompido por monstros, como no original (mais à
+	// noite no ermo). A emboscada vem no meio das duas horas: recupera só a parte já descansada.
+	CharacterDraft &character = this->game.getCharacter();
+	std::mt19937 &rng = this->game.getRandom();
+	const int ambushChance = this->isWild() ? (clock::isNight(character.gameMinutes) ? 35 : 15) : this->isDungeon() ? 25 : 0;
+	if (ambushChance > 0 && std::uniform_int_distribution<int>(0, 99)(rng) < ambushChance)
+	{
+		const int minutes = std::uniform_int_distribution<int>(10, 110)(rng);
+		character.gameMinutes += minutes;
+		this->health = std::min(character.maxHealth, this->health + (character.maxHealth - this->health) * minutes / 120);
+		if (character.classIndex != 3)
+			this->spellPoints = std::min(character.maxSpellPoints, this->spellPoints + (character.maxSpellPoints - this->spellPoints) * minutes / 120);
+		if (this->restAmbush() > 0)
+		{
+			this->persist();
+			this->showMessage(text.get("World.RestAmbush"), 4.0);
+			return;
+		}
+		character.gameMinutes -= minutes; // nenhum lugar livre por perto: descanso normal
+	}
+
+	character.gameMinutes += 120.0; // duas horas de descanso
+	this->health = std::max(1, character.maxHealth);
 	// Feiticeiros (classe 3) não recuperam magia descansando, como no original.
-	if (this->game.getCharacter().classIndex != 3) this->spellPoints = this->game.getCharacter().maxSpellPoints;
+	if (character.classIndex != 3) this->spellPoints = character.maxSpellPoints;
 	this->persist();
 	this->showMessage(text.get("World.Rested"), 3.0);
 	this->tryDream();
+}
+
+int arena::GameWorldScreen::restAmbush()
+{
+	// Um ou dois monstros (às vezes um salteador humano) surgem a 4..8 passos, já atentos. Bichos do
+	// ermo no ermo; nas masmorras, os mesmos sorteados ao entrar (mais fortes com o nível do jogador).
+	std::mt19937 &rng = this->game.getRandom();
+	const int playerLevel = this->game.getCharacter().level;
+	std::vector<int> choices;
+	if (this->isWild())
+	{
+		static const std::vector<int> Day = { 0, 1, 2, 3, 5, 8, 13 };
+		static const std::vector<int> Night = { 0, 1, 3, 5, 6, 8, 9, 10, 11, 12, 13, 14 };
+		for (const int kind : clock::isNight(this->game.getCharacter().gameMinutes) ? Night : Day)
+		{
+			const CreatureDefinition *def = this->creatures.definition(kind);
+			if (def && def->level <= playerLevel + 2) choices.push_back(kind);
+		}
+	}
+	else
+		for (int kind = 0; kind <= std::min(22, 3 + playerLevel * 2); kind++)
+			if (this->creatures.definition(kind)) choices.push_back(kind);
+	if (choices.empty()) return 0;
+
+	const int wanted = std::uniform_int_distribution<int>(1, 2)(rng);
+	int spawned = 0;
+	for (int tries = 0; tries < 60 && spawned < wanted; tries++)
+	{
+		const float angle = std::uniform_real_distribution<float>(0.0f, 2.0f * Pi)(rng);
+		const float distance = std::uniform_real_distribution<float>(4.0f, 8.0f)(rng);
+		const int cx = static_cast<int>(std::floor(this->x + std::cos(angle) * distance)), cz = static_cast<int>(std::floor(this->z + std::sin(angle) * distance));
+		if (!this->level.inBounds(cx, cz) || this->level.blocksMovement(cx, cz) || this->level.cell(cx, cz).chasm) continue;
+		int kind = choices[std::uniform_int_distribution<size_t>(0, choices.size() - 1)(rng)];
+		if (std::uniform_int_distribution<int>(0, 99)(rng) < (this->isWild() ? 15 : 33))
+			kind = this->creatures.humanDefinition(this->game.getData(), std::uniform_int_distribution<int>(0, ClassCount - 1)(rng), rng() % 2u == 0, std::max(1, playerLevel));
+		const int index = this->creatures.spawn(this->game.getAssets(), this->palette, kind, cx + 0.5f, cz + 0.5f, rng);
+		if (index < 0) continue;
+		this->creatures.wake(index);
+		spawned++;
+	}
+	return spawned;
 }
 
 void arena::GameWorldScreen::setupWeapon()

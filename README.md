@@ -225,6 +225,14 @@ Comandos: `k:X`, `enter`, `esc`, `up`, `down`, `left`, `right`, `bs`, `click:x,y
   mais o material e o escudo) é subtraída do acerto na mesma unidade do bônus de defesa da Agilidade, como diz a UESP
   ("reduz a rolagem de ataque do inimigo"; cada 5 pontos de Agilidade valem 1 de armadura).
 
+### Pulo e mapa automático
+
+- **Pulo** (Espaço, ou A no controle, explorando): a Força dá o impulso, e Khajiits e Acrobatas pulam mais longe,
+  como no original. No ar, o jogador passa por cima de fossos e água (uma célula correndo); nunca acima do teto.
+- **Mapa automático** (M): a tela inteira com o andar ou a cidade, revelado conforme o jogador anda (5 células em
+  volta), com escadas e saídas em dourado, portas em laranja, água em azul e uma seta na posição do jogador. A roda do
+  mouse aproxima e afasta; um botão liga e desliga o minimapa. O que foi visto fica no save (`World.Explored`).
+
 ### Inimigos humanos
 
 Como no original: guerreiros, magos, ladrões, cavaleiros, monges, bárbaros... das 18 classes. Os mapas prontos os

@@ -669,6 +669,8 @@ int main(int argc, char **argv)
 
 				event.type = InputEvent::Type::KeyDown;
 				event.key = translateKey(key, event.character);
+				// Explorando, o Espaço pula (nos menus continua sendo Enter).
+				if (key == SDLK_SPACE && game.wantsRelativeMouse()) { event.key = InputEvent::Key::Character; event.character = ' '; }
 				if (event.key == InputEvent::Key::Character && settings.keyRemap.contains(event.character)) event.character = settings.keyRemap.at(event.character);
 				if (event.key != InputEvent::Key::None)
 				{
@@ -742,7 +744,7 @@ int main(int argc, char **argv)
 						toView(mx, my, click);
 						game.handleInput(click);
 					}
-					else sendKey(InputEvent::Key::Enter, 0, down);
+					else sendKey(InputEvent::Key::Character, ' ', down); // explorando, o A pula (o X usa)
 					break;
 				case SDL_CONTROLLER_BUTTON_B: case SDL_CONTROLLER_BUTTON_START: sendKey(InputEvent::Key::Escape, 0, down); break;
 				case SDL_CONTROLLER_BUTTON_X: sendKey(InputEvent::Key::Character, 'E', down); break;

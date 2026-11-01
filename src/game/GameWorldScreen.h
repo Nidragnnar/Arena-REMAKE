@@ -132,6 +132,10 @@ namespace arena
 		float x = 0, z = 0;
 		float yaw = 0, pitch = 0;
 		float eyeOffset = 0.0f;  // suaviza subida em degraus/água
+		// Pulo (Espaço): no ar, passa por cima de fossos e água.
+		float jumpHeight = 0.0f, jumpVelocity = 0.0f;
+		bool airborne = false;
+		void jump();
 		double time = 0.0;
 		double bob = 0.0;
 		std::set<char> heldKeys;
@@ -142,6 +146,12 @@ namespace arena
 		double helpTimer = 12.0;
 		bool paused = false;
 		bool showMinimap = true;
+		// Mapa automático (M): o andar inteiro, revelado conforme o jogador explora (5 células em volta).
+		std::vector<uint8_t> explored;
+		void markExplored();
+		void drawAutomap(kit::Painter &painter, int width, int height);
+		Rect automapWindow, automapMinimapButton, automapCloseButton;
+		int automapSpan = 0; // células mostradas na largura (roda do mouse aproxima)
 
 		// Combate
 		CreatureSystem creatures;
@@ -166,7 +176,7 @@ namespace arena
 		bool leftFoot = false;
 
 		// Inventário e saque (janelas sobre o mundo; o jogo pausa enquanto abertas)
-		enum class Overlay { None, Character, Loot, LevelUp, SaveLoad, Service, Dialogue, Travel, Journal };
+		enum class Overlay { None, Character, Loot, LevelUp, SaveLoad, Service, Dialogue, Travel, Journal, Automap };
 		Overlay overlay = Overlay::None;
 		CharacterMenu characterMenu;
 		LootMenu lootMenu;

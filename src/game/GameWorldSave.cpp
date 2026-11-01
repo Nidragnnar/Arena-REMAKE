@@ -87,6 +87,14 @@ std::string arena::GameWorldScreen::serializeWorld() const
 	first = true;
 	for (const auto &[rx, rz, name] : this->removedSprites) { out << (first ? "" : ";") << number(rx) << ":" << number(rz) << ":" << name; first = false; }
 
+	out << "\nExplored=";
+	for (size_t i = 0; i < this->explored.size();)
+	{
+		size_t j = i;
+		while (j < this->explored.size() && this->explored[j] == this->explored[i]) j++;
+		out << (i ? ";" : "") << (j - i) << ":" << static_cast<int>(this->explored[i]);
+		i = j;
+	}
 	out << "\n\n[Creatures]\n# vida, x, z, morta (no ermo: W = tipo, vida, x, z das criaturas vivas por perto)\n";
 	const auto &all = this->creatures.getCreatures();
 	for (size_t i = 0; i < all.size(); i++)
@@ -163,6 +171,18 @@ void arena::GameWorldScreen::restoreWorld(const std::vector<std::pair<std::strin
 					}
 				}
 				this->removedSprites.emplace_back(rx, rz, parts[2]);
+			}
+		}
+		else if (key == "World.Explored")
+		{
+			// Mapa automático: o que já foi visto neste mapa.
+			this->explored.assign(static_cast<size_t>(this->level.getWidth() * this->level.getDepth()), 0);
+			size_t at = 0;
+			for (const std::string &run : split(value, ';'))
+			{
+				int count = 0, bit = 0;
+				if (std::sscanf(run.c_str(), "%d:%d", &count, &bit) != 2) continue;
+				for (int k = 0; k < count && at < this->explored.size(); k++) this->explored[at++] = static_cast<uint8_t>(bit);
 			}
 		}
 		else if (key.rfind("Creatures.C", 0) == 0)

@@ -729,6 +729,7 @@ K12=H|esta ajuda
 K13=Esc|pausa
 K14=F11|tela cheia
 K15=J|diário de missões
+K16=Espaço|pular
 
 [Pause]
 Continue=Continuar
@@ -1352,3 +1353,9 @@ Armor10=de Atravessar Paredes
 Armor11=de Invisibilidade
 Armor12=de Reflexão de Feitiço
 Armor13=de Regeneração
+
+[Automap]
+Title=Mapa: %s
+Hint=Roda do mouse: aproximar   M ou Esc: fechar
+MinimapOn=Minimapa: ligado
+MinimapOff=Minimapa: desligado

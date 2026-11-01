@@ -283,6 +283,94 @@ arena::GameWorldScreen::GameWorldScreen(Game &game, const std::string &mifName) 
 			this->checkTriggers(this->lastCellX + dx, this->lastCellZ + dz);
 }
 
+void arena::GameWorldScreen::markExplored()
+{
+	// Revela as células em volta do jogador (raio 5, como uma tocha alcança), para o mapa automático.
+	const int w = this->level.getWidth(), d = this->level.getDepth();
+	if (this->explored.size() != static_cast<size_t>(w * d)) this->explored.assign(static_cast<size_t>(w * d), 0);
+	const int px = static_cast<int>(std::floor(this->x)), pz = static_cast<int>(std::floor(this->z));
+	for (int dx = -5; dx <= 5; dx++)
+		for (int dz = -5; dz <= 5; dz++)
+			if (dx * dx + dz * dz <= 26 && this->level.inBounds(px + dx, pz + dz)) this->explored[static_cast<size_t>((px + dx) + (pz + dz) * w)] = 1;
+}
+
+void arena::GameWorldScreen::drawAutomap(kit::Painter &painter, int width, int height)
+{
+	namespace col = kit::color;
+	const int u = painter.unit();
+	const Fonts &fonts = this->game.getFonts();
+	const Localization &text = this->game.getText();
+	if (this->explored.size() != static_cast<size_t>(this->level.getWidth() * this->level.getDepth())) this->markExplored();
+	painter.fill(Rect{ 0, 0, width, height }, hud::rgb(0, 0, 0, 160));
+	const int w = std::min(width - 8 * u, 520 * u), h = std::min(height - 8 * u, 330 * u);
+	this->automapWindow = Rect{ (width - w) / 2, (height - h) / 2, w, h };
+	const Rect &win = this->automapWindow;
+	painter.woodPanel(win, 245);
+	painter.text(fonts.a, ui::format(text.get("Automap.Title"), { this->locationName }), win.x + w / 2, win.y + 10 * u, col::GoldBright, TextAlign::Center);
+
+	// Área do mapa: um quadrado com até automapSpan células de lado, centrado no jogador (preso às bordas do nível).
+	const int lw = this->level.getWidth(), ld = this->level.getDepth();
+	if (this->automapSpan <= 0) this->automapSpan = std::clamp(std::max(lw, ld), 16, 96);
+	const int span = std::min(this->automapSpan, std::max(lw, ld));
+	const Rect area{ win.x + 12 * u, win.y + 32 * u, w - 24 * u, h - 32 * u - 34 * u };
+	painter.inset(area, false);
+	const int cellPx = std::max(1, std::min(area.w, area.h) / span);
+	const int cols = std::min(span, area.w / cellPx), rows = std::min(span, area.h / cellPx);
+	const int ox = area.x + (area.w - cols * cellPx) / 2, oy = area.y + (area.h - rows * cellPx) / 2;
+	// Norte para cima (-X do mundo) e leste à direita (-Z), como no minimapa.
+	const int pcx = static_cast<int>(std::floor(this->x)), pcz = static_cast<int>(std::floor(this->z));
+	const int firstRow = std::clamp(pcx - rows / 2, 0, std::max(0, lw - rows));
+	const int firstCol = std::clamp(ld - 1 - pcz - cols / 2, 0, std::max(0, ld - cols));
+	hud::Frame &frame = painter.frame();
+	for (int r = 0; r < rows; r++)
+		for (int c = 0; c < cols; c++)
+		{
+			const int cx = firstRow + r, cz = ld - 1 - (firstCol + c);
+			if (!this->level.inBounds(cx, cz)) continue;
+			const size_t index = static_cast<size_t>(cx + cz * lw);
+			if (index >= this->explored.size() || !this->explored[index]) continue;
+			const Cell &cell = this->level.cell(cx, cz);
+			uint32_t tint = hud::rgb(150, 128, 96);
+			if (cell.type == CellType::Wall) tint = cell.isExit ? hud::rgb(230, 190, 60) : cell.menu >= 0 ? hud::rgb(200, 120, 40) : hud::rgb(60, 48, 36);
+			else if (cell.isLevelDown) tint = hud::rgb(230, 190, 60);
+			else if (cell.type == CellType::Door) tint = hud::rgb(200, 120, 40);
+			else if (cell.type == CellType::Raised) tint = hud::rgb(170, 150, 120);
+			else if (cell.chasm) tint = cell.chasmKind == ChasmKind::Lava ? hud::rgb(200, 70, 30) : hud::rgb(60, 96, 170);
+			hud::fillRect(frame, ox + c * cellPx, oy + r * cellPx, cellPx, cellPx, tint);
+		}
+
+	// O jogador: seta dourada na direção do olhar.
+	const float sx = ox + (ld - 1 - pcz - firstCol + (1.0f - (this->z - pcz))) * cellPx;
+	const float sy = oy + (pcx - firstRow + (this->x - pcx)) * cellPx;
+	const float fx = std::cos(this->yaw), fz = std::sin(this->yaw);
+	const int arrow = std::max(4 * u, 2 * cellPx);
+	for (int i = 0; i < arrow; i++) hud::fillRect(frame, static_cast<int>(sx - fz * i), static_cast<int>(sy - fx * i), std::max(u, 1), std::max(u, 1), col::GoldBright);
+	hud::fillRect(frame, static_cast<int>(sx) - 2 * u, static_cast<int>(sy) - 2 * u, 4 * u, 4 * u, col::GoldBright);
+	painter.text(fonts.arena, text.get("World.North"), area.x + area.w / 2, area.y + 2 * u, col::GoldBright, TextAlign::Center);
+
+	// Botões: minimapa e fechar; dica da roda do mouse.
+	const int by = win.y + h - 26 * u;
+	painter.text(fonts.arena, text.get("Automap.Hint"), win.x + 14 * u, by + 4 * u, col::TextDim);
+	this->automapMinimapButton = Rect{ win.x + w - 14 * u - 250 * u, by, 150 * u, 18 * u };
+	painter.button(this->automapMinimapButton, text.get(this->showMinimap ? "Automap.MinimapOn" : "Automap.MinimapOff"), kit::hit(this->automapMinimapButton, this->uiMouseX, this->uiMouseY), false);
+	this->automapCloseButton = Rect{ win.x + w - 14 * u - 94 * u, by, 94 * u, 18 * u };
+	painter.button(this->automapCloseButton, text.get("Menu.Close"), kit::hit(this->automapCloseButton, this->uiMouseX, this->uiMouseY), false);
+}
+
+void arena::GameWorldScreen::jump()
+{
+	// Força dá impulso; Khajiits e Acrobatas pulam mais longe, como no original. Na água (fosso) não dá para pular.
+	if (this->airborne || this->paralysisTimer > 0.0 || this->health <= 0) return;
+	const CharacterDraft &hero = this->game.getCharacter();
+	const bool inPit = this->level.cell(static_cast<int>(std::floor(this->x)), static_cast<int>(std::floor(this->z))).chasm && !this->hasPlayerEffect(SpellEffectType::Levitate);
+	if (inPit) return;
+	float impulse = 2.4f + (hero.attributes[0] + this->fortifyBonus(0) - 50) / 120.0f;
+	if (hero.raceIndex == 6 || hero.classIndex == 9) impulse += 0.4f;
+	this->jumpVelocity = std::clamp(impulse, 2.0f, 3.0f);
+	this->airborne = true;
+	this->game.playSound("SWISH.VOC", 0.3f);
+}
+
 void arena::GameWorldScreen::removeSpriteAt(size_t index)
 {
 	const auto &sprites = this->level.getSprites();
@@ -561,6 +649,10 @@ void arena::GameWorldScreen::drawOverlay(std::vector<uint32_t> &pixels, int widt
 	else if (this->overlay == Overlay::Dialogue)
 	{
 		this->dialogueMenu.render(painter, this->game);
+	}
+	else if (this->overlay == Overlay::Automap)
+	{
+		this->drawAutomap(painter, width, height);
 	}
 	else if (this->overlay == Overlay::Journal)
 	{
@@ -1709,6 +1801,19 @@ void arena::GameWorldScreen::handleInput(const InputEvent &event)
 			return;
 		}
 
+		if (this->overlay == Overlay::Automap)
+		{
+			// Fecha com M ou Esc; botão liga/desliga o minimapa; a roda aproxima e afasta.
+			if (event.isKey(InputEvent::Key::Escape) || event.isHotkey('M')) this->overlay = Overlay::None;
+			else if (event.type == InputEvent::Type::MouseWheel) this->automapSpan = std::clamp(this->automapSpan - event.wheel * 8, 16, 256);
+			else if (event.isClick())
+			{
+				if (kit::hit(this->automapMinimapButton, this->uiMouseX, this->uiMouseY)) this->showMinimap = !this->showMinimap;
+				else if (kit::hit(this->automapCloseButton, this->uiMouseX, this->uiMouseY) || !kit::hit(this->automapWindow, this->uiMouseX, this->uiMouseY)) this->overlay = Overlay::None;
+			}
+			return;
+		}
+
 		if (this->overlay == Overlay::Journal)
 		{
 			if (this->journalMenu.handleInput(event, this->game).close) this->overlay = Overlay::None;
@@ -1809,6 +1914,10 @@ void arena::GameWorldScreen::handleInput(const InputEvent &event)
 	{
 		this->interact();
 	}
+	else if (event.isHotkey(' '))
+	{
+		this->jump();
+	}
 	else if (event.isHotkey('C'))
 	{
 		this->openCharacterMenu(CharacterMenu::Tab::Character);
@@ -1840,7 +1949,9 @@ void arena::GameWorldScreen::handleInput(const InputEvent &event)
 	}
 	else if (event.isHotkey('M'))
 	{
-		this->showMinimap = !this->showMinimap;
+		this->overlay = Overlay::Automap;
+		this->heldKeys.clear();
+		this->holdLeft = this->holdRight = this->holdUp = this->holdDown = false;
 	}
 	else if (event.isHotkey('R'))
 	{
@@ -1977,7 +2088,7 @@ void arena::GameWorldScreen::update(double dt)
 		{
 			this->stepDistance = 0.0f;
 			this->leftFoot = !this->leftFoot;
-			const bool inWater = this->level.cell(static_cast<int>(std::floor(this->x)), static_cast<int>(std::floor(this->z))).chasm && !this->hasPlayerEffect(SpellEffectType::Levitate);
+			const bool inWater = this->level.cell(static_cast<int>(std::floor(this->x)), static_cast<int>(std::floor(this->z))).chasm && !this->hasPlayerEffect(SpellEffectType::Levitate) && !this->airborne;
 			this->game.playSound(inWater ? "SWIMMING.VOC" : (this->leftFoot ? "DIRTL.VOC" : "DIRTR.VOC"), inWater ? 0.5f : 0.35f);
 		}
 	}
@@ -1987,14 +2098,31 @@ void arena::GameWorldScreen::update(double dt)
 	const int cellZ = static_cast<int>(std::floor(this->z));
 	if (cellX != this->lastCellX || cellZ != this->lastCellZ)
 	{
-		if (this->level.cell(cellX, cellZ).chasm && !this->level.cell(this->lastCellX, this->lastCellZ).chasm && !this->hasPlayerEffect(SpellEffectType::Levitate)) this->game.playSound("SPLASH.VOC", 0.7f);
+		if (!this->airborne && this->level.cell(cellX, cellZ).chasm && !this->level.cell(this->lastCellX, this->lastCellZ).chasm && !this->hasPlayerEffect(SpellEffectType::Levitate)) this->game.playSound("SPLASH.VOC", 0.7f);
 		this->lastCellX = cellX;
 		this->lastCellZ = cellZ;
 		this->checkTriggers(cellX, cellZ);
+		this->markExplored();
+	}
+
+	// Pulo: sobe e desce (gravidade); no ar, o fosso ou a água embaixo não puxam os olhos para baixo.
+	if (this->airborne)
+	{
+		this->jumpVelocity -= 16.0f * fdt;
+		// Nunca acima do teto (os olhos ficam um pouco abaixo dele).
+		this->jumpHeight = std::min(this->jumpHeight + this->jumpVelocity * fdt, this->level.getWallHeight() - EyeHeight - 0.06f);
+		if (this->jumpHeight <= 0.0f)
+		{
+			this->jumpHeight = 0.0f;
+			this->airborne = false;
+			const Cell &landing = this->level.cell(static_cast<int>(std::floor(this->x)), static_cast<int>(std::floor(this->z)));
+			this->game.playSound(landing.chasm ? "SPLASH.VOC" : "DIRTL.VOC", 0.6f);
+		}
 	}
 
 	// Suaviza a altura dos olhos ao subir em plataformas ou entrar na água.
-	const float floorTarget = this->level.floorHeightAt(static_cast<int>(std::floor(this->x)), static_cast<int>(std::floor(this->z)));
+	float floorTarget = this->level.floorHeightAt(static_cast<int>(std::floor(this->x)), static_cast<int>(std::floor(this->z)));
+	if (this->airborne) floorTarget = std::max(floorTarget, 0.0f);
 	const float target = this->hasPlayerEffect(SpellEffectType::Levitate) ? std::max(floorTarget, 0.15f) : floorTarget;
 	this->eyeOffset += (target - this->eyeOffset) * std::min(1.0f, fdt * 10.0f);
 }
@@ -2353,7 +2481,7 @@ void arena::GameWorldScreen::renderWorld(std::vector<uint32_t> &pixels, int widt
 	{
 		Camera camera;
 		const float bobOffset = static_cast<float>(std::sin(this->bob)) * 0.012f;
-		camera.position = { this->x, EyeHeight + this->eyeOffset + bobOffset, this->z };
+		camera.position = { this->x, EyeHeight + this->eyeOffset + this->jumpHeight + bobOffset, this->z };
 		camera.yaw = this->yaw;
 		camera.pitch = this->pitch;
 		camera.fovY = 1.05f;
@@ -2643,7 +2771,7 @@ void arena::GameWorldScreen::drawHud(std::vector<uint32_t> &pixels, int width, i
 		const Rect box{ cxp - 150 * u, height / 2 - 75 * u, 300 * u, 30 * u + rows * 13 * u };
 		painter.woodPanel(box, 215);
 		painter.text(fonts.a, text.get("Help.Title"), box.x + box.w / 2, box.y + 8 * u, col::GoldBright, TextAlign::Center);
-		for (int i = 0; i < 15; i++)
+		for (int i = 0; i < 16; i++)
 		{
 			const std::string entry = text.get("Help.K" + std::to_string(i + 1));
 			const size_t separator = entry.find('|');

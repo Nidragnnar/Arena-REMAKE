@@ -327,6 +327,12 @@ bool arena::Level::build(const AssetManager &assets, const Palette &palette, con
 					this->creatureSpawns.push_back({ row + 0.5f, col + 0.5f, *flat.itemId - 32 });
 					continue;
 				}
+				if (flat.itemId && *flat.itemId >= 55 && *flat.itemId <= 72)
+				{
+					// Inimigo humano (guerreiro, mago, ladrão...): a classe é o *ITEM - 55.
+					this->creatureSpawns.push_back({ row + 0.5f, col + 0.5f, HumanSpawnBase + *flat.itemId - 55 });
+					continue;
+				}
 				if (flat.itemId && *flat.itemId == 73)
 				{
 					// Jagar Tharn (Palácio Imperial): a 24ª criatura do executável.

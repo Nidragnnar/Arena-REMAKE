@@ -17,7 +17,8 @@ namespace arena
 	{
 		struct Frame { int texture = -1; float width = 0, height = 0; };
 		std::array<std::vector<Frame>, 5> directions; // arquivos @1..@5 (6..8 = espelhos de 4..2)
-		std::vector<Frame> death;                     // arquivo @6
+		std::vector<Frame> death;                     // arquivo @6 (humanos: DEADBODY.IMG)
+		std::vector<Frame> attack;                    // humanos: arquivo de ataque à parte
 	};
 
 	struct Creature
@@ -67,7 +68,9 @@ namespace arena
 	class CreatureSystem
 	{
 	public:
-		void init(const AssetManager &assets, const Palette &palette, const ArenaData &data, const Level &level, std::mt19937 &rng);
+		void init(const AssetManager &assets, const Palette &palette, const ArenaData &data, const Level &level, std::mt19937 &rng, int playerLevel = 1);
+		// Definição de inimigo humano (classe, sexo) no nível pedido, criada uma vez por combinação.
+		int humanDefinition(const ArenaData &data, int classIndex, bool male, int level);
 		void update(double dt, const Level &level, const PlayerCombatStats &player, std::mt19937 &rng, std::vector<CombatEvent> &events);
 		void draw(Renderer3D &renderer, const Level &level, float eyeX, float eyeZ, float drawRadius) const;
 
@@ -109,6 +112,7 @@ namespace arena
 		void moveTowards(Creature &creature, size_t self, const Level &level, const PlayerCombatStats &player, float dirX, float dirZ, float distance);
 
 		std::vector<CreatureDefinition> definitions;
+		std::map<int, int> humanDefinitions; // (classe × 2 + sexo) -> definição
 		std::map<int, CreatureAnimation> animations;
 		std::vector<Texture> textures;
 		std::vector<Creature> creatures;

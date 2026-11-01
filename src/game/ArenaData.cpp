@@ -268,6 +268,13 @@ bool arena::ArenaData::load(const AssetManager &assets, const std::filesystem::p
 				this->creatures.push_back(std::move(def));
 			}
 
+			// Inimigos humanos: pedaços de nome por tipo de armadura, modelos e multiplicadores de experiência.
+			const auto types = readStrings(exe, offsetOf("Entities.HumanFilenameTypes"), 7);
+			const auto templates = readStrings(exe, offsetOf("Entities.HumanFilenameTemplates"), 3);
+			for (size_t i = 0; i < 7 && i < types.size(); i++) this->humanTypes[i] = toUpperAscii(types[i]);
+			for (size_t i = 0; i < 3 && i < templates.size(); i++) this->humanTemplates[i] = toUpperAscii(templates[i]);
+			for (size_t i = 0; i < 3; i++) this->humanExpMultipliers[i] = exe[offsetOf("Entities.HumanEnemyExperienceMultipliers") + i];
+
 			// Doenças (como no OpenTESArena): chance por criatura (o Vampiro tem 5% fixos), as 4 criaturas que
 			// transmitem doença com a lista de cada uma (terminada em 0xFF) e as doenças de cura demorada. Os ids do
 			// executável começam em 10 (26 = a 17ª doença, Febre do Mago); aqui viram índices de DiseaseNames.
@@ -531,6 +538,49 @@ bool arena::ArenaData::loadWorldMap(const AssetManager &assets, const ByteBuffer
 	}
 
 	return true;
+}
+
+arena::CreatureDefinition arena::ArenaData::humanEnemy(int classIndex, bool male, int level) const
+{
+	const ClassDefinition &cls = this->getClass(std::clamp(classIndex, 0, ClassCount - 1));
+	level = std::max(1, level);
+	// Tipo de sprite pela armadura da classe (como o OpenTESArena): placas, malha, couro; sem armadura,
+	// mago, monge (12) ou bárbaro (15), senão "sem armadura". Placas só existem no masculino.
+	int type = 3;
+	if (cls.armor == ArmorAllowance::All) type = 0;
+	else if (cls.armor == ArmorAllowance::LeatherAndChain) type = 1;
+	else if (cls.armor == ArmorAllowance::LeatherOnly) type = 2;
+	else if (cls.castsMagic) type = 4;
+	else if (classIndex == 12) type = 5;
+	else if (classIndex == 15) type = 6;
+	const bool appearsMale = male || type == 0;
+	auto name = [&](const std::string &pattern, char direction)
+	{
+		std::string out = pattern;
+		const size_t xxx = out.find("XXX");
+		if (xxx != std::string::npos) out.replace(xxx, 3, this->humanTypes[static_cast<size_t>(type)]);
+		if (!out.empty()) out[0] = appearsMale ? '0' : '1';
+		if (direction != 0) { const size_t at = out.find('@'); if (at != std::string::npos) out[at] = direction; }
+		return out;
+	};
+
+	CreatureDefinition def;
+	def.originalName = cls.originalName;
+	def.animFilename = name(this->humanTemplates[0], 0);  // '@' = direção 1..5
+	def.attackFilename = name(this->humanTemplates[1], '1');
+	def.humanClass = classIndex;
+	def.male = male;
+	def.level = level;
+	def.minHp = 15 + cls.healthDie * level / 2;
+	def.maxHp = 15 + cls.healthDie * level;
+	const int category = static_cast<int>(cls.category);
+	def.minDamage = 1 + (cls.category == ClassCategory::Warrior ? 1 : 0);
+	def.maxDamage = cls.category == ClassCategory::Warrior ? 6 + 2 * level : cls.category == ClassCategory::Thief ? 5 + level * 3 / 2 : 3 + level;
+	def.baseExperience = level * level * this->humanExpMultipliers[static_cast<size_t>(std::clamp(category, 0, 2))];
+	def.experienceMultiplier = 0;
+	def.hasCorpse = true;
+	def.spellElement = cls.castsMagic ? static_cast<int>(SpellElement::Fire) : -1; // magos lançam bolas de fogo
+	return def;
 }
 
 void arena::ArenaData::nameRandomDungeons(const std::vector<std::string> &patterns)

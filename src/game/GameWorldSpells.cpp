@@ -261,7 +261,7 @@ void arena::GameWorldScreen::rewardKill(int target, int maxHp)
 	this->playAt("BODYFALL.VOC", victim.x, victim.z);
 	const int gained = def.baseExperience + maxHp * def.experienceMultiplier;
 	this->experience += gained;
-	this->corpseLoot[target] = generateLoot(LootSource::Creature, victim.definition, this->game.getData().getItems(), this->game.getRandom(), this->game.getCharacter().level);
+	this->corpseLoot[target] = generateLoot(def.humanClass >= 0 ? LootSource::DeadBody : LootSource::Creature, victim.definition, this->game.getData().getItems(), this->game.getRandom(), this->game.getCharacter().level);
 	this->showMessage(ui::format(text.get("World.CreatureKilled"), { this->creatureRef(target, false), std::to_string(gained) }), 3.0);
 
 	// A fera caçada para o governante: falta voltar ao palácio para receber.

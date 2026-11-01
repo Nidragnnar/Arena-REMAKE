@@ -60,6 +60,7 @@ namespace arena
 		void handleCombatEvents(const std::vector<CombatEvent> &events);
 		void drawWeapon(std::vector<uint32_t> &pixels, int width, int viewHeight);
 		std::string creatureRef(int creature, bool capitalized) const;
+		std::string creatureLabel(int creature) const;
 		void checkTriggers(int cellX, int cellZ);
 		bool tryOpenLoot();
 		void applyOverlayResult(const OverlayResult &result);

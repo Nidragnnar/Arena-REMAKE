@@ -84,12 +84,47 @@ bool arena::CreatureSystem::loadAnimation(const AssetManager &assets, const Pale
 		}
 	}
 
-	loadFile(6, animation.death);
+	if (!def.attackFilename.empty())
+	{
+		// Humano: ataque num arquivo à parte (só de frente) e o corpo é o DEADBODY.IMG.
+		auto loadWhole = [&](const std::string &name, bool img, std::vector<CreatureAnimation::Frame> &out)
+		{
+			const auto data = assets.read(name);
+			if (!data) return;
+			std::vector<IndexedImage> images;
+			if (img) { if (auto image = loadImg(name, *data)) images.push_back(std::move(*image)); }
+			else images = loadCfa(*data);
+			for (size_t i = 0; i < images.size(); i++)
+			{
+				CreatureAnimation::Frame frame;
+				frame.texture = static_cast<int>(this->textures.size());
+				frame.width = ((images[i].width * def.scale) / 256) / ArenaUnits;
+				frame.height = ((((images[i].height * def.scale) / 256) * 200) / 256) / ArenaUnits;
+				this->textures.push_back(toTexture(images[i], palette, name, static_cast<int>(i), static_cast<int>(images.size())));
+				out.push_back(frame);
+			}
+		};
+		loadWhole(def.attackFilename, false, animation.attack);
+		loadWhole("DEADBODY.IMG", true, animation.death);
+	}
+	else loadFile(6, animation.death);
 	this->animations.emplace(definitionIndex, std::move(animation));
 	return true;
 }
 
-void arena::CreatureSystem::init(const AssetManager &assets, const Palette &palette, const ArenaData &data, const Level &level, std::mt19937 &rng)
+int arena::CreatureSystem::humanDefinition(const ArenaData &data, int classIndex, bool male, int level)
+{
+	if (classIndex < 0 || classIndex >= ClassCount) return -1;
+	const int key = classIndex * 2 + (male ? 1 : 0);
+	const auto it = this->humanDefinitions.find(key);
+	if (it != this->humanDefinitions.end()) return it->second;
+	this->definitions.push_back(data.humanEnemy(classIndex, male, level));
+	const int index = static_cast<int>(this->definitions.size()) - 1;
+	this->humanDefinitions[key] = index;
+	return index;
+}
+
+void arena::CreatureSystem::init(const AssetManager &assets, const Palette &palette, const ArenaData &data, const Level &level, std::mt19937 &rng, int playerLevel)
 {
 	// Conjuradores do original: Fantasma e Espectro (frio), Homúnculo e Lich (magia), Daemon de Fogo (fogo),
 	// Medusa (veneno), Vampiro (magia, rouba vida) e Jagar Tharn (choque).
@@ -103,14 +138,18 @@ void arena::CreatureSystem::init(const AssetManager &assets, const Palette &pale
 
 	for (const CreatureSpawn &spawn : level.getCreatureSpawns())
 	{
-		if (spawn.creatureIndex >= static_cast<int>(this->definitions.size()) || !this->loadAnimation(assets, palette, spawn.creatureIndex))
+		// Inimigo humano: definição pela classe, com sexo sorteado e o nível do jogador.
+		const int definition = spawn.creatureIndex >= HumanSpawnBase
+			? this->humanDefinition(data, spawn.creatureIndex - HumanSpawnBase, rng() % 2u == 0, std::max(1, playerLevel + randomInt(rng, -1, 1)))
+			: spawn.creatureIndex;
+		if (definition < 0 || definition >= static_cast<int>(this->definitions.size()) || !this->loadAnimation(assets, palette, definition))
 		{
 			continue;
 		}
 
-		const CreatureDefinition &def = this->definitions[static_cast<size_t>(spawn.creatureIndex)];
+		const CreatureDefinition &def = this->definitions[static_cast<size_t>(definition)];
 		Creature creature;
-		creature.definition = spawn.creatureIndex;
+		creature.definition = definition;
 		creature.x = spawn.x;
 		creature.z = spawn.z;
 		creature.angle = randomFloat(rng, 0.0f, TwoPi);
@@ -403,11 +442,18 @@ void arena::CreatureSystem::draw(Renderer3D &renderer, const Level &level, float
 			frame = pick(frames, WalkFrames, std::size(WalkFrames), WalkFps, true);
 			break;
 		case Creature::State::Look:
-			frame = pick(frames, LookFrames, std::size(LookFrames), LookFps, false);
+			if (anim.attack.empty()) frame = pick(frames, LookFrames, std::size(LookFrames), LookFps, false); // humanos: parados
 			break;
 		case Creature::State::Attack:
 			mirrored = false;
-			frame = pick(anim.directions[0], AttackFrames, std::size(AttackFrames), AttackFps, false);
+			if (!anim.attack.empty())
+			{
+				// Humano: todos os quadros do arquivo de ataque no tempo do golpe.
+				const double length = std::size(AttackFrames) / AttackFps;
+				const size_t step = std::min(anim.attack.size() - 1, static_cast<size_t>(c.stateTime / length * anim.attack.size()));
+				frame = &anim.attack[step];
+			}
+			else frame = pick(anim.directions[0], AttackFrames, std::size(AttackFrames), AttackFps, false);
 			break;
 		case Creature::State::Dying:
 		case Creature::State::Dead:

@@ -225,6 +225,16 @@ Comandos: `k:X`, `enter`, `esc`, `up`, `down`, `left`, `right`, `bs`, `click:x,y
   mais o material e o escudo) é subtraída do acerto na mesma unidade do bônus de defesa da Agilidade, como diz a UESP
   ("reduz a rolagem de ataque do inimigo"; cada 5 pontos de Agilidade valem 1 de armadura).
 
+### Inimigos humanos
+
+Como no original: guerreiros, magos, ladrões, cavaleiros, monges, bárbaros... das 18 classes. Os mapas prontos os
+trazem nos marcadores *ITEM 55..72 (um por classe); nas masmorras geradas, um em cada três inimigos é humano, e no
+ermo às vezes aparece um salteador. A animação sai do tipo de armadura da classe (placas, malha, couro, sem armadura,
+mago, monge, bárbaro; `HumanFilenameTypes/Templates` do executável), com sexo e direção no nome do arquivo
+(`01PLTWLK.CFA`, `11MAGWLK.CFA`...), o ataque num arquivo à parte e o corpo `DEADBODY.IMG`. A experiência é nível²
+× multiplicador da categoria (tabela do executável); vida e dano seguem o dado de vida e a categoria da classe
+(aproximação). Magos lançam bolas de fogo; o corpo deixa o saque de um cadáver (equipamento e ouro).
+
 ### Inventário, equipamento e saque
 
 - Tabelas lidas do ACD.EXE: 18 armas (dano, peso, uma/duas mãos), 11 peças de armadura

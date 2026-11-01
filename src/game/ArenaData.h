@@ -52,6 +52,10 @@ namespace arena
 		int spellElement = -1;    // conjura projéteis deste elemento (SpellElement); -1 = só corpo a corpo
 		int diseaseChance = 0;    // % de, ao acertar, paralisar ou passar doença (CreatureDiseaseChances)
 		std::vector<int> diseases; // doenças que transmite (índices de DiseaseNames)
+		// Inimigo humano: animação de ataque à parte ("0@XXXATT.CFA", só de frente), classe e sexo.
+		std::string attackFilename;
+		int humanClass = -1;
+		bool male = true;
 	};
 
 	struct ClassQuestion
@@ -137,6 +141,10 @@ namespace arena
 		// Atributos iniciais (0..100) por raça e gênero.
 		std::array<int, AttributeCount> getBaseAttributes(int raceIndex, bool male) const;
 
+		// Inimigo humano do original (classe 0..17), no nível pedido: animações pelo tipo de armadura da classe
+		// (HumanFilenameTypes/Templates), experiência nível² × multiplicador da categoria (como no OpenTESArena).
+		CreatureDefinition humanEnemy(int classIndex, bool male, int level) const;
+
 		// Doenças: nomes do executável (17) e as de cura demorada (3 a 17 dias em vez de 1).
 		const std::vector<std::string> &getDiseaseNames() const { return this->diseaseNames; }
 		bool longDisease(int id) const { return std::find(this->longDiseases.begin(), this->longDiseases.end(), id) != this->longDiseases.end(); }
@@ -162,6 +170,9 @@ namespace arena
 
 		std::vector<CityLocation> cities;
 		std::vector<std::string> diseaseNames;
+		std::array<std::string, 7> humanTypes;     // PLT, CHN, LTR, UNA, MAG, MNK, BAR
+		std::array<std::string, 3> humanTemplates; // andar, atacar, arco
+		std::array<int, 3> humanExpMultipliers{};  // por categoria (mago, ladrão, guerreiro)
 		std::vector<int> longDiseases;
 		std::vector<std::vector<std::string>> nameChunks;
 		std::array<std::pair<int, int>, 9> provinceOrigins{};

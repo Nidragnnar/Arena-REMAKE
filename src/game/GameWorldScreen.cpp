@@ -151,6 +151,13 @@ arena::GameWorldScreen::GameWorldScreen(Game &game, const std::string &mifName) 
 			if (this->level.blocksMovement(cx, cz) || this->level.cell(cx, cz).chasm) continue;
 			const float dx = cx + 0.5f - this->x, dz = cz + 0.5f - this->z;
 			if (dx * dx + dz * dz < 8.0f * 8.0f) continue; // longe da entrada
+			// Um em cada três é humano (guerreiro, mago, ladrão... de qualquer uma das 18 classes), como no original.
+			if (random.next() % 3u == 0)
+			{
+				this->level.addCreatureSpawn({ cx + 0.5f, cz + 0.5f, HumanSpawnBase + static_cast<int>(random.next() % ClassCount) });
+				placed++;
+				continue;
+			}
 			const int kind = random.next() % (strongest + 1);
 			if (!game.getData().getCreature(kind)) continue;
 			this->level.addCreatureSpawn({ cx + 0.5f, cz + 0.5f, kind });
@@ -158,7 +165,7 @@ arena::GameWorldScreen::GameWorldScreen(Game &game, const std::string &mifName) 
 		}
 	}
 
-	this->creatures.init(game.getAssets(), this->palette, game.getData(), this->level, game.getRandom());
+	this->creatures.init(game.getAssets(), this->palette, game.getData(), this->level, game.getRandom(), game.getCharacter().level);
 	if (this->isDungeon()) this->placeDungeonTargets();
 	if (this->level.isExterior() && !this->isWild())
 	{
@@ -452,7 +459,7 @@ bool arena::GameWorldScreen::tryOpenLoot()
 		auto it = this->corpseLoot.find(static_cast<int>(i));
 		if (it == this->corpseLoot.end()) continue;
 		this->lootMenu.open(&it->second, ui::format(text.get("Loot.TitleCorpse"),
-			{ text.getOr("Creatures.Name" + std::to_string(this->textIndexOf(c.definition)), this->creatures.definitionOf(static_cast<int>(i)).originalName) }));
+			{ this->creatureLabel(static_cast<int>(i)) }));
 		this->openContainer = { -1, -1 };
 		this->overlay = Overlay::Loot;
 		return true;
@@ -1087,11 +1094,41 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 		return true;
 	}
 
+	if (name == "traveldays")
+	{
+		// traveldays:p,l imprime os dias daqui até o local p,l e o terreno no caminho (depuração).
+		int p = 0, l = 0;
+		std::sscanf(arg.c_str(), "%d,%d", &p, &l);
+		const CityLocation *from = this->currentCity(), *to = this->game.getData().getCity(p, l);
+		if (!from || !to) return false;
+		std::printf("de %s (%d,%d) a %s (%d,%d): %d dias\n", from->name.c_str(), from->globalX, from->globalY, to->name.c_str(), to->globalX, to->globalY,
+			this->game.getData().travelDays(*from, *to, clock::month(this->game.getCharacter().gameMinutes)));
+		return true;
+	}
+
 	if (name == "gold")
 	{
 		// gold:N muda o ouro (teste).
 		this->game.getCharacter().gold = std::max(0, std::atoi(arg.c_str()));
 		return true;
+	}
+
+	if (name == "spawnhuman" && this->loaded)
+	{
+		// spawnhuman:classe[,f] cria um inimigo humano dessa classe à frente (f = mulher), já atento (teste).
+		const int classIndex = std::atoi(arg.c_str());
+		const bool male = arg.find(",f") == std::string::npos;
+		const int definition = this->creatures.humanDefinition(this->game.getData(), classIndex, male, this->game.getCharacter().level);
+		const float fx = std::cos(this->yaw), fz = std::sin(this->yaw);
+		for (float d = 3.0f; d >= 1.5f; d -= 0.5f)
+		{
+			const float sx = this->x + fx * d, sz = this->z + fz * d;
+			if (this->level.blocksMovement(static_cast<int>(std::floor(sx)), static_cast<int>(std::floor(sz)))) continue;
+			const int index = this->creatures.spawn(this->game.getAssets(), this->palette, definition, sx, sz, this->game.getRandom());
+			std::printf("humano %d (%s): definição %d, criatura %d\n", classIndex, this->creatures.definition(definition) ? this->creatures.definition(definition)->animFilename.c_str() : "-", definition, index);
+			return index >= 0;
+		}
+		return false;
 	}
 
 	if (name == "hp" && this->loaded)
@@ -1233,11 +1270,23 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 	return false;
 }
 
+std::string arena::GameWorldScreen::creatureLabel(int creature) const
+{
+	// Nome no HUD: o da criatura ou, para humanos, a classe ("Cavaleira", "Mago").
+	const CreatureDefinition &def = this->creatures.definitionOf(creature);
+	if (def.humanClass >= 0) return this->game.localized(std::string("Classes.Name") + std::to_string(def.humanClass) + (def.male ? "" : "_F"), this->game.className(def.humanClass));
+	const int definition = this->creatures.getCreatures()[static_cast<size_t>(creature)].definition;
+	return this->game.getText().getOr("Creatures.Name" + std::to_string(this->textIndexOf(definition)), def.originalName);
+}
+
 std::string arena::GameWorldScreen::creatureRef(int creature, bool capitalized) const
 {
 	const int definition = this->creatures.getCreatures()[static_cast<size_t>(creature)].definition;
-	std::string ref = this->game.getText().getOr("Creatures.Ref" + std::to_string(this->textIndexOf(definition)),
-		this->creatures.definitionOf(creature).originalName);
+	const CreatureDefinition &def = this->creatures.definitionOf(creature);
+	std::string label = this->creatureLabel(creature);
+	if (!label.empty() && label[0] >= 'A' && label[0] <= 'Z') label[0] = static_cast<char>(label[0] - 'A' + 'a');
+	std::string ref = def.humanClass >= 0 ? (def.male ? "o " : "a ") + label
+		: this->game.getText().getOr("Creatures.Ref" + std::to_string(this->textIndexOf(definition)), def.originalName);
 	if (capitalized && !ref.empty() && ref[0] >= 'a' && ref[0] <= 'z') ref[0] = static_cast<char>(ref[0] - 'a' + 'A');
 	return ref;
 }
@@ -2464,7 +2513,7 @@ void arena::GameWorldScreen::drawHud(std::vector<uint32_t> &pixels, int width, i
 		if (target >= 0 && this->health > 0)
 		{
 			const Creature &c = this->creatures.getCreatures()[static_cast<size_t>(target)];
-			const std::string name = text.getOr("Creatures.Name" + std::to_string(this->textIndexOf(c.definition)), this->creatures.definitionOf(target).originalName);
+			const std::string name = this->creatureLabel(target);
 			const int barW = 90 * u;
 			painter.text(fonts.arena, name, cxp, band.y + band.h + 6 * u, rgb(255, 225, 170), TextAlign::Center);
 			const Rect hp{ cxp - barW / 2, band.y + band.h + 17 * u, barW, 5 * u };
@@ -3253,7 +3302,10 @@ void arena::GameWorldScreen::updateWildCreatures(double dt)
 		if (def && def->level <= playerLevel + 2) choices.push_back(kind);
 	}
 	if (choices.empty()) return;
-	const int kind = choices[std::uniform_int_distribution<size_t>(0, choices.size() - 1)(rng)];
+	int kind = choices[std::uniform_int_distribution<size_t>(0, choices.size() - 1)(rng)];
+	// Às vezes um humano (salteador de qualquer classe) no lugar do bicho.
+	if (std::uniform_int_distribution<int>(0, 99)(rng) < 15)
+		kind = this->creatures.humanDefinition(this->game.getData(), std::uniform_int_distribution<int>(0, ClassCount - 1)(rng), rng() % 2u == 0, std::max(1, playerLevel));
 
 	// Lugar livre longe da vista (atrás ou dos lados) e fora das muralhas da cidade.
 	const float fx = std::cos(this->yaw), fz = std::sin(this->yaw);

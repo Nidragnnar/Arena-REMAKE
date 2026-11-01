@@ -87,6 +87,9 @@ namespace arena
 		int itemId = -1;         // *ITEM do .INF (2 corpo, 3 equipamento, 4..6 tesouro, 7 baú)
 	};
 
+	// Inimigos humanos (*ITEM 55..72 = classe 0..17): creatureIndex = HumanSpawnBase + classe.
+	constexpr int HumanSpawnBase = 100;
+
 	// Marcador de criatura no MAP1 (FLAT com *ITEM 32..54 no .INF).
 	struct CreatureSpawn
 	{

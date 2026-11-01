@@ -1,0 +1,32 @@
+﻿ARENA REMAKE - The Elder Scrolls: Arena em português (Windows 10/11, 64 bits)
+==============================================================================
+
+O remake NÃO traz os arquivos do jogo. Você precisa do Arena original, que é gratuito.
+
+COMO JOGAR
+1. Baixe o The Elder Scrolls: Arena original (grátis):
+   - Steam: procure "The Elder Scrolls: Arena" e instale;
+   - ou GOG / site da Bethesda.
+2. Descompacte esta pasta (ArenaRemake) em qualquer lugar, por exemplo na Área de Trabalho.
+3. Abra o ArenaRemake.exe.
+   - Se o Arena estiver na Steam ou no GOG no lugar padrão, o jogo acha sozinho.
+   - Se não achar, ele abre uma janela para você escolher a pasta do Arena: escolha a pasta
+     ARENA, a que tem o arquivo GLOBAL.BSA (na Steam fica em
+     ...\steamapps\common\The Elder Scrolls Arena\ARENA). A escolha fica gravada.
+
+TECLAS PRINCIPAIS
+   W A S D  andar          Mouse     olhar        Clique/F atacar
+   Shift    correr         Espaço    pular        E        usar / conversar
+   Q        lançar feitiço R         descansar    T        viajar por Tamriel
+   C I B    ficha, inventário e feitiços          J        diário de missões
+   M        minimapa       H         ajuda        Esc      pausa (salvar, carregar)
+   F11      tela cheia / janela                   F12      captura de tela
+   Também dá para jogar com controle (gamepad). As teclas podem ser trocadas no settings.ini.
+
+DICAS
+- Os jogos salvos ficam na pasta "saves", ao lado do ArenaRemake.exe.
+- Configurações (tela cheia, volume, gráficos, teclas) ficam no settings.ini.
+- Se o jogo não abrir em computadores antigos, troque Renderer=gpu por Renderer=cpu no settings.ini.
+
+Projeto de fã, sem fins lucrativos e sem afiliação com a Bethesda Softworks / ZeniMax Media.
+Código: https://github.com/Nidragnnar/Arena-REMAKE

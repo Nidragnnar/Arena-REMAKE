@@ -26,6 +26,23 @@ Bethesda distribui gratuitamente (também está na Steam e no GOG).
 
 > Projeto de fã, sem fins lucrativos e sem afiliação com a Bethesda Softworks / ZeniMax Media.
 
+## Como jogar (Windows 10/11, 64 bits)
+
+1. **Baixe o Arena original, que é gratuito**: na Steam (procure *The Elder Scrolls: Arena*), no GOG
+   ou no site da Bethesda. O remake usa os arquivos dele.
+2. **Baixe o remake** em [Releases](https://github.com/Nidragnnar/Arena-REMAKE/releases): o arquivo
+   `ArenaRemake-PTBR-....zip` do lançamento mais recente.
+3. **Descompacte** a pasta `ArenaRemake` em qualquer lugar (por exemplo, na Área de Trabalho) e abra o
+   `ArenaRemake.exe`.
+4. Se o Arena estiver no lugar padrão da Steam ou do GOG, o jogo acha sozinho. Se não, ele abre uma janela
+   para escolher a pasta do Arena: escolha a pasta `ARENA`, a que tem o arquivo `GLOBAL.BSA` (na Steam,
+   `...\steamapps\common\The Elder Scrolls Arena\ARENA`). A escolha fica gravada; para trocar depois,
+   abra com `ArenaRemake.exe --escolher-pasta` ou edite `ArenaPath` no `settings.ini`.
+
+Os jogos salvos ficam na pasta `saves`, ao lado do executável. O pacote já traz as bibliotecas do Visual C++
+de que o jogo precisa; em computadores sem placa de vídeo com OpenGL 3.3, troque `Renderer=gpu` por
+`Renderer=cpu` no `settings.ini`. O `LEIA-ME.txt` dentro do pacote resume as teclas.
+
 ## Compilar (Windows, Visual Studio 2026)
 
 ```bash
@@ -35,6 +52,9 @@ cmake --build C:/arena-build --config Release
 
 Dependências: `vcpkg install sdl2:x64-windows stb:x64-windows`. Use um diretório de build com caminho curto
 (o MSBuild falha com caminhos acima de 260 caracteres).
+
+Para gerar o pacote de uma versão (o .zip das Releases):
+`powershell -ExecutionPolicy Bypass -File tools/pacote/empacotar.ps1 -Versao 2026.11.01`.
 
 ## Executar
 

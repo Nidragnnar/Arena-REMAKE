@@ -5,7 +5,8 @@
 //   ArenaRemake --screenshot <title|menu|menu-popup|class> <saida.png>   (sem janela)
 //   ArenaRemake --continuar                                           (entra no mundo com o personagem salvo)
 //   ArenaRemake --script "k:x;k:n;shot:a.png" [--seed N] [--gpu]        (roteiro sem janela; --gpu testa a placa de vídeo)
-//   ArenaRemake --cpu                                                  (força o renderizador por software)
+//   ArenaRemake --escolher-pasta                                       (abre a janela para escolher a pasta do Arena)
+//   ArenaRemake --cpu                                                 (força o renderizador por software)
 
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
@@ -15,8 +16,10 @@
 #define NOMINMAX
 #include <windows.h>
 #include <shellapi.h>
+#include <shobjidl.h>
 #endif
 
+#include <algorithm>
 #include <chrono>
 #include <map>
 #include <cmath>
@@ -24,6 +27,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <fstream>
+#include <sstream>
 #include <string>
 
 #include "core/KeyValueFile.h"
@@ -129,26 +134,126 @@ namespace
 		return settings;
 	}
 
+	// Caminho em UTF-8 (settings.ini e argumentos) para path, sem passar pela página de código ANSI.
+	std::filesystem::path pathFromUtf8(const std::string &text)
+	{
+		return std::filesystem::path(std::u8string(text.begin(), text.end()));
+	}
+
+	// A pasta do Arena é a que tem o GLOBAL.BSA; aceita também a pasta acima dela (a do jogo na Steam ou no GOG).
+	std::filesystem::path arenaDataIn(const std::filesystem::path &dir)
+	{
+		std::error_code ec;
+		if (std::filesystem::exists(dir / "GLOBAL.BSA", ec)) return dir;
+		if (std::filesystem::exists(dir / "ARENA" / "GLOBAL.BSA", ec)) return dir / "ARENA";
+		return {};
+	}
+
 	std::filesystem::path findArenaDir(const std::string &configured)
 	{
 		std::vector<std::filesystem::path> candidates;
-		if (!configured.empty()) candidates.emplace_back(configured);
+		if (!configured.empty()) candidates.emplace_back(pathFromUtf8(configured));
 		candidates.emplace_back("ARENA");
+		candidates.emplace_back("../ARENA");
 		candidates.emplace_back("../original/ARENA");
+		candidates.emplace_back("C:/GOG Games/The Elder Scrolls Arena/ARENA");
+		candidates.emplace_back("C:/Program Files (x86)/GOG Galaxy/Games/The Elder Scrolls Arena/ARENA");
 		candidates.emplace_back("Z:/SteamLibrary/steamapps/common/The Elder Scrolls Arena/ARENA");
 		candidates.emplace_back("C:/Program Files (x86)/Steam/steamapps/common/The Elder Scrolls Arena/ARENA");
 		candidates.emplace_back("C:/Program Files/Steam/steamapps/common/The Elder Scrolls Arena/ARENA");
 
 		for (const auto &dir : candidates)
 		{
-			std::error_code ec;
-			if (std::filesystem::exists(dir / "GLOBAL.BSA", ec))
-			{
-				return dir;
-			}
+			const std::filesystem::path found = arenaDataIn(dir);
+			if (!found.empty()) return found;
 		}
 
 		return {};
+	}
+
+	// Grava (ou troca) uma chave numa seção do settings.ini, mantendo o resto do arquivo.
+	void writeSetting(const std::filesystem::path &file, const std::string &section, const std::string &key, const std::string &value)
+	{
+		std::vector<std::string> lines;
+		{
+			std::ifstream in(file);
+			for (std::string line; std::getline(in, line);) lines.push_back(line);
+		}
+		std::string current;
+		bool done = false;
+		for (size_t i = 0; i < lines.size() && !done; i++)
+		{
+			if (!lines[i].empty() && lines[i][0] == '[') current = lines[i].substr(1, lines[i].find(']') - 1);
+			else if (current == section && lines[i].rfind(key + "=", 0) == 0) { lines[i] = key + "=" + value; done = true; }
+		}
+		if (!done)
+		{
+			auto at = std::find(lines.begin(), lines.end(), "[" + section + "]");
+			if (at == lines.end()) { lines.push_back("[" + section + "]"); at = lines.end() - 1; }
+			lines.insert(at + 1, key + "=" + value);
+		}
+		std::ofstream out(file, std::ios::trunc);
+		for (const std::string &line : lines) out << line << "\n";
+	}
+
+#ifdef _WIN32
+	// Janela do Windows para escolher uma pasta; vazio se cancelar.
+	std::filesystem::path pickFolder(const wchar_t *title)
+	{
+		std::filesystem::path chosen;
+		const HRESULT init = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+		IFileOpenDialog *dialog = nullptr;
+		if (SUCCEEDED(CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL, IID_PPV_ARGS(&dialog))))
+		{
+			DWORD options = 0;
+			dialog->GetOptions(&options);
+			dialog->SetOptions(options | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
+			dialog->SetTitle(title);
+			IShellItem *item = nullptr;
+			if (SUCCEEDED(dialog->Show(nullptr)) && SUCCEEDED(dialog->GetResult(&item)))
+			{
+				PWSTR path = nullptr;
+				if (SUCCEEDED(item->GetDisplayName(SIGDN_FILESYSPATH, &path)))
+				{
+					chosen = path;
+					CoTaskMemFree(path);
+				}
+				item->Release();
+			}
+			dialog->Release();
+		}
+		if (SUCCEEDED(init)) CoUninitialize();
+		return chosen;
+	}
+#endif
+
+	// Sem a pasta do Arena: explica e abre a escolha de pasta até achar uma válida (ou o jogador cancelar).
+	// A escolhida fica gravada em settings.ini para as próximas vezes.
+	std::filesystem::path askArenaDir(const std::filesystem::path &settingsFile)
+	{
+#ifdef _WIN32
+		const char *intro = "Não encontrei os arquivos do The Elder Scrolls: Arena original.\n\n"
+			"O remake precisa deles para funcionar. O Arena é gratuito: baixe-o na Steam, no GOG ou no site da Bethesda.\n\n"
+			"Na próxima janela, escolha a pasta do Arena (a que tem o arquivo GLOBAL.BSA, normalmente chamada ARENA).";
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Arena Remake", intro, nullptr);
+		for (;;)
+		{
+			const std::filesystem::path picked = pickFolder(L"Escolha a pasta do Arena (com o GLOBAL.BSA)");
+			if (picked.empty()) return {};
+			const std::filesystem::path found = arenaDataIn(picked);
+			if (!found.empty())
+			{
+				const std::u8string text = found.generic_u8string();
+				writeSetting(settingsFile, "Game", "ArenaPath", std::string(text.begin(), text.end()));
+				return found;
+			}
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, "Arena Remake",
+				"Essa pasta não tem o GLOBAL.BSA. Escolha a pasta ARENA do jogo original.", nullptr);
+		}
+#else
+		(void)settingsFile;
+		return {};
+#endif
 	}
 
 	// Proporção 4:3: o modo 320x200 do VGA era exibido com pixels 20% mais altos.
@@ -429,6 +534,7 @@ int main(int argc, char **argv)
 		else if (arg == "--screenshot" && i + 2 < argCount) { screenshotScenario = next(); const std::string &path = next(); screenshotPath = std::filesystem::path(std::u8string(path.begin(), path.end())); }
 		else if (arg == "--script" && i + 1 < argCount) script = next();
 		else if (arg == "--seed" && i + 1 < argCount) seed = std::atoll(next().c_str());
+		else if (arg == "--escolher-pasta") settings.arenaPath = "?"; // força a janela para escolher a pasta do Arena
 		else if (arg == "--fullscreen") settings.fullscreen = true;
 		else if (arg == "--continuar") continueSaved = true;
 		else if (arg == "--cpu") settings.renderer = "cpu";
@@ -438,7 +544,8 @@ int main(int argc, char **argv)
 
 	const bool headless = !screenshotScenario.empty() || !script.empty();
 
-	const std::filesystem::path arenaDir = findArenaDir(settings.arenaPath);
+	std::filesystem::path arenaDir = settings.arenaPath == "?" ? std::filesystem::path() : findArenaDir(settings.arenaPath);
+	if (arenaDir.empty() && script.empty() && screenshotScenario.empty()) arenaDir = askArenaDir(baseDir / "settings.ini");
 	Game game;
 	game.setGraphics(settings.graphics);
 	if (!headless)
@@ -451,7 +558,7 @@ int main(int argc, char **argv)
 	if (arenaDir.empty() || !game.init(arenaDir, baseDir / "data", error))
 	{
 		const std::string message = arenaDir.empty()
-			? "Pasta do Arena não encontrada.\nDefina ArenaPath em settings.ini ou use --arena <pasta>."
+			? "Pasta do Arena não encontrada.\nAbra o jogo de novo e escolha a pasta ARENA (com o GLOBAL.BSA),\nou defina ArenaPath em settings.ini."
 			: error;
 		std::fprintf(stderr, "%s\n", message.c_str());
 		if (!headless)

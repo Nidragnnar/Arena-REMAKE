@@ -473,6 +473,14 @@ feitiço sem gastar magia e gasta uma carga; sem cargas, o item se desfaz. Tamb�
 (atributo ou proteção), que vêm dos saves do original. Saem em baús, pilhas de tesouro e criaturas (o quarto byte da
 tabela de saque delas) e na Guilda dos Magos, até a qualidade do nível do jogador + 2.
 
+### Armas e armaduras encantadas
+
+Como no original (EnchantmentChances e as tabelas de encantamento do executável): parte das peças do saque (15%) e
+das lojas (1 em 10) é especial, com material raro, encantamento ou os dois. São 14 encantamentos de arma e 14 de
+armadura ("Espada longa do Relâmpago", "Couraça de placas de Força"), até a qualidade do nível do jogador + 6. Os de
+atributo dão +3 a +6 nele enquanto a peça está equipada (o tamanho exato do bônus no original não é conhecido); os de
+feitiço põem o feitiço no livro, de graça e com 30 s de recarga, como os artefatos. O preço soma o do encantamento.
+
 ## Roteiro
 
 1. ~~Formatos base, título e menu principal em PT-BR~~ ✅

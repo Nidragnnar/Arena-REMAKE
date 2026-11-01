@@ -385,6 +385,17 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 			const size_t a = value.find('|'), b = a == std::string::npos ? a : value.find('|', a + 1);
 			if (b != std::string::npos) loaded.journal.push_back({ std::atof(value.c_str()), value.substr(a + 1, b - a - 1), value.substr(b + 1) });
 		}
+		else if (key == "Spellbook.Granted")
+		{
+			for (size_t at = 0; at < value.size();)
+			{
+				const size_t comma = value.find(',', at);
+				const std::string part = value.substr(at, comma == std::string::npos ? std::string::npos : comma - at);
+				if (!part.empty()) loaded.grantedSpells.push_back(std::atoi(part.c_str()));
+				if (comma == std::string::npos) break;
+				at = comma + 1;
+			}
+		}
 		else if (key == "Spellbook.Known")
 		{
 			loaded.spellbookKnown = true;
@@ -400,8 +411,8 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 		else if (key.rfind("Inventory.Item", 0) == 0)
 		{
 			// Item = tipo, id, classe de armadura, material, equipado[, artefato]
-			int kind = 0, type = 0, armorClass = 0, material = 0, equipped = 0, artifactId = -1, magicGroup = -1, magicIndex = 0, charges = 0;
-			if (std::sscanf(value.c_str(), "%d,%d,%d,%d,%d,%d,%d,%d,%d", &kind, &type, &armorClass, &material, &equipped, &artifactId, &magicGroup, &magicIndex, &charges) >= 5)
+			int kind = 0, type = 0, armorClass = 0, material = 0, equipped = 0, artifactId = -1, magicGroup = -1, magicIndex = 0, charges = 0, enchant = -1;
+			if (std::sscanf(value.c_str(), "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", &kind, &type, &armorClass, &material, &equipped, &artifactId, &magicGroup, &magicIndex, &charges, &enchant) >= 5)
 			{
 				Item item;
 				item.kind = static_cast<ItemKind>(std::clamp(kind, 0, 3));
@@ -409,6 +420,7 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 				item.magicGroup = magicGroup;
 				item.magicIndex = magicIndex;
 				item.charges = charges;
+				item.enchant = enchant;
 				item.type = type;
 				item.armorClass = static_cast<ArmorClass>(std::clamp(armorClass, 0, 2));
 				item.material = std::clamp(material, 0, MaterialCount - 1);
@@ -446,7 +458,7 @@ bool arena::Game::loadSavedCharacter(const std::filesystem::path &path)
 
 	this->character = loaded;
 	this->importedMap.clear();
-	artifact::syncSpells(this->character);
+	artifact::syncSpells(this->character, this->rules.getItems());
 	setCustomSpells(this->character.customSpells);
 	this->pendingWorld = std::move(world);
 	return true;
@@ -496,17 +508,19 @@ bool arena::Game::saveCharacter(const std::filesystem::path &path, const std::st
 		file << "Attribute" << i << "=" << c.attributes[static_cast<size_t>(i)] << "\n";
 	}
 
-	file << "\n[Inventory]\n# tipo (0 arma, 1 armadura, 2 poção, 3 artefato), id, classe (0 placas, 1 malha, 2 couro), material, equipado, artefato, item mágico (grupo, índice, cargas/bônus)\n";
+	file << "\n[Inventory]\n# tipo (0 arma, 1 armadura, 2 poção, 3 artefato), id, classe (0 placas, 1 malha, 2 couro), material, equipado, artefato, item mágico (grupo, índice, cargas/bônus), encantamento\n";
 	for (size_t i = 0; i < c.inventory.size(); i++)
 	{
 		const Item &item = c.inventory[i];
 		file << "Item" << i << "=" << static_cast<int>(item.kind) << "," << item.type << "," << static_cast<int>(item.armorClass)
-			<< "," << item.material << "," << (item.equipped ? 1 : 0) << "," << item.artifact << "," << item.magicGroup << "," << item.magicIndex << "," << item.charges << "\n";
+			<< "," << item.material << "," << (item.equipped ? 1 : 0) << "," << item.artifact << "," << item.magicGroup << "," << item.magicIndex << "," << item.charges << "," << item.enchant << "\n";
 	}
 
 	file << "\n[Spellbook]\n# feitiços conhecidos (índices do SPELLSG.65) e o preparado para a tecla Q\nKnown=";
 	for (size_t i = 0; i < c.spells.size(); i++) file << (i ? "," : "") << c.spells[i];
-	file << "\nReady=" << c.readySpell << "\n";
+	file << "\nReady=" << c.readySpell << "\nGranted=";
+	for (size_t i = 0; i < c.grantedSpells.size(); i++) file << (i ? "," : "") << c.grantedSpells[i];
+	file << "\n";
 	file << "\n[Quest]\n# missão principal: pedaços do Cajado do Caos e passo da busca do próximo\nStaffPieces=" << c.staffPieces << "\nStep=" << c.questStep << "\nGiver=" << c.questGiver << "\nVersion=2\n";
 	file << "\n[CustomSpells]\n# feitiços criados: índice|nome|alvo|elemento|efeito|sub|parâmetros|ouro\n";
 	for (size_t i = 0; i < c.customSpells.size(); i++)

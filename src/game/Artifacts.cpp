@@ -56,19 +56,36 @@ int arena::artifact::spellOf(int id)
 	return definitionOf(id).spell;
 }
 
-void arena::artifact::syncSpells(CharacterDraft &character)
+void arena::artifact::syncSpells(CharacterDraft &character, const ItemTables &tables)
 {
-	// O poder fica no livro de feitiços só enquanto o artefato está equipado.
+	// O poder fica no livro de feitiços só enquanto o item está equipado.
 	std::vector<int> powers;
 	for (const Item &item : character.inventory)
-		if (item.artifact >= 0 && item.equipped && spellOf(item.artifact) >= 0) powers.push_back(spellOf(item.artifact));
+	{
+		if (!item.equipped) continue;
+		const int spell = item.artifact >= 0 ? spellOf(item.artifact) : enchantmentSpell(item, tables);
+		if (spell >= 0 && std::find(powers.begin(), powers.end(), spell) == powers.end()) powers.push_back(spell);
+	}
 
-	auto isPower = [](int spell) { return spell >= 46 && spell <= 58; };
-	std::erase_if(character.spells, [&](int spell) { return isPower(spell) && std::find(powers.begin(), powers.end(), spell) == powers.end(); });
+	// Saves antigos: poderes de artefato no livro sem registro de onde vieram.
+	for (int spell : character.spells)
+		if (spell >= 46 && spell <= 58 && std::find(character.grantedSpells.begin(), character.grantedSpells.end(), spell) == character.grantedSpells.end()) character.grantedSpells.push_back(spell);
+
+	auto has = [](const std::vector<int> &list, int spell) { return std::find(list.begin(), list.end(), spell) != list.end(); };
+	std::vector<int> granted;
+	std::erase_if(character.spells, [&](int spell) { return has(character.grantedSpells, spell) && !has(powers, spell); });
 	for (int spell : powers)
-		if (std::find(character.spells.begin(), character.spells.end(), spell) == character.spells.end()) character.spells.push_back(spell);
-	if (isPower(character.readySpell) && std::find(powers.begin(), powers.end(), character.readySpell) == powers.end())
-		character.readySpell = character.spells.empty() ? -1 : character.spells.front();
+	{
+		if (!has(character.spells, spell)) { character.spells.push_back(spell); granted.push_back(spell); }
+		else if (has(character.grantedSpells, spell)) granted.push_back(spell);
+	}
+	character.grantedSpells = granted;
+	if (character.readySpell >= 0 && !has(character.spells, character.readySpell)) character.readySpell = character.spells.empty() ? -1 : character.spells.front();
+}
+
+bool arena::artifact::isGranted(const CharacterDraft &character, int spell)
+{
+	return std::find(character.grantedSpells.begin(), character.grantedSpells.end(), spell) != character.grantedSpells.end();
 }
 
 const arena::CityLocation *arena::artifact::dungeon(const ArenaData &data, int id)

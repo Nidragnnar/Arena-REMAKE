@@ -34,8 +34,10 @@ namespace arena
 
 		Item makeItem(int id);
 		int spellOf(int id); // feitiço do poder (-1 = nenhum)
-		// Põe no livro os poderes dos artefatos equipados e tira os dos que não estão mais.
-		void syncSpells(CharacterDraft &character);
+		// Põe no livro os poderes dos artefatos e os feitiços das armas e armaduras encantadas equipados, e tira
+		// os dos que não estão mais (só os que vieram de itens; os aprendidos ficam).
+		void syncSpells(CharacterDraft &character, const ItemTables &tables);
+		bool isGranted(const CharacterDraft &character, int spell);
 		constexpr double PowerRecharge = 30.0; // segundos reais até o poder poder ser usado de novo
 		// Província e masmorra com nome (34..47) onde o artefato está escondido.
 		const CityLocation *dungeon(const ArenaData &data, int id);

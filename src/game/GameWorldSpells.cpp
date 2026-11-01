@@ -106,9 +106,15 @@ int arena::GameWorldScreen::fortifyBonus(int attribute) const
 		if (e.type == SpellEffectType::Fortify && e.sub == attribute) bonus += e.magnitude;
 	}
 
-	// Itens mágicos de atributo equipados (grupo 3).
+	// Itens mágicos de atributo (grupo 3) e armas e armaduras encantadas com atributo, equipados.
+	const ItemTables &tables = this->game.getData().getItems();
 	for (const Item &item : this->game.getCharacter().inventory)
-		if (item.equipped && item.isMagicItem() && item.magicGroup == 3 && item.magicIndex == attribute) bonus += item.charges;
+	{
+		if (!item.equipped) continue;
+		if (item.isMagicItem() && item.magicGroup == 3 && item.magicIndex == attribute) bonus += item.charges;
+		int amount = 0;
+		if (enchantmentAttribute(item, tables, amount) == attribute) bonus += amount;
+	}
 	return bonus;
 }
 
@@ -143,13 +149,14 @@ void arena::GameWorldScreen::castReadySpell()
 	}
 
 	// Poder de artefato: grátis, mas precisa recarregar entre um uso e outro.
-	if (spell->artifactPower() && this->powerRecharge[spell->index] > 0.0)
+	const bool power = spell->artifactPower() || artifact::isGranted(c, spell->index); // de artefato ou de item encantado
+	if (power && this->powerRecharge[spell->index] > 0.0)
 	{
 		this->showMessage(ui::format(text.get("Artifacts.Recharging"), { spellName(this->game, *spell), std::to_string(static_cast<int>(std::ceil(this->powerRecharge[spell->index]))) }), 2.5);
 		return;
 	}
-	if (spell->artifactPower()) this->powerRecharge[spell->index] = artifact::PowerRecharge;
-	const int cost = spell->castingCost();
+	if (power) this->powerRecharge[spell->index] = artifact::PowerRecharge;
+	const int cost = power ? 0 : spell->castingCost();
 	if (this->spellPoints < cost)
 	{
 		this->showMessage(ui::format(text.get("Spells.NotEnough"), { spellName(this->game, *spell), std::to_string(cost) }), 2.5);

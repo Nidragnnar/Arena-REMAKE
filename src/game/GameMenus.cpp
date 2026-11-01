@@ -4,6 +4,7 @@
 
 #include "../render/Ui.h"
 #include "GameMenus.h"
+#include "Artifacts.h"
 #include "Leveling.h"
 #include "OriginalSave.h"
 
@@ -390,7 +391,7 @@ void arena::CharacterMenu::renderSpells(kit::Painter &painter, const Game &game,
 		const int ty = row.y + (this->rowH - fonts.arena.getHeight() * u) / 2;
 		const bool ready = spell->index == c.readySpell;
 		painter.text(fonts.arena, spellName(game, *spell), row.x + 4 * u, ty, ready ? hud::rgb(120, 60, 0) : col::Ink, TextAlign::Left, false);
-		const int cost = spell->castingCost();
+		const int cost = artifact::isGranted(c, spell->index) ? 0 : spell->castingCost();
 		painter.text(fonts.arena, std::to_string(cost), row.x + row.w - 4 * u, ty, cost > state.spellPoints ? hud::rgb(160, 30, 20) : col::InkSoft, TextAlign::Right, false);
 	}
 
@@ -412,7 +413,7 @@ void arena::CharacterMenu::renderSpells(kit::Painter &painter, const Game &game,
 	{
 		{ text.get("Menu.TargetLabel"), text.get("Spells.Target" + std::to_string(std::min(static_cast<int>(spell->target), 4))) },
 		{ text.get("Menu.ElementLabel"), text.get("Spells.Element" + std::to_string(static_cast<int>(spell->element))) },
-		{ text.get("Menu.CostLabel"), ui::format(text.get("Menu.SpellCost"), { std::to_string(spell->castingCost()) }) },
+		{ text.get("Menu.CostLabel"), ui::format(text.get("Menu.SpellCost"), { std::to_string(artifact::isGranted(c, spell->index) ? 0 : spell->castingCost()) }) },
 	};
 	for (const auto &[label, value] : facts)
 	{

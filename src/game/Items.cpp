@@ -161,6 +161,30 @@ bool arena::ItemTables::load(const ByteBuffer &exe, const std::function<size_t(c
 		}
 	}
 
+	// Encantamentos de armas e armaduras (14 cada): nome, qualidade, feitiço (255 = bônus de atributo) e preço extra.
+	const char *enchantGroups[2] = { "Weapon", "Armor" };
+	for (size_t g = 0; g < 2; g++)
+	{
+		const std::string key = std::string("Equipment.") + enchantGroups[g] + "Enchantment";
+		const auto names = readStrings(exe, offsetOf((key + "Names").c_str()), EnchantmentCount);
+		for (int i = 0; i < EnchantmentCount; i++)
+		{
+			Enchantment e;
+			e.name = i < static_cast<int>(names.size()) ? names[static_cast<size_t>(i)] : std::string();
+			e.quality = exe[offsetOf((key + "Qualities").c_str()) + i];
+			e.spell = exe[offsetOf((key + "Spells").c_str()) + i];
+			e.bonusPrice = readLE16(exe.data() + offsetOf((key + "BonusPrices").c_str()) + i * 2);
+			if (e.spell == 255)
+			{
+				// Bônus de atributo: qual, pelo nome ("of Strength", "of Will"...).
+				static const char *Attributes[] = { "Strength", "Intelligence", "Will", "Agility", "Speed", "Endurance", "Personality", "Luck" };
+				for (int a = 0; a < 8; a++) if (e.name.find(Attributes[a]) != std::string::npos) { e.attribute = a; break; }
+			}
+			this->enchantments[g].push_back(e);
+		}
+	}
+	for (size_t i = 0; i < 3; i++) this->enchantmentChance[i] = exe[offsetOf("Equipment.EnchantmentChances") + i];
+
 	const size_t lootAt = offsetOf("Entities.CreatureLootChances");
 	for (size_t i = 0; i < 25 && lootAt + i * 4 + 4 <= exe.size(); i++) this->creatureLootChances.push_back(readLE32(exe.data() + lootAt + i * 4));
 	return true;
@@ -180,6 +204,7 @@ float arena::itemWeight(const Item &item, const ItemTables &tables)
 int arena::itemPrice(const Item &item, const ItemTables &tables)
 {
 	if (item.artifact >= 0) return artifact::price(item.artifact);
+	const int enchantPrice = enchantmentOf(item, tables) ? enchantmentOf(item, tables)->bonusPrice : 0;
 	if (item.kind == ItemKind::Trinket)
 	{
 		// Itens mágicos: preço-base da peça mais o preço por carga do feitiço (bônus: 500 por ponto).
@@ -195,12 +220,12 @@ int arena::itemPrice(const Item &item, const ItemTables &tables)
 	const int multiplier = std::max(1, tables.materialPriceMultiplier[static_cast<size_t>(std::clamp(item.material, 0, MaterialCount - 1))]);
 	switch (item.kind)
 	{
-	case ItemKind::Weapon: return std::max(1, tables.weaponPrice[static_cast<size_t>(item.type)] * multiplier);
+	case ItemKind::Weapon: return std::max(1, tables.weaponPrice[static_cast<size_t>(item.type)] * multiplier) + enchantPrice;
 	case ItemKind::Armor:
 	{
 		const int base = tables.armorPrice[static_cast<size_t>(item.armorClass)][static_cast<size_t>(item.type)];
 		const bool metal = item.armorClass == ArmorClass::Plate || item.isShield();
-		return std::max(1, metal ? base * multiplier : base * 4);
+		return std::max(1, metal ? base * multiplier : base * 4) + enchantPrice;
 	}
 	default: return tables.potionPrice[static_cast<size_t>(item.type)];
 	}
@@ -299,6 +324,41 @@ arena::Item arena::randomMagicItem(const ItemTables &tables, int maxQuality, std
 	return item;
 }
 
+const arena::ItemTables::Enchantment *arena::enchantmentOf(const Item &item, const ItemTables &tables)
+{
+	if (item.enchant < 0 || item.artifact >= 0 || (item.kind != ItemKind::Weapon && item.kind != ItemKind::Armor)) return nullptr;
+	const auto &list = tables.enchantments[item.kind == ItemKind::Weapon ? 0 : 1];
+	return item.enchant < static_cast<int>(list.size()) ? &list[static_cast<size_t>(item.enchant)] : nullptr;
+}
+
+int arena::enchantmentSpell(const Item &item, const ItemTables &tables)
+{
+	const ItemTables::Enchantment *e = enchantmentOf(item, tables);
+	return e && e->spell < 64 ? e->spell : -1; // 255 = atributo; 193 (Saltar) não é feitiço do livro
+}
+
+int arena::enchantmentAttribute(const Item &item, const ItemTables &tables, int &bonus)
+{
+	const ItemTables::Enchantment *e = enchantmentOf(item, tables);
+	if (!e || e->attribute < 0) return -1;
+	bonus = std::max(3, e->quality / 2); // a qualidade dá o tamanho do bônus (aproximação: +3 a +6)
+	return e->attribute;
+}
+
+void arena::makeSpecial(Item &item, const ItemTables &tables, int maxQuality, std::mt19937 &rng)
+{
+	if (item.kind != ItemKind::Weapon && item.kind != ItemKind::Armor) return;
+	const int roll = randomInt(rng, 1, 10);
+	const bool material = roll <= tables.enchantmentChance[0] || roll > tables.enchantmentChance[1];
+	const bool enchant = roll > tables.enchantmentChance[0];
+	if (material && (item.kind == ItemKind::Weapon || item.armorClass == ArmorClass::Plate || item.isShield())) item.material = randomInt(rng, 3, MaterialCount - 1);
+	if (!enchant) return;
+	std::vector<int> allowed;
+	const auto &list = tables.enchantments[item.kind == ItemKind::Weapon ? 0 : 1];
+	for (size_t i = 0; i < list.size(); i++) if (list[i].quality <= maxQuality && (list[i].spell < 64 || list[i].attribute >= 0)) allowed.push_back(static_cast<int>(i));
+	if (!allowed.empty()) item.enchant = allowed[static_cast<size_t>(randomInt(rng, 0, static_cast<int>(allowed.size()) - 1))];
+}
+
 int arena::magicItemSpell(const Item &item, const ItemTables &tables)
 {
 	if (!item.isMagicItem() || item.magicGroup > 2) return -1;
@@ -311,27 +371,29 @@ arena::Loot arena::generateLoot(LootSource source, int creatureIndex, const Item
 	Loot loot;
 	auto chance = [&rng](int percent) { return randomInt(rng, 0, 99) < percent; };
 	const int magicQuality = playerLevel + 2;
+	// Equipamento especial (material raro e/ou encantamento) em parte do saque.
+	auto equipment = [&]() { Item e = randomEquipment(tables, rng); if (chance(15)) makeSpecial(e, tables, playerLevel + 6, rng); return e; };
 	switch (source)
 	{
 	case LootSource::TreasurePile:
 		loot.gold = randomInt(rng, 5, 40);
 		if (chance(30)) loot.items.push_back(potion(chance(85) ? 2 : 8));
-		if (chance(15)) loot.items.push_back(randomEquipment(tables, rng));
+		if (chance(15)) loot.items.push_back(equipment());
 		if (chance(8)) loot.items.push_back(randomMagicItem(tables, magicQuality, rng));
 		break;
 	case LootSource::EquipmentPile:
-		loot.items.push_back(randomEquipment(tables, rng));
-		if (chance(40)) loot.items.push_back(randomEquipment(tables, rng));
+		loot.items.push_back(equipment());
+		if (chance(40)) loot.items.push_back(equipment());
 		if (chance(20)) loot.gold = randomInt(rng, 1, 15);
 		break;
 	case LootSource::DeadBody:
 		loot.gold = randomInt(rng, 0, 12);
-		if (chance(30)) loot.items.push_back(randomEquipment(tables, rng));
+		if (chance(30)) loot.items.push_back(equipment());
 		if (chance(20)) loot.items.push_back(potion(2));
 		break;
 	case LootSource::Chest:
 		loot.gold = randomInt(rng, 15, 60);
-		loot.items.push_back(randomEquipment(tables, rng));
+		loot.items.push_back(equipment());
 		if (chance(40)) loot.items.push_back(potion(chance(80) ? 2 : 8));
 		if (chance(12)) loot.items.push_back(randomMagicItem(tables, magicQuality, rng));
 		break;
@@ -343,7 +405,7 @@ arena::Loot arena::generateLoot(LootSource source, int creatureIndex, const Item
 		if (chance(static_cast<int>(chances & 0xFF))) loot.gold = randomInt(rng, 2, 25);
 		if (chance(static_cast<int>((chances >> 8) & 0xFF))) loot.items.push_back(potion(2));
 		if (chance(static_cast<int>((chances >> 24) & 0xFF))) loot.items.push_back(randomMagicItem(tables, magicQuality, rng));
-		if (chance(static_cast<int>((chances >> 16) & 0xFF))) loot.items.push_back(randomEquipment(tables, rng));
+		if (chance(static_cast<int>((chances >> 16) & 0xFF))) loot.items.push_back(equipment());
 		break;
 	}
 	}

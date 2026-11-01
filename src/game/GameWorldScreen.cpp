@@ -483,7 +483,7 @@ bool arena::GameWorldScreen::tryOpenLoot()
 
 void arena::GameWorldScreen::applyOverlayResult(const OverlayResult &result)
 {
-	if (result.inventoryChanged) artifact::syncSpells(this->game.getCharacter()); // poderes dos artefatos equipados
+	if (result.inventoryChanged) artifact::syncSpells(this->game.getCharacter(), this->game.getData().getItems()); // poderes de itens equipados
 
 	if (result.spellPointsDelta != 0)
 	{
@@ -1010,7 +1010,7 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 		Item item = artifact::makeItem(std::clamp(std::atoi(arg.c_str()), 0, artifact::Count - 1));
 		item.equipped = true;
 		character.inventory.push_back(item);
-		artifact::syncSpells(character);
+		artifact::syncSpells(character, this->game.getData().getItems());
 		if (const int power = artifact::spellOf(item.artifact); power >= 0) character.readySpell = power;
 		return true;
 	}
@@ -1024,6 +1024,8 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 		std::printf("\nmateriais:"); for (int v : t.materialBonus) std::printf(" %d", v);
 		std::printf("\npoções:"); for (int v : t.potionPrice) std::printf(" %d", v);
 		for (int i = 0; i < MagicItemTypeCount; i++) std::printf("\nmágico %d: %s chance %d preço %d cargas %d..%d", i, t.magicItemNames[static_cast<size_t>(i)].c_str(), t.magicItemChance[static_cast<size_t>(i)], t.magicItemPrice[static_cast<size_t>(i)], t.magicItemCharges[static_cast<size_t>(i)].first, t.magicItemCharges[static_cast<size_t>(i)].second);
+		std::printf("\nchances de encantamento: %d %d %d", t.enchantmentChance[0], t.enchantmentChance[1], t.enchantmentChance[2]);
+		for (size_t g = 0; g < 2; g++) for (const auto &e : t.enchantments[g]) std::printf("\n  %s: %s -> feitiço %d, qualidade %d, +%d", g ? "armadura" : "arma", e.name.c_str(), e.spell, e.quality, e.bonusPrice);
 		for (size_t g = 0; g < 3; g++) for (const auto &s : t.magicSpells[g]) std::printf("\n  grupo %zu: %s -> feitiço %d, qualidade %d, %d/carga", g, s.name.c_str(), s.spell, s.quality, s.pricePerCharge);
 		std::printf("\n");
 		return true;
@@ -1060,6 +1062,27 @@ bool arena::GameWorldScreen::debugCommand(const std::string &name, const std::st
 			std::printf("\n");
 		}
 		if (!arg.empty()) { this->game.getCharacter().disease = std::atoi(arg.c_str()); this->game.getCharacter().diseaseEnd = this->game.getCharacter().gameMinutes + 1440.0; }
+		return true;
+	}
+
+	if (name == "enchanted")
+	{
+		// enchanted:K,T,E põe no inventário, equipada, uma arma (K 0) ou armadura (K 1) do tipo T com o encantamento E (teste).
+		int kind = 0, type = 0, enchant = 0;
+		if (std::sscanf(arg.c_str(), "%d,%d,%d", &kind, &type, &enchant) != 3) return false;
+		Item item;
+		item.kind = kind == 0 ? ItemKind::Weapon : ItemKind::Armor;
+		item.type = type;
+		item.armorClass = ArmorClass::Plate;
+		item.enchant = enchant;
+		CharacterDraft &character = this->game.getCharacter();
+		for (Item &other : character.inventory)
+			if (other.equipped && other.kind == item.kind && (item.kind == ItemKind::Weapon || bodyPartOf(other) == bodyPartOf(item))) other.equipped = false;
+		item.equipped = true;
+		character.inventory.push_back(item);
+		artifact::syncSpells(character, this->game.getData().getItems());
+		if (const int spell = enchantmentSpell(item, this->game.getData().getItems()); spell >= 0) character.readySpell = spell;
+		this->setupWeapon();
 		return true;
 	}
 
@@ -2537,7 +2560,7 @@ void arena::GameWorldScreen::drawHud(std::vector<uint32_t> &pixels, int width, i
 	std::string spellLine = text.get("Hud.NoSpell");
 	if (const Spell *ready = this->game.getData().getSpells().find(character.readySpell))
 	{
-		spellLine = spellName(this->game, *ready) + " (" + std::to_string(ready->castingCost()) + ")";
+		spellLine = spellName(this->game, *ready) + " (" + std::to_string(artifact::isGranted(this->game.getCharacter(), ready->index) ? 0 : ready->castingCost()) + ")";
 	}
 	painter.text(fonts.arena, text.get("Hud.Spell"), right.x + 9 * u, ry, col::TextDim);
 	painter.text(fonts.arena, fitted(text.get("Hud.Spell"), spellLine), right.x + right.w - 9 * u, ry, rgb(170, 190, 255), TextAlign::Right);

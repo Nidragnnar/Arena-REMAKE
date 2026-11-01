@@ -43,7 +43,7 @@ namespace
 	constexpr int RoomPrices[4] = { 5, 10, 20, 40 };
 
 	// Estoque da loja: armas e peças de armadura com materiais sorteados pela tabela do original.
-	std::vector<Item> makeStock(const ItemTables &tables, uint32_t seed)
+	std::vector<Item> makeStock(const ItemTables &tables, uint32_t seed, int playerLevel)
 	{
 		std::mt19937 rng(seed);
 		auto material = [&]()
@@ -74,6 +74,9 @@ namespace
 			stock.push_back(item);
 		}
 
+		// Uma em cada dez peças é especial (material raro e/ou encantamento), como no original.
+		for (Item &item : stock) if (rng() % 10u == 0) makeSpecial(item, tables, playerLevel + 6, rng);
+
 		// Agrupa: armas, depois armaduras, do mais barato ao mais caro.
 		std::stable_sort(stock.begin(), stock.end(), [&tables](const Item &a, const Item &b)
 		{
@@ -96,7 +99,7 @@ void arena::ServiceMenu::open(const Game &game, Kind openKind, const std::string
 	this->scroll = 0;
 	this->notice.clear();
 	this->frameW = this->frameH = 1;
-	if (openKind == Kind::Equipment) this->stock = makeStock(game.getData().getItems(), stockSeed);
+	if (openKind == Kind::Equipment) this->stock = makeStock(game.getData().getItems(), stockSeed, game.getCharacter().level);
 	if (openKind == Kind::MagesGuild)
 	{
 		// Itens mágicos à venda: 6 por guilda, sorteados pela semente dela, até a qualidade do nível do jogador.

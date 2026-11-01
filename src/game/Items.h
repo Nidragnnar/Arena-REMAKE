@@ -23,6 +23,7 @@ namespace arena
 	constexpr int BodyPartCount = 7;        // peito, mãos, pernas, ombro E, ombro D, cabeça, pés
 	constexpr int MagicItemTypeCount = 4;   // peças dos itens mágicos (anel, amuleto...)
 	constexpr int MagicSpellCounts[3] = { 15, 9, 8 }; // feitiços de ataque, defesa e diversos
+	constexpr int EnchantmentCount = 14;    // encantamentos de armas e de armaduras
 
 	struct Item
 	{
@@ -36,6 +37,7 @@ namespace arena
 		// grupo 0..2 = feitiço de ataque/defesa/diversos (índice na tabela, charges = cargas);
 		// 3 = bônus de atributo (índice = atributo, charges = bônus); 4 = bônus de armadura (charges = bônus).
 		int magicGroup = -1, magicIndex = 0, charges = 0;
+		int enchant = -1; // encantamento de arma ou armadura (índice na tabela do tipo), -1 = nenhum
 		bool isMagicItem() const { return this->kind == ItemKind::Trinket && this->artifact < 0 && this->magicGroup >= 0; }
 
 		bool isShield() const { return this->kind == ItemKind::Armor && this->type >= 7; }
@@ -75,6 +77,11 @@ namespace arena
 		struct MagicSpell { std::string name; int spell = 0, quality = 0, pricePerCharge = 0; };
 		std::array<std::vector<MagicSpell>, 3> magicSpells; // ataque, defesa, diversos
 
+		// Encantamentos de armas (0) e armaduras (1): feitiço 255 = bônus de atributo.
+		struct Enchantment { std::string name; int quality = 0, spell = 0, bonusPrice = 0, attribute = -1; };
+		std::array<std::vector<Enchantment>, 2> enchantments;
+		std::array<int, 3> enchantmentChance{}; // 1..10: material especial, encantamento, os dois
+
 		bool load(const ByteBuffer &exe, const std::function<size_t(const char*)> &offsetOf);
 	};
 
@@ -92,6 +99,14 @@ namespace arena
 	// do grupo com qualidade até maxQuality (nível de quem acha/compra).
 	Item randomMagicItem(const ItemTables &tables, int maxQuality, std::mt19937 &rng);
 	int magicItemSpell(const Item &item, const ItemTables &tables); // feitiço do SPELLSG (-1 se não for de feitiço)
+
+	// Encantamentos de armas e armaduras: um feitiço (vai para o livro enquanto equipado) ou um bônus de atributo.
+	const ItemTables::Enchantment *enchantmentOf(const Item &item, const ItemTables &tables);
+	int enchantmentSpell(const Item &item, const ItemTables &tables);              // -1 = nenhum
+	int enchantmentAttribute(const Item &item, const ItemTables &tables, int &bonus); // -1 = nenhum
+	// Peça especial como no original (EnchantmentChances, 1..10): só material raro, só encantamento ou os dois;
+	// encantamentos até a qualidade maxQuality.
+	void makeSpecial(Item &item, const ItemTables &tables, int maxQuality, std::mt19937 &rng);
 
 	// Equipamento inicial por classe e geração de saque (aproximação das regras do original).
 	std::vector<Item> startingKit(int classIndex, int armorAllowance);

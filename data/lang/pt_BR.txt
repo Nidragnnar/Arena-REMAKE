@@ -1321,3 +1321,34 @@ ArmorItem=%s de Proteção +%s
 Charges=Cargas: %s (usar lança o feitiço sem gastar magia)
 Passive=Bônus enquanto equipado
 Crumbles=%s se desfaz: acabaram as cargas.
+
+[Enchant]
+# Encantamentos de armas e armaduras (tabelas do executável), na ordem do original.
+Weapon0=de Força
+Weapon1=de Resistência a Choque
+Weapon2=de Vontade
+Weapon3=de Agilidade
+Weapon4=de Velocidade
+Weapon5=de Resistência
+Weapon6=de Resistência ao Fogo
+Weapon7=da Sorte
+Weapon8=do Relâmpago
+Weapon9=de Resistência ao Frio
+Weapon10=de Atravessar Paredes
+Weapon11=de Roubo de Vida
+Weapon12=da Paralisia
+Weapon13=da Tempestade de Fogo
+Armor0=de Força
+Armor1=de Inteligência
+Armor2=de Vontade
+Armor3=de Agilidade
+Armor4=de Velocidade
+Armor5=de Resistência
+Armor6=de Personalidade
+Armor7=da Sorte
+Armor8=de Salto
+Armor9=de Levitação
+Armor10=de Atravessar Paredes
+Armor11=de Invisibilidade
+Armor12=de Reflexão de Feitiço
+Armor13=de Regeneração

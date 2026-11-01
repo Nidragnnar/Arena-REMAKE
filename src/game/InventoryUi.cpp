@@ -31,6 +31,17 @@ namespace
 	}
 }
 
+namespace
+{
+	// " de Força", " de Relâmpago"... (tradução em Enchant.WeaponN / Enchant.ArmorN, com o original de reserva).
+	std::string enchantmentSuffix(const arena::Game &game, const arena::Item &item)
+	{
+		const arena::ItemTables::Enchantment *e = arena::enchantmentOf(item, game.getData().getItems());
+		if (!e) return {};
+		return " " + game.getText().getOr(std::string(item.kind == arena::ItemKind::Weapon ? "Enchant.Weapon" : "Enchant.Armor") + std::to_string(item.enchant), e->name);
+	}
+}
+
 std::string arena::itemName(const Game &game, const Item &item)
 {
 	const Localization &text = game.getText();
@@ -52,11 +63,12 @@ std::string arena::itemName(const Game &game, const Item &item)
 	switch (item.kind)
 	{
 	case ItemKind::Weapon:
-		return text.getOr("Weapons.Name" + std::to_string(item.type), tables.weaponNames[static_cast<size_t>(item.type)]) + " (" + material + ")";
+		return text.getOr("Weapons.Name" + std::to_string(item.type), tables.weaponNames[static_cast<size_t>(item.type)]) + enchantmentSuffix(game, item) + " (" + material + ")";
 	case ItemKind::Armor:
 	{
 		std::string name = text.getOr("Armor.Piece" + std::to_string(item.type), tables.armorNames[static_cast<size_t>(item.type)]);
 		if (!item.isShield()) name += " " + text.get("Armor.Class" + std::to_string(static_cast<int>(item.armorClass)));
+		name += enchantmentSuffix(game, item);
 		if (item.armorClass == ArmorClass::Plate || item.isShield()) name += " (" + material + ")";
 		return name;
 	}

@@ -108,6 +108,8 @@ namespace
 			Item item;
 			item.equipped = (flags & 0x80) != 0;
 			item.material = (flags & 1) ? std::clamp<int>(p[16], 0, MaterialCount - 1) : 1;
+			// X = encantamento (1..13; o 0 não se distingue de "sem encantamento" e fica de fora).
+			if ((kind == 0 || kind == 1) && p[15] >= 1 && p[15] < EnchantmentCount) item.enchant = p[15];
 			if (kind == 1)
 			{
 				// Arma: o tipo cujo dano de tabela (com o bônus do material) bate com o gravado; senão o SlotID.

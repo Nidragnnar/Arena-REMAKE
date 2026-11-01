@@ -340,7 +340,8 @@ Só criaturas até 2 níveis acima do jogador. As criaturas vivas por perto fica
 voltam ao carregar o jogo.
 
 Com **T** (na cidade ou no ermo) abre a viagem por Tamriel: o mapa com as províncias, a lista dos
-locais da província com os dias de viagem (pelo terreno do mapa-múndi e as tabelas de velocidade
+locais da província com os dias de viagem (passar o mouse num ponto do mapa mostra o nome e os dias; clicar nele
+escolhe o destino direto) (pelo terreno do mapa-múndi e as tabelas de velocidade
 do executável, como no original) e os locais marcados no mapa. Ao viajar, os dias passam e o
 jogador chega aos arredores do destino, do lado de fora do portão. A Cidade Imperial usa o mapa
 pronto do original (`IMPERIAL.MIF`).

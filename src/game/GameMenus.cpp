@@ -248,7 +248,10 @@ void arena::CharacterMenu::renderCharacter(kit::Painter &painter, const Game &ga
 		const int cx = r.x + pad + (i / 4) * (colW + pad);
 		const int cy = y + (i % 4) * line;
 		painter.text(fonts.arena, game.attributeName(i, false), cx, cy, col::InkSoft, TextAlign::Left, false);
-		painter.text(fonts.arena, std::to_string(c.attributes[static_cast<size_t>(i)]), cx + colW, cy, col::Ink, TextAlign::Right, false);
+		// Com bônus (encantamentos, itens mágicos, feitiços de reforço): o valor final e o bônus entre parênteses.
+		const int bonus = state.attributeBonus[static_cast<size_t>(i)];
+		const std::string value = bonus != 0 ? std::to_string(c.attributes[static_cast<size_t>(i)] + bonus) + " (" + signedValue(bonus) + ")" : std::to_string(c.attributes[static_cast<size_t>(i)]);
+		painter.text(fonts.arena, value, cx + colW, cy, bonus > 0 ? hud::rgb(40, 110, 30) : bonus < 0 ? col::Danger : col::Ink, TextAlign::Right, false);
 	}
 
 	y += 4 * line + 6 * u;
@@ -257,7 +260,8 @@ void arena::CharacterMenu::renderCharacter(kit::Painter &painter, const Game &ga
 	painter.text(fonts.a, text.get("Menu.Abilities"), r.x + pad, y, col::Ink, TextAlign::Left, false);
 	y += 20 * u;
 
-	const auto &a = c.attributes;
+	std::array<int, AttributeCount> a = c.attributes; // valores com os bônus
+	for (int i = 0; i < AttributeCount; i++) a[static_cast<size_t>(i)] += state.attributeBonus[static_cast<size_t>(i)];
 	const std::pair<std::string, std::string> derived[] =
 	{
 		{ text.get("Menu.Damage"), signedValue(damageBonusFor(a[0])) },

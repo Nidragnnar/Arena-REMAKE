@@ -641,6 +641,7 @@ arena::MenuState arena::GameWorldScreen::menuState() const
 	state.spellPoints = this->spellPoints;
 	state.experience = this->experience;
 	state.effects = this->describeEffects();
+	for (int i = 0; i < AttributeCount; i++) state.attributeBonus[static_cast<size_t>(i)] = this->fortifyBonus(i);
 	return state;
 }
 

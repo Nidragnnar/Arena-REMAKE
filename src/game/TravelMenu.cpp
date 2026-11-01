@@ -53,6 +53,19 @@ void arena::TravelMenu::selectProvince(const Game &game, int newProvince)
 	});
 }
 
+int arena::TravelMenu::placeUnderMouse() const
+{
+	// O ponto mais perto do mouse entre os que ele toca (as cidades grudadas umas nas outras se resolvem pela distância).
+	int best = -1, bestDistance = 1 << 30;
+	for (const auto &[rect, index] : this->dots)
+	{
+		if (!kit::hit(rect, this->mouseX, this->mouseY)) continue;
+		const int dx = this->mouseX - (rect.x + rect.w / 2), dy = this->mouseY - (rect.y + rect.h / 2);
+		if (dx * dx + dy * dy < bestDistance) { bestDistance = dx * dx + dy * dy; best = index; }
+	}
+	return best;
+}
+
 arena::TravelMenu::Choice arena::TravelMenu::handleInput(const InputEvent &event, const Game &game)
 {
 	Choice choice;
@@ -83,11 +96,17 @@ arena::TravelMenu::Choice arena::TravelMenu::handleInput(const InputEvent &event
 	else if (event.isKey(InputEvent::Key::Down) && count > 0) { this->selected = std::min(count - 1, this->selected + 1); this->confirm = -1; }
 	else if (event.isKey(InputEvent::Key::Enter)) go(this->selected);
 	else if (event.type == InputEvent::Type::MouseWheel) this->scroll = std::clamp(this->scroll - (event.dy > 0 ? 1 : -1) * 3, 0, std::max(0, count - this->visibleRows));
-	else if (event.type == InputEvent::Type::MouseMove) this->hoveredProvince = provinceUnderMouse();
+	else if (event.type == InputEvent::Type::MouseMove)
+	{
+		this->hoveredPlace = this->placeUnderMouse();
+		this->hoveredProvince = this->hoveredPlace >= 0 ? -1 : provinceUnderMouse();
+	}
 	else if (event.isClick() && this->frameW > 1)
 	{
 		if (kit::hit(this->closeRect, this->mouseX, this->mouseY) || !kit::hit(this->window, this->mouseX, this->mouseY)) { choice.close = true; return choice; }
 		if (kit::hit(this->goRect, this->mouseX, this->mouseY)) { if (this->confirm < 0) this->confirm = this->selected; go(this->selected); return choice; }
+		// Ponto do mapa: o primeiro clique escolhe o lugar (e pede confirmação), o segundo viaja.
+		if (const int place = this->placeUnderMouse(); place >= 0) { go(place); return choice; }
 		const int p = provinceUnderMouse();
 		if (p >= 0) { this->selectProvince(game, p); return choice; }
 		if (kit::hit(this->listRect, this->mouseX, this->mouseY))
@@ -128,12 +147,15 @@ void arena::TravelMenu::render(kit::Painter &painter, const Game &game)
 	this->mapRect = Rect{ this->window.x + pad, this->window.y + pad + 24 * u, areaW, areaW * 3 / 4 };
 	painter.image(this->map, this->mapW, this->mapH, this->mapRect);
 	auto mapPoint = [&](int gx, int gy) { return std::pair<int, int>{ this->mapRect.x + gx * this->mapRect.w / 320, this->mapRect.y + gy * this->mapRect.h / 200 }; };
+	this->dots.clear();
 	for (size_t i = 0; i < this->places.size(); i++)
 	{
 		const CityLocation *city = this->places[i].first;
 		const auto [mx, my] = mapPoint(city->globalX, city->globalY);
 		const int r = (city->type == CityLocation::Type::CityState ? 3 : 2) * u;
-		const bool chosen = static_cast<int>(i) == this->selected;
+		const int reach = std::max(r + 2 * u, 5 * u);
+		this->dots.push_back({ Rect{ mx - reach, my - reach, 2 * reach, 2 * reach }, static_cast<int>(i) });
+		const bool chosen = static_cast<int>(i) == this->selected || static_cast<int>(i) == this->hoveredPlace;
 		const uint32_t tint = chosen ? col::GoldBright : city->type == CityLocation::Type::CityState ? hud::rgb(230, 60, 40)
 			: city->type == CityLocation::Type::Dungeon ? hud::rgb(120, 70, 160) : hud::rgb(220, 200, 150);
 		painter.fill(Rect{ mx - r - u, my - r - u, 2 * r + 2 * u, 2 * r + 2 * u }, hud::rgb(0, 0, 0, 200));
@@ -148,6 +170,22 @@ void arena::TravelMenu::render(kit::Painter &painter, const Game &game)
 			painter.fill(Rect{ mx - k, my - 4 * u + k, 2 * k + u, u }, col::GoldBright);
 			painter.fill(Rect{ mx - k, my + 4 * u - k, 2 * k + u, u }, col::GoldBright);
 		}
+	}
+
+	// Nome e dias do ponto sob o mouse, numa etiqueta ao lado dele.
+	if (this->hoveredPlace >= 0 && this->hoveredPlace < static_cast<int>(this->places.size()))
+	{
+		const auto &[city, days] = this->places[static_cast<size_t>(this->hoveredPlace)];
+		const bool dungeon = city->type == CityLocation::Type::Dungeon;
+		const std::string label = (dungeon ? ui::format(text.get(city->mainQuest() ? "Travel.MainDungeon" : "Travel.Dungeon"), { city->name }) : city->name)
+			+ " - " + ui::format(text.get(days == 1 ? "Travel.Day" : "Travel.Days"), { std::to_string(days) });
+		const int tw = painter.textWidth(fonts.arena, label) + 10 * u, th = 14 * u;
+		int tx = this->mouseX + 10 * u, ty = this->mouseY - th - 4 * u;
+		tx = std::min(tx, this->mapRect.x + this->mapRect.w - tw);
+		ty = std::max(ty, this->mapRect.y);
+		painter.fill(Rect{ tx, ty, tw, th }, hud::rgb(20, 12, 6, 230));
+		painter.fill(Rect{ tx, ty + th - u, tw, u }, col::GoldDim);
+		painter.text(fonts.arena, label, tx + 5 * u, ty + 3 * u, col::GoldBright, TextAlign::Left, false);
 	}
 
 	// Lista à direita.

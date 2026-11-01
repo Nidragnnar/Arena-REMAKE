@@ -30,6 +30,10 @@ namespace arena
 		int province = -1, hoveredProvince = -1;
 		std::vector<std::pair<const CityLocation *, int>> places; // destino e dias
 		int selected = -1, confirm = -1, scroll = 0;
+		// Pontos do mapa (Ã¡rea clicÃ¡vel de cada local da lista) e o que estÃ¡ sob o mouse.
+		std::vector<std::pair<Rect, int>> dots;
+		int hoveredPlace = -1;
+		int placeUnderMouse() const;
 		int frameW = 1, frameH = 1;
 		int mouseX = -1, mouseY = -1;
 		Rect window, mapRect, listRect, closeRect, goRect;

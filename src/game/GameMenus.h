@@ -17,6 +17,7 @@ namespace arena
 		int spellPoints = 0;
 		int experience = 0;
 		std::vector<std::string> effects; // efeitos mágicos ativos, já descritos ("Luz - 40 s")
+		std::array<int, AttributeCount> attributeBonus{}; // feitiços de reforço, encantamentos e itens mágicos
 	};
 
 	// Janela do personagem em resolução nativa: boneco e barras à esquerda e três abas
